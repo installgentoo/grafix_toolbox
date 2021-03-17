@@ -1,0 +1,71 @@
+use super::{atlas_pack::*, vtex::*};
+use crate::uses::{math::*, GL::tex::*, *};
+
+//TODO Trait aliases
+pub fn pack_into_atlas<K: Eq + hash::Hash + Clone + Debug, T: Tile<F>, S: TexSize, F: TexFmt>(mut tiles: Vec<(K, T)>, max_w: i32, max_h: i32) -> (Atlas<K, S, F>, Vec<(K, T)>) {
+	tiles.sort_by(|(_, l), (_, r)| if l.h() != r.h() { r.h().cmp(&l.h()) } else { r.w().cmp(&l.w()) });
+	ASSERT!(
+		tiles.iter().map(|(l, _)| l).collect::<HashSet<_>>().len() == tiles.len(),
+		"Vector supplied to atlas needs unique keys"
+	);
+
+	let max_w = {
+		let area = tiles.iter().fold(0, |v, (_, t)| v + usize::to(t.w()) * usize::to(t.h()));
+		max_w.min(i32::to(2_u32.pow(u32::to(f64::to(area).sqrt().log2().ceil()))))
+	};
+	let (min_w, min_h) = (tiles.iter().map(|(_, e)| e.w()).min().unwrap(), tiles.iter().rev().take(1).next().unwrap().1.h());
+
+	let (c, empty, filled) = (S::SIZE, &mut vec![Rect { x: 0, y: 0, w: max_w, h: max_h }], &mut vec![]);
+	let (mut tail, mut atlas, mut packed) = (vec![], vec![], HashMap::new());
+
+	let mut tiles = tiles.into_iter().map(|i| Some(i)).collect::<Vec<_>>();
+	for i in 0..tiles.len() {
+		if let Some((id, img)) = &tiles[i] {
+			let duplicate = tiles[..i].iter().rev().flatten().take_while(|(_, e)| e.h() == img.h()).find(|(_, e)| *img == *e);
+			if let Some((i, _)) = duplicate {
+				packed.insert(id.clone(), *packed.get(i).unwrap());
+				DEBUG!("Deduped {:?}, {:?} in atlas", *i, *id);
+				continue;
+			}
+
+			if let Ok(b) = pack(img.w(), img.h(), empty, filled, min_w, min_h) {
+				let (x, y, w, h) = (b.x, b.y, b.w, b.h);
+				packed.insert(id.clone(), (x, y + h, x + w, y));
+				atlas.resize(atlas.len().max(usize::to(b.y2() * max_w * c)), F::ZERO);
+
+				for i in 0..h {
+					let d = img.data();
+					let b = usize::to(((y + i) * max_w + x) * c);
+					let w = usize::to(w * c);
+					let x = usize::to(i) * w;
+					atlas[b..b + w].copy_from_slice(&d[x..x + w])
+				}
+			} else {
+				if let Some((id, img)) = tiles[i].take() {
+					tail.push((id, img));
+				}
+			};
+		}
+	}
+
+	let max_h = atlas.len() / usize::to(max_w * c);
+
+	let tex = Rc::new(Tex2d::<S, F>::new((max_w, max_h), &atlas));
+	let packed = packed
+		.into_iter()
+		.map(|(id, reg)| {
+			let region = (0.5, -0.5, 0.5, -0.5).sum(reg).div((max_w, max_h, max_w, max_h));
+			(id, VTex2d { region, tex: tex.clone() })
+		})
+		.collect();
+
+	(packed, tail)
+}
+
+type Atlas<K, S, F> = HashMap<K, VTex2d<S, F>>;
+
+pub trait Tile<T>: Eq {
+	fn w(&self) -> i32;
+	fn h(&self) -> i32;
+	fn data(&self) -> &[T];
+}

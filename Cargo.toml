@@ -1,0 +1,39 @@
+[package]
+name = "grafix-toolbox"
+version = "0.7.0"
+authors = ["Alexander Drozdoff"]
+edition = "2018"
+description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
+license = "MIT"
+repository = "https://github.com/installgentoo/grafix_toolbox"
+homepage = "https://github.com/installgentoo/grafix_toolbox"
+
+[features]
+profiling = []
+gl45 = []
+default = ["gl45"]
+
+[lib]
+name = "grafix_toolbox"
+path = "./crate.rs"
+
+[dependencies]
+backtrace = "^0.3"
+bitflags = "^1.2"
+const_format = "^0.2"
+hashbrown = { version = "^0.11", features = ["serde"] }
+half = { version = "^1.7", features = ["serde"] }
+serde = { version = "^1", features = ["derive"] }
+serde_json = "^1"
+bincode = "^1"
+rand = "^0.8"
+rand_xorshift = "^0.3"
+nalgebra = "^0.25"
+nalgebra-glm = "^0.11"
+image = { version = "^0.23", default-features = false, features = ["png", "hdr"] }
+rusttype = "^0.9"
+gl = "^0.14"
+glfw = "^0.41"
+tobj = "^2"
+smol = "^1.2"
+zstd = "^0.6"
