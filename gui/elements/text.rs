@@ -99,7 +99,7 @@ impl TextEdit {
 		let whole_text_h = scale * f32::to(len);
 		let start = (1. - scrollbar.pip_pos) * (whole_text_h - size.y());
 		let line_pos = |n| start + size.y() - scale * f32::to(n + 1);
-		let vis_range = move || (start, size.y()).div(whole_text_h).mul(len).sum((0, 1)).fmin(len - 1).fmax(0);
+		let vis_range = move || (start, size.y()).mul(len).div(whole_text_h).fmax(0).sum((0, 1)).fmin(len);
 		let (start, len) = vec2::<usize>::to(vis_range());
 		//println!("{:?}", (start, len));
 		let p = |x, n| pos.sum((x, line_pos(n)));
@@ -164,7 +164,7 @@ impl TextEdit {
 
 		let p = &mut scrollbar.pip_pos as *mut f32;
 		r.logic(
-			(pos, size),
+			(pos, pos.sum(size)),
 			move |e, focused, mouse_pos| {
 				let pip = unsafe { &mut *p };
 				let setx = |c, o| util::move_caret(lines, c, (o, 0));
@@ -172,7 +172,7 @@ impl TextEdit {
 				let click = |p| util::caret_to_cursor(lines, vis_range(), t, scale, pos.sum((offset.x(), size.y())), p);
 				let move_pip = |v: f32| (*pip + v).clamp(0., 1.);
 				let set_screen = |c: &Caret, at: f32| 1. - (f32::to(c.y()) / f32::to(lines.len() - len) - at).clamp(0., 1.);
-				let center_pip = |c: &Caret| set_screen(c, f32::to(len) * scale / whole_text_h * 0.5);
+				let center_pip = |c: &Caret| set_screen(c, f32::to(len) * scale / whole_text_h * 0.5).or_val(whole_text_h > size.y(), 1.);
 				let range = |beg: Caret, end: Caret, text: &str| {
 					let lw = lines[..beg.y()].iter().zip(wraps[..beg.y()].iter());
 					let start_l = get_line(lines, beg);
@@ -271,7 +271,7 @@ impl TextEdit {
 								text.str().replace_range(b..e, "\n");
 							} else {
 								text.str().insert(b, '\n');
-								println!("{:?}", (b..e, &text[b..]));
+								//println!("{:?}", (b..e, &text[b..]));
 							}
 							*caret = (1, beg.y() + 1);
 							*select = *caret;

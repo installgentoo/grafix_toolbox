@@ -91,6 +91,6 @@ pub mod opengl {
 		pub use super::super::utility::{EnvTex, Environment};
 	}
 	pub mod mesh {
-		pub use super::super::utility::{Camera, Mesh, Model, Skybox};
+		pub use super::super::utility::{AnyMesh, Camera, Mesh, Model, Skybox};
 	}
 }

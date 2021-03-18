@@ -90,7 +90,7 @@ impl ShaderManager {
 		let m = Self::get();
 		let name = filename.into();
 		m.loading.push(task::spawn(async move {
-			let data = EXPECT_OR!(Res::to(FS::read_text(name.as_ref()).await));
+			let data = OR_DEF!(Res::to(FS::read_text(name.as_ref()).await));
 			unblock(move || parse_shader_sources(&name, &data)).await
 		}));
 	}

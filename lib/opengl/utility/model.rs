@@ -1,6 +1,7 @@
 use super::mesh::*;
 use crate::uses::{math::*, serde_impl::*, GL::buffer::*, *};
 
+#[derive(Default)]
 pub struct Model {
 	idxs: Vec<u32>,
 	xyz: Vec<f32>,
@@ -8,10 +9,10 @@ pub struct Model {
 	norm: Vec<f16>,
 }
 impl Model {
-	pub fn load_models(file: &str, scale: f32) -> Vec<Model> {
+	pub fn load_models(file: &str, scale: f32) -> Res<Vec<Model>> {
 		let file = &CONCAT!["res/", file, ".obj"];
-		let (models, _) = EXPECT!(tobj::load_obj(file, true), "Can't load models in {}", file);
-		models
+		let (models, _) = tobj::load_obj(file, true).map_err(|e| format!("Can't load models in {}, {:?}", file, e))?;
+		let models = models
 			.into_iter()
 			.map(|m| {
 				let mesh = m.mesh;
@@ -51,7 +52,24 @@ impl Model {
 					.collect::<Vec<f32>>();
 				Model { idxs, xyz, uv, norm }
 			})
-			.collect()
+			.collect();
+		Ok(models)
+	}
+	pub fn new_cached(name: &str) -> Res<Self> {
+		let cache = &CONCAT![name, ".obj.z"];
+		if let Ok(d) = FS::Load::Archive(cache) {
+			if let Ok(model) = SERDE::FromVec(&d) {
+				return Ok(model);
+			}
+		}
+
+		let model: Res<Model> = (|| {
+			let m = Model::load_models(name, 1.)?.into_iter().next().ok_or("Empty models file")?;
+			let v = EXPECT!(SERDE::ToVec(&m));
+			FS::Save::Archive((cache, v));
+			Ok(m)
+		})();
+		model
 	}
 }
 impl<T: Borrow<Model>> From<T> for Mesh<u32, f32, f16, f16> {
@@ -66,30 +84,6 @@ impl<T: Borrow<Model>> From<T> for Mesh<u32, f32, f16, f16> {
 	}
 }
 
-impl Mesh<u32, f32, f16, f16> {
-	pub fn new_cached(name: &str) -> Self {
-		let cache = &CONCAT![name, ".obj.z"];
-		FS::Load::Archive(cache)
-			.map_or_else(
-				|_| {
-					let m = EXPECT!(Model::load_models(name, 1.).into_iter().next());
-					let v = EXPECT!(SERDE::ToVec(&m));
-					ASSERT!(
-						{
-							let xyz = &m.xyz;
-							let xyz1 = EXPECT!(SERDE::FromVec::<Model>(&v)).xyz;
-							xyz.iter().map(|v| *v).eq(xyz1)
-						},
-						"fail"
-					);
-					FS::Save::Archive((cache, v));
-					m
-				},
-				|d| EXPECT!(SERDE::FromVec(&d)),
-			)
-			.into()
-	}
-}
 impl Mesh<u16, f32, f16, f32> {
 	pub fn make_sphere(scale: f32, segs: u32) -> Self {
 		let (xyz, uv) = {

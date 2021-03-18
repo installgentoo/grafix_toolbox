@@ -4,7 +4,7 @@ use crate::uses::{GL::tex::*, *};
 pub type uImage<S> = Image<S, u8>;
 pub type fImage<S> = Image<S, f16>;
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct Image<S: TexSize, F: TexFmt> {
 	pub w: u32,
 	pub h: u32,

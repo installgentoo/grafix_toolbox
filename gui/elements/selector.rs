@@ -7,10 +7,10 @@ pub struct Selector {
 	choices: Vec<Button>,
 	open: bool,
 	editing: bool,
-	pub choice: u32,
+	pub choice: usize,
 }
 impl Selector {
-	pub fn draw<'s>(&'s mut self, r: &mut RenderLock<'s>, t: &'s Theme, pos: Vec2, size: Vec2, options: &'s mut [String]) -> u32 {
+	pub fn draw<'s>(&'s mut self, r: &mut RenderLock<'s>, t: &'s Theme, pos: Vec2, size: Vec2, options: &'s mut [String]) -> usize {
 		let Self {
 			button,
 			line_edit,
@@ -19,7 +19,7 @@ impl Selector {
 			editing,
 			choice,
 		} = self;
-		let text = &options[*choice as usize];
+		let text = &options[*choice];
 
 		if !*open {
 			choices.clear();
@@ -37,7 +37,7 @@ impl Selector {
 				if c.draw(r, t, pos.sum(size.mul((0, n + 1))), size, &options[n]) {
 					*open = false;
 					*editing = false;
-					*choice = u32::to(n);
+					*choice = n;
 					return *choice;
 				}
 			}

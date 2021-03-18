@@ -88,7 +88,7 @@ impl<'l> RenderLock<'l> {
 		check_borrow(id);
 		LineEdit::storage(id).draw(self, t(), pos, size)
 	}
-	pub fn Selector(&mut self, id: u32, pos: Vec2, size: Vec2, options: &'l mut [String]) -> u32 {
+	pub fn Selector(&mut self, id: u32, pos: Vec2, size: Vec2, options: &'l mut [String]) -> usize {
 		check_borrow(id);
 		Selector::storage(id).draw(self, t(), pos, size, options)
 	}

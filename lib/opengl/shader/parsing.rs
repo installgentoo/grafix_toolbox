@@ -48,7 +48,7 @@ pub fn parse_shader_sources(filename: &str, text: &str) -> SourcePack {
 			.collect::<Res<_>>()
 	})();
 
-	EXPECT_OR!(parsed, "Malformed .glsl file {}, row {}, '{:?}'", filename, cur_row_number)
+	OR_DEF!(parsed, "Malformed .glsl file {}, row {}, '{:?}'", filename, cur_row_number)
 }
 
 pub fn print_shader_log(obj: u32) -> String {

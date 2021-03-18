@@ -39,7 +39,7 @@ pub mod uses {
 		pub mod task {
 			pub use smol::Task;
 			pub mod task {
-				pub use smol::{block_on, spawn};
+				pub use smol::{block_on, future::poll_once, spawn};
 			}
 		}
 		pub use smol::{fs, io};

@@ -61,12 +61,12 @@ pub mod Save {
 
 					if let Ok(mut file) = file {
 						let data = if let ComprW(l) = operation {
-							EXPECT_OR!(Res::to(unblock(move || zstd::stream::encode_all(&data[..], l)).await))
+							OR_DEF!(Res::to(unblock(move || zstd::stream::encode_all(&data[..], l)).await))
 						} else {
 							data
 						};
 
-						let _ = EXPECT_OR!(file.write_all(&data).await);
+						let _ = OR_DEF!(file.write_all(&data).await);
 						EXPECT!(file.sync_all().await);
 					} else {
 						FAILED!(map_err(file, &name));
@@ -125,6 +125,19 @@ macro_rules! LOADER {
 				Done($t),
 			}
 			impl Resource {
+				pub fn if_ready(&mut self) -> Option<&mut $t> {
+					match self {
+						Done(vec) => Some(vec),
+						Loading(handle) => {
+							let res = task::block_on(async move { task::poll_once(handle).await });
+							if res.is_none() {
+								return None;
+							}
+							*self = Done(OR_DEF!(res.unwrap()));
+							self.if_ready()
+						}
+					}
+				}
 				pub fn check(&mut self) -> Res<&mut $t> {
 					match self {
 						Done(vec) => Ok(vec),
@@ -140,7 +153,7 @@ macro_rules! LOADER {
 						Done(vec) => vec,
 						Loading(handle) => {
 							let res = task::block_on(async move { handle.await });
-							*self = Done(EXPECT_OR!(res));
+							*self = Done(OR_DEF!(res));
 							self.get()
 						}
 					}
@@ -148,7 +161,7 @@ macro_rules! LOADER {
 				pub fn take(self) -> $t {
 					match self {
 						Done(vec) => vec,
-						Loading(handle) => EXPECT_OR!(task::block_on(async move { handle.await })),
+						Loading(handle) => OR_DEF!(task::block_on(async move { handle.await })),
 					}
 				}
 			}

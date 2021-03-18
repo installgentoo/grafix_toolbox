@@ -34,16 +34,16 @@ macro_rules! PASS {
 	};
 }
 
-macro_rules! EXPECT_OR {
+macro_rules! OR_DEF {
 	($e: expr) => {{
-		EXPECT_OR_IMPL!($e, "{:?}")
+		EXPECT_OR_DEF_IMPL!($e, "{:?}")
 	}};
 	($e: expr, $($t: tt)+) => {{
-		EXPECT_OR_IMPL!($e, $($t)+)
+		EXPECT_OR_DEF_IMPL!($e, $($t)+)
 	}}
 }
 #[macro_export]
-macro_rules! EXPECT_OR_IMPL {
+macro_rules! EXPECT_OR_DEF_IMPL {
 	($e: expr, $($t: tt)+) => {{
 		let e = $e;
 		use logging::UniformUnwrapOrDefault;

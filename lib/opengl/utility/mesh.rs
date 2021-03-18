@@ -57,15 +57,24 @@ pub mod Skybox {
 	}
 }
 
+pub trait AnyMesh {
+	fn Draw(&mut self);
+	fn to_trait(self) -> Box<dyn AnyMesh>;
+}
+impl<I: 'static + IdxType, C: 'static + AttrType, T: 'static + AttrType, N: 'static + AttrType> AnyMesh for Mesh<I, C, T, N> {
+	fn Draw(&mut self) {
+		self.vao.Bind().Draw(self.draw);
+	}
+	fn to_trait(self) -> Box<dyn AnyMesh> {
+		return Box::new(self);
+	}
+}
 pub struct Mesh<I: IdxType, C: AttrType, T: AttrType, N: AttrType> {
 	pub vao: Vao<I>,
 	pub buff: (IdxArr<I>, AttrArr<C>, Option<AttrArr<T>>, AttrArr<N>),
 	pub draw: (u32, GLenum),
 }
 impl<I: IdxType, C: AttrType, T: AttrType, N: AttrType> Mesh<I, C, T, N> {
-	pub fn Draw(&mut self) {
-		self.vao.Bind().Draw(self.draw);
-	}
 	pub fn new(args: impl MeshArgs<I, C, T, N>) -> Self {
 		let (idx, xyz, uv, norm, mode) = args.get();
 

@@ -17,41 +17,42 @@ impl<T: Borrow<Environment>> From<T> for EnvTex {
 	}
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct Environment {
 	specular: Vec<[fImage<RGB>; 6]>,
 	diffuse: [fImage<RGB>; 6],
 }
 impl Environment {
-	pub fn new_cached(name: &str) -> EnvTex {
+	pub fn new_cached(name: &str) -> Res<Self> {
 		let cache = &CONCAT![name, ".hdr.z"];
-		FS::Load::Archive(cache)
-			.map_or_else(
-				|_| {
-					let file = EXPECT!(FS::Load::File(CONCAT!["res/", name, ".hdr"]));
-					let equirect = Tex2d::from(Image::<RGB, f32>::new(file));
-					let env = Self::new(equirect);
-					let v = EXPECT!(SERDE::ToVec(&env));
-					FS::Save::Archive((cache, v));
-					env
-				},
-				|d| EXPECT!(SERDE::FromVec(&d)),
-			)
-			.into()
+		if let Ok(d) = FS::Load::Archive(cache) {
+			if let Ok(env) = SERDE::FromVec(&d) {
+				return Ok(env);
+			}
+		}
+
+		let env: Res<_> = (|| {
+			let file = FS::Load::File(CONCAT!["res/", name, ".hdr"])?;
+			let equirect = Tex2d::from(Image::<RGB, f32>::new(file));
+			let env = Self::new(equirect);
+			let v = EXPECT!(SERDE::ToVec(&env));
+			FS::Save::Archive((cache, v));
+			Ok(env)
+		})();
+		env
 	}
 	pub fn lut_cached() -> Tex2d<RG, f16> {
-		let name = "brdf_lut.pbrt.z";
-		FS::Load::Archive(name)
-			.map_or_else(
-				|_| {
-					let lut = Self::lut();
-					let v = EXPECT!(SERDE::ToVec(&lut));
-					FS::Save::Archive((name, v));
-					lut
-				},
-				|d| EXPECT!(SERDE::FromVec(&d)),
-			)
-			.into()
+		let cache = "brdf_lut.pbrt.z";
+		if let Ok(d) = FS::Load::Archive(cache) {
+			if let Ok(lut) = SERDE::FromVec(&d) {
+				return fImage::into(lut);
+			}
+		}
+
+		let lut = Self::lut();
+		let v = EXPECT!(SERDE::ToVec(&lut));
+		FS::Save::Archive((cache, v));
+		lut.into()
 	}
 	pub fn lut() -> fImage<RG> {
 		let mut lut = EXPECT!(Shader::new((mesh__2d_screen_vs, env__gen_lut_ps)));

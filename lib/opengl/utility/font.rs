@@ -23,7 +23,11 @@ pub struct Font {
 }
 impl Font {
 	pub fn tex(&self) -> &Tex2d<RED, u8> {
-		self.tex.as_ref().unwrap()
+		if let Some(t) = self.tex.as_ref() {
+			t
+		} else {
+			UnsafeOnce!(Tex2d<RED, u8>, { Tex2d::default() })
+		}
 	}
 	pub fn char(&self, c: char) -> &Glyph {
 		let g = &self.glyphs;
@@ -48,16 +52,20 @@ impl Font {
 	pub fn new_cached(name: &str, alphabet: &str) -> Self {
 		let alph_chksum = chksum::const_fnv1(alphabet.as_bytes()).to_string();
 		let cache = &CONCAT![name, ".", &alph_chksum, ".font.z"];
-		FS::Load::Archive(cache).map_or_else(
-			|_| {
-				let file = EXPECT!(FS::Load::File(CONCAT!["res/", name, ".ttf"]));
-				let font = Font::new(file, alphabet);
-				let v = EXPECT!(SERDE::ToVec(&font));
-				FS::Save::Archive((cache, v));
-				font
-			},
-			|d| EXPECT!(SERDE::FromVec(&d)),
-		)
+		if let Ok(d) = FS::Load::Archive(cache) {
+			if let Ok(font) = SERDE::FromVec(&d) {
+				return font;
+			}
+		}
+
+		let font: Res<_> = (|| {
+			let file = FS::Load::File(CONCAT!["res/", name, ".ttf"])?;
+			let font = Font::new(file, alphabet);
+			let v = EXPECT!(SERDE::ToVec(&font));
+			FS::Save::Archive((cache, v));
+			Ok(font)
+		})();
+		OR_DEF!(font)
 	}
 	pub fn new<D: Borrow<Vec<u8>>>(font_data: D, alphabet: &str) -> Self {
 		use rusttype as ttf;

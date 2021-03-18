@@ -45,7 +45,7 @@ impl ops::Deref for CachedStr {
 }
 impl fmt::Display for CachedStr {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "{})", self.str)
+		write!(f, "{}", self.str)
 	}
 }
 impl<S: Into<String>> From<S> for CachedStr {
