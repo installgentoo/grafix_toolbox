@@ -2,6 +2,17 @@ pub type CowStr = std::borrow::Cow<'static, str>;
 pub type Res<T> = Result<T, String>;
 pub type Str = &'static str;
 
+#[macro_export]
+macro_rules! map_enum {
+	($i: expr, $v: pat, $m: expr) => {
+		if let $v = $i {
+			Some($m)
+		} else {
+			None
+		}
+	};
+}
+
 pub trait Utf8Len {
 	fn utf8_len(&self) -> usize;
 	fn len_at_char(&self, i: usize) -> usize;

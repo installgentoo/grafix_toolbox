@@ -167,6 +167,14 @@ where
 		self.apply(name);
 	}
 }
+impl<T, const L: usize> UniformArgs for [T; L]
+where
+	[T]: UniformImpl,
+{
+	fn get(self, name: i32, _: &mut HashMap<i32, i32>) {
+		self.apply(name);
+	}
+}
 impl<T> UniformArgs for &Vec<T>
 where
 	[T]: UniformImpl,
@@ -183,7 +191,6 @@ where
 		self[..].apply(name);
 	}
 }
-//TODO Const Generics
 
 pub mod uniforms_use {
 	pub const fn id(s: &str) -> (u32, &str) {

@@ -137,7 +137,14 @@ pub unsafe fn glTextureStorage2D(_typ: GLenum, tex: u32, levels: i32, fmt: GLenu
 			gl::BindTexture(_typ, tex);
 			let (mut w, mut h) = (w, h);
 			for lvl in 0..levels {
-				gl::TexImage2D(_typ, lvl, formatDepth45to33(fmt), w, h, 0, gl::RGBA, gl::FLOAT, 0 as *const GLvoid);
+				if _typ == gl::TEXTURE_CUBE_MAP {
+					for f in 0..6 {
+						let f = gl::TEXTURE_CUBE_MAP_POSITIVE_X + f;
+						gl::TexImage2D(f, lvl, formatDepth45to33(fmt), w, h, 0, gl::RGBA, gl::FLOAT, 0 as *const GLvoid);
+					}
+				} else {
+					gl::TexImage2D(_typ, lvl, formatDepth45to33(fmt), w, h, 0, gl::RGBA, gl::FLOAT, 0 as *const GLvoid);
+				}
 				w = 1.max(w / 2);
 				h = 1.max(h / 2);
 			}
@@ -186,7 +193,11 @@ pub unsafe fn glTextureSubImage3D(_typ: GLenum, tex: u32, lvl: i32, x: i32, y: i
 	G!(
 		{
 			gl::BindTexture(_typ, tex);
-			gl::TexSubImage3D(_typ, lvl, x, y, z, w, h, d, fmt, t, data);
+			if _typ == gl::TEXTURE_CUBE_MAP {
+				gl::TexSubImage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + u32::to(z), lvl, x, y, w, h, fmt, t, data);
+			} else {
+				gl::TexSubImage3D(_typ, lvl, x, y, z, w, h, d, fmt, t, data);
+			}
 			gl::BindTexture(_typ, *bound_tex33());
 		},
 		gl::TextureSubImage3D(tex, lvl, x, y, z, w, h, d, fmt, t, data)

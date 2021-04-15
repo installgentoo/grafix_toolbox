@@ -117,6 +117,7 @@ impl ShaderManager {
 
 			task::block_on(async move {
 				let mut s = vec![];
+				//TODO ASYNC CLOSURES
 				for t in loading.drain(..) {
 					s.push(t.await)
 				}

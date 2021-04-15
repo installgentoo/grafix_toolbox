@@ -1,4 +1,26 @@
 #[macro_export]
+macro_rules! impl_for_asref {
+	($t: tt, $f: tt, $r: ty) => {
+		impl<T, const L: usize> $t<T> for [T; L] {
+			fn $f(&self) -> $r {
+				(&self[..]).$f()
+			}
+		}
+		impl<T> $t<T> for &Vec<T> {
+			fn $f(&self) -> $r {
+				(&self[..]).$f()
+			}
+		}
+		impl<T> $t<T> for Vec<T> {
+			fn $f(&self) -> $r {
+				(&self).$f()
+			}
+		}
+	};
+}
+//TODO redo with specialization
+
+#[macro_export]
 macro_rules! type_name {
 	($t: ty) => {
 		type_tools::short_type_name::<$t>()

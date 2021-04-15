@@ -1,65 +1,52 @@
 use super::{object::*, state::*, types::*};
-use crate::uses::{slicing::*, *};
+use crate::uses::*;
 
 type Args = (*const GLvoid, usize, GLenum);
 pub trait AllocArgs<T> {
-	fn geta(self) -> Args;
+	fn geta(&self) -> Args;
 }
 impl<T> AllocArgs<T> for Args {
-	fn geta(self) -> Self {
-		self
+	fn geta(&self) -> Args {
+		*self
 	}
 }
-impl<S: Sliceable<T>, T> AllocArgs<T> for (S, GLenum) {
-	fn geta(self) -> Args {
-		let slice = self.0.slice();
+impl<S: AsRef<[T]>, T> AllocArgs<T> for (S, GLenum) {
+	fn geta(&self) -> Args {
+		let slice = self.0.as_ref();
 		(slice.as_ptr() as *const GLvoid, slice.len(), self.1)
 	}
 }
 impl<T> AllocArgs<T> for &[T] {
-	fn geta(self) -> Args {
-		(self, gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT | gl::MAP_WRITE_BIT).geta()
+	fn geta(&self) -> Args {
+		(*self, gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT | gl::MAP_WRITE_BIT).geta()
 	}
 }
-impl<T> AllocArgs<T> for &Vec<T> {
-	fn geta(self) -> Args {
-		(self[..]).geta()
-	}
-}
-/*impl<T, const N: usize> AllocArgs<T> for [T; N] {//TODO add const generic impl + same for UpdateArgs
-	fn geta(self) -> Args {
-		(self.as_ptr(), self.len(), _)
-	}
-}*/
+impl_for_asref!(AllocArgs, geta, Args);
 
 type UArgs = (*const GLvoid, usize, usize);
 pub trait UpdateArgs<T> {
-	fn getu(self) -> UArgs;
+	fn getu(&self) -> UArgs;
 }
 impl<T> UpdateArgs<T> for UArgs {
-	fn getu(self) -> Self {
-		self
+	fn getu(&self) -> UArgs {
+		*self
 	}
 }
-impl<S: Sliceable<T>, T, O> UpdateArgs<T> for (S, O)
+impl<S: AsRef<[T]>, T, O: Copy> UpdateArgs<T> for (S, O)
 where
 	usize: Cast<O>,
 {
-	fn getu(self) -> UArgs {
-		let slice = self.0.slice();
+	fn getu(&self) -> UArgs {
+		let slice = self.0.as_ref();
 		(slice.as_ptr() as *const GLvoid, slice.len(), usize::to(self.1))
 	}
 }
 impl<T> UpdateArgs<T> for &[T] {
-	fn getu(self) -> UArgs {
-		(self, 0).getu()
+	fn getu(&self) -> UArgs {
+		(*self, 0).getu()
 	}
 }
-impl<T> UpdateArgs<T> for &Vec<T> {
-	fn getu(self) -> UArgs {
-		(self[..]).getu()
-	}
-}
+impl_for_asref!(UpdateArgs, getu, UArgs);
 
 type RArgs = (isize, isize, GLenum);
 pub trait MappingArgs {

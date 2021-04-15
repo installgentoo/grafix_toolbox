@@ -44,35 +44,37 @@ impl LineEdit {
 		r.logic(
 			(pos, pos.sum(size)),
 			move |e, focused, mouse_pos| {
-				let clamp = |c, o, l| util::move_caret(&[l], (c, 0), (o, 0)).0;
-				let click = |l| util::caret_to_cursor(&[l], (0., 0.), t, *scale, (pos.x() + offset.x(), 0.), mouse_pos).0;
-				let idx = |l: &str, o| {
+				let _text = text as *mut CachedStr;
+				let clamp = |c, o| util::move_caret(&[(text as &str)], (c, 0), (o, 0), true).0;
+				let click = || util::caret_to_cursor(&[(text as &str)], (0., 0.), t, *scale, (pos.x() + offset.x(), 0.), mouse_pos).0;
+				let idx = |o| {
 					let (pos, o) = vec2::<isize>::to((*caret, o));
-					l.len_at_char(usize::to((pos + o).max(0)))
+					(text as &str).len_at_char(usize::to((pos + o).max(0)))
 				};
+				let text = unsafe { &mut *_text };
 
 				match e {
 					OfferFocus => return Accept,
-					MouseButton { state, .. } if state.pressed() => *caret = click(text),
+					MouseButton { state, .. } if state.pressed() => *caret = click(),
 					Keyboard { key, state } if focused && state.pressed() => match key {
 						Key::Enter | Key::Escape if focused => return CancelFocus,
-						Key::Right => *caret = clamp(*caret, if state.ctrl() { 10 } else { 1 }, text),
-						Key::Left => *caret = clamp(*caret, -if state.ctrl() { 10 } else { 1 }, text),
-						Key::Delete if idx(text, -1) < text.len() => {
-							let i = idx(text, -1);
+						Key::Right => *caret = clamp(*caret, if state.ctrl() { 10 } else { 1 }),
+						Key::Left => *caret = clamp(*caret, -if state.ctrl() { 10 } else { 1 }),
+						Key::Delete if idx(-1) < text.len() => {
+							let i = idx(-1);
 							text.str().remove(i);
 						}
-						Key::Backspace if idx(text, -1) > 0 => {
-							let i = idx(text, -2);
-							*caret = clamp(*caret, -1, text);
+						Key::Backspace if idx(-1) > 0 => {
+							let i = idx(-2);
+							*caret = clamp(*caret, -1);
 							text.str().remove(i);
 						}
 						_ => (),
 					},
 					Char { ch } if focused => {
-						let i = idx(text, -1);
+						let i = idx(-1);
 						text.str().insert(i, *ch);
-						*caret = clamp(*caret, 1, text);
+						*caret = clamp(*caret, 1);
 					}
 					_ => (),
 				}

@@ -22,34 +22,28 @@ impl Model {
 				let (mut min, mut max) = ((0., 0., 0.), (0., 0., 0.));
 				for i in 0..mesh.positions.len() / 3 {
 					let i = (i * 3) as usize;
-					let c = &mesh.positions[i..i + 3];
-					xyz.extend(c);
+					xyz.extend(&mesh.positions[i..i + 3]);
 					let v = Vec3::to(&mesh.positions[i..]);
 					min = min.fmin(v);
 					max = max.fmax(v);
 					if !mesh.texcoords.is_empty() {
-						let t = mesh.texcoords[i..i + 3].iter().map(|v| f16::to(*v));
-						uv.extend(t);
+						uv.extend(mesh.texcoords[i..i + 3].iter().map(|v| f16::to(*v)));
 					}
 					if !mesh.normals.is_empty() {
-						let n = mesh.normals[i..i + 3].iter().map(|v| f16::to(*v));
-						norm.extend(n);
+						norm.extend(mesh.normals[i..i + 3].iter().map(|v| f16::to(*v)));
 					} else if i % 9 == 0 && i + 8 < mesh.positions.len() {
 						let xyz = &mesh.positions[i..];
 						let (v1, v2, v3) = (Vec3::to(&xyz[..]), Vec3::to(&xyz[3..]), Vec3::to(&xyz[6..]));
 						use glm::Vec3 as V3;
 						let ndir = v1.sum(v2).sum(v3).div(3).sgn();
-						let n = <[f16; 3]>::to(vec3::<f16>::to(Vec3::to(glm::triangle_normal(&V3::to(v1), &V3::to(v2), &V3::to(v3))).mul(ndir)));
+						let n = <[_; 3]>::to(vec3::<f16>::to(Vec3::to(glm::triangle_normal(&V3::to(v1), &V3::to(v2), &V3::to(v3))).mul(ndir)));
 						(0..9).for_each(|i| norm.push(n[i % 3]));
 					}
 				}
 				let d: Vec3 = max.sub(min);
 				let scale = (1., 1., 1.).div(d.x().max(d.y()).max(d.z())).mul(scale);
 				let center = max.sum(min).div(2);
-				let xyz = xyz
-					.chunks(3)
-					.flat_map(|s| <[_; 3]>::to((Vec3::to(s)).sub(center).mul(scale)).to_vec())
-					.collect::<Vec<f32>>();
+				let xyz = xyz.chunks(3).flat_map(|s| <[_; 3]>::to((Vec3::to(s)).sub(center).mul(scale)).to_vec()).collect::<Vec<_>>();
 				Model { idxs, xyz, uv, norm }
 			})
 			.collect();
@@ -115,9 +109,9 @@ impl Mesh<u16, f32, f16, f32> {
 			.collect::<Vec<_>>();
 
 		let draw = (u32::to(idx.len()), gl::TRIANGLE_STRIP);
-		let idx = IdxArr::new(&idx);
-		let xyz = AttrArr::new(&xyz);
-		let uv = AttrArr::new(&uv);
+		let idx = IdxArr::new(idx);
+		let xyz = AttrArr::new(xyz);
+		let uv = AttrArr::new(uv);
 		let norm = AttrArr::default();
 
 		let mut vao = Vao::new();
@@ -158,9 +152,9 @@ impl Model {
 	pub fn to_bytes(&self) -> Vec<u8> {
 		let mut v = vec![];
 		let Self { idxs, xyz, uv, norm } = self;
-		let il: [u8; 8] = (idxs.len() * type_size!(u32)).to_le_bytes();
-		let cl: [u8; 8] = (xyz.len() * type_size!(f32)).to_le_bytes();
-		let tl: [u8; 8] = (uv.len() * type_size!(f16)).to_le_bytes();
+		let il: [_; 8] = (idxs.len() * type_size!(u32)).to_le_bytes();
+		let cl: [_; 8] = (xyz.len() * type_size!(f32)).to_le_bytes();
+		let tl: [_; 8] = (uv.len() * type_size!(f16)).to_le_bytes();
 		let (_, i, _) = unsafe { idxs.align_to() };
 		let (_, c, _) = unsafe { xyz.align_to() };
 		let (_, t, _) = unsafe { uv.align_to() };

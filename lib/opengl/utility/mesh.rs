@@ -10,7 +10,7 @@ pub mod Screen {
 	pub fn Draw() {
 		UnsafeOnce!(Model, {
 			#[rustfmt::skip]
-			let xyuv = AttrArr::new(&[ -1_i8, -1, 0, 0,  3, -1, 2, 0,  -1, 3, 0, 2 ][..]);
+			let xyuv = AttrArr::new([ -1, -1, 0, 0,  3, -1, 2, 0,  -1, 3, 0, 2 ]);
 			let mut vao = Vao::new();
 			vao.AttribFmt(&xyuv, (0, 4));
 			Model { vao, xyuv }
@@ -36,16 +36,15 @@ pub mod Skybox {
 	pub fn Draw() {
 		UnsafeOnce!(Model, {
 			#[rustfmt::skip]
-			let idx = IdxArr::new(&[ 0, 1, 3,  3, 1, 2,
-									 4, 5, 7,  7, 5, 6,
-									 0, 1, 4,  4, 1, 5,
-									 3, 2, 7,  7, 2, 6,
-									 2, 1, 6,  6, 1, 5,
-									 3, 7, 0,  0, 7, 4, ][..]);
-			let (n, p) = (-1_i8, 1_i8);
+			let idx = IdxArr::new([ 0, 1, 3,  3, 1, 2,
+									4, 5, 7,  7, 5, 6,
+									0, 1, 4,  4, 1, 5,
+									3, 2, 7,  7, 2, 6,
+									2, 1, 6,  6, 1, 5,
+									3, 7, 0,  0, 7, 4, ]);
 			#[rustfmt::skip]
-			let xyz = AttrArr::new(&[ n, p, p,  p, p, p,  p, p, n,  n, p, n,
-									  n, n, p,  p, n, p,  p, n, n,  n, n, n ][..]);
+			let xyz = AttrArr::new([ -1,  1, 1,   1,  1, 1,   1,  1, -1,  -1,  1, -1,
+									 -1, -1, 1,   1, -1, 1,   1, -1, -1,  -1, -1, -1 ]);
 			let mut vao = Vao::new();
 			vao.BindIdxs(&idx);
 			vao.AttribFmt(&xyz, (0, 3));

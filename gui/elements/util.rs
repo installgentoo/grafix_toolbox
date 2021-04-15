@@ -21,46 +21,57 @@ pub fn caret_x(text: &str, t: &Theme, scale: f32, at: usize, pad: f32) -> f32 {
 	adv + last_ch.coord.x() + last_w + empty_x
 }
 
-pub fn move_caret(lines: &[&str], (x, y): Caret, (ox, oy): iVec2) -> Caret {
+pub fn move_caret(lines: &[&str], (x, y): Caret, (ox, oy): iVec2, clamp_x: bool) -> Caret {
 	let (x, ox, y, oy) = vec4::<isize>::to((x, ox, y, oy));
-	let last_line = lines.last_idx();
-	let y = usize::to((y + oy).min(isize::to(last_line)).max(0));
+	let last_idx = lines.last_idx();
+	let y = usize::to((y + oy).clamp(0, isize::to(last_idx)));
 	let text = lines[y];
-	let x = usize::to(if ox != 0 {
-		let x = x.min(isize::to(text.utf8_len()) + 1) + ox;
-		if x < 1 {
+	let x = {
+		let x = x + ox;
+		if x + ox < 1 {
 			if y == 0 {
 				return (1, 0);
 			};
-			return move_caret(lines, vec2::<usize>::to((lines[y - 1].utf8_len() + 1, y - 1)), (i32::to(x), 0));
+			let skip = isize::to(lines[y - 1].utf8_len() + 1);
+			return move_caret(lines, (0, y - 1), iVec2::to((x + skip, 0)), true);
 		}
-		if x > isize::to(text.utf8_len() + 1) {
-			if y == last_line {
-				return (lines[last_line].utf8_len() + 1, last_line);
+		if clamp_x && x > isize::to(text.utf8_len() + 1) {
+			if y == last_idx {
+				return (lines[last_idx].utf8_len() + 1, last_idx);
 			};
-			return move_caret(lines, vec2::<usize>::to((1, y + 1)), (i32::to(x - isize::to(text.utf8_len()) - 2), 0));
+			return move_caret(lines, vec2::<usize>::to((x - isize::to(text.utf8_len() + 1), y + 1)), (0, 0), true);
 		}
 		x
-	} else {
-		x.max(1)
-	});
-	(x, y)
+	};
+	vec2::<usize>::to((x, y))
 }
 
 pub fn caret_to_cursor(lines: &[&str], (start, len): Vec2, t: &Theme, scale: f32, pos: Vec2, (x, y): Vec2) -> Caret {
-	let whole_text_h = scale * f32::to(lines.len());
 	let (b, e) = vec2::<isize>::to((start, start + len));
-	let y = usize::to(
-		isize::to(start + (pos.y() - y) / whole_text_h * f32::to(lines.len()))
-			.clamp(b, e)
-			.min(isize::to(lines.last_idx())),
-	);
-	let text = lines[y];
+	let y = isize::to(start + (pos.y() - y) / scale).clamp(b - 1, e);
+	let text = line(lines, (0, y));
 	let ((caret_x, _), (str, _)) = Text::substr(text, &t.font, scale, x - pos.x());
 	let past_end = x > pos.x() + caret_x;
-	let c = (str.utf8_len(), y);
+	let c = (str.utf8_len(), usize::to(y));
 	let o = (1.or_def(past_end), 0);
-	move_caret(lines, c, o)
+	move_caret(lines, c, o, true)
+}
+
+pub fn clamp(lines: &[&str], c: Caret) -> Caret {
+	c.clmp((1, 0), (line(lines, c).utf8_len() + 1, lines.last_idx()))
+}
+
+pub fn line<'a, X, Y>(lines: &'a [&str], caret: (X, Y)) -> &'a str
+where
+	vec2<isize>: Cast<(X, Y)>,
+{
+	let (_, y) = vec2::<isize>::to(caret);
+	let y = usize::to(y.clamp(0, isize::to(lines.last_idx())));
+	if lines.len() > 0 {
+		unsafe { lines.get_unchecked(y) }
+	} else {
+		""
+	}
 }
 
 pub type Caret = vec2<usize>;

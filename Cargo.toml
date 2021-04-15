@@ -1,6 +1,6 @@
 [package]
 name = "grafix-toolbox"
-version = "0.7.1"
+version = "0.7.2"
 authors = ["Alexander Drozdoff"]
 edition = "2018"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
@@ -28,12 +28,12 @@ serde_json = "^1"
 bincode = "^1"
 rand = "^0.8"
 rand_xorshift = "^0.3"
-nalgebra = "^0.25"
-nalgebra-glm = "^0.11"
+nalgebra = "^0.26"
+nalgebra-glm = "^0.12"
 image = { version = "^0.23", default-features = false, features = ["png", "hdr"] }
 rusttype = "^0.9"
 gl = "^0.14"
 glfw = "^0.41"
 tobj = "^2"
 smol = "^1.2"
-zstd = "^0.6"
+zstd = "^0.7"

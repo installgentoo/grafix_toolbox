@@ -77,7 +77,7 @@ impl Objects {
 					idxs.append(&mut indices);
 				}
 
-				fn update<T: Copy + Clone>(changed: bool, ordered: bool, dim: usize, v: &mut Vec<T>, at: usize, upd: &[T], flush: &mut Option<usize>) {
+				fn update<T: Copy>(changed: bool, ordered: bool, dim: usize, v: &mut Vec<T>, at: usize, upd: &[T], flush: &mut Option<usize>) {
 					if changed {
 						flush.get_or_insert(at * dim);
 						v.truncate(at * dim);
@@ -87,7 +87,7 @@ impl Objects {
 							v.extend_from_slice(&upd.chunks(dim).rev().flatten().cloned().collect::<Vec<_>>());
 						}
 					}
-				};
+				}
 
 				let ordered = b.typ(objs).obj().ordered();
 				update(state.contains(State::XYZW), ordered, 4, xyzw, batch_start, &b.xyzw, &mut flush.1);

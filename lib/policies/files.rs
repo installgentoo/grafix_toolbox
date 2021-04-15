@@ -185,7 +185,7 @@ pub async fn read_file<P: AsRef<Path>>(p: P) -> Res<Vec<u8>> {
 		let mut b = vec![];
 		PASS!(f.read_to_end(&mut b).await);
 		Ok(b)
-	};
+	}
 	let p = p.as_ref();
 	map_err(read(p).await, p)
 }
@@ -195,7 +195,7 @@ pub async fn read_text<P: AsRef<Path>>(p: P) -> Res<String> {
 		let mut b = String::new();
 		PASS!(f.read_to_string(&mut b).await);
 		Ok(b)
-	};
+	}
 	let p = p.as_ref();
 	map_err(read(p).await, p)
 }

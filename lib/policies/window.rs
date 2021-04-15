@@ -7,7 +7,7 @@ pub trait WindowPolicy {
 	fn aspect() -> Vec2;
 	fn pixel() -> Vec2;
 
-	fn clipboard(&self) -> String;
+	unsafe fn clipboard(&self) -> String;
 	fn set_clipboard(&mut self, str: &str);
 	fn resize(&mut self, size: uVec2);
 
@@ -105,7 +105,8 @@ impl WindowPolicy for GlfwWindow {
 	fn pixel() -> Vec2 {
 		*Self::_pixel()
 	}
-	fn clipboard(&self) -> String {
+	unsafe fn clipboard(&self) -> String {
+		//TODO glfw-rs is broken
 		self.window.get_clipboard_string().unwrap_or_default()
 	}
 	fn set_clipboard(&mut self, s: &str) {

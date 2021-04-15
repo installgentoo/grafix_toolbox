@@ -1,5 +1,5 @@
 use super::{parts::*, *};
-use crate::uses::{math::*, GL::Font, *};
+use crate::uses::{math::*, GL::window::*, GL::Font, *};
 
 #[derive(Default)]
 pub struct Theme {
@@ -105,10 +105,18 @@ impl<'l> RenderLock<'l> {
 		TextEdit::storage(id).draw(self, t(), pos, size, scale, true)
 	}
 	pub fn clipboard() -> &'l str {
-		clip_store()
+		let (str, _) = clip_store();
+		str
 	}
 	pub fn set_clipboard(s: &str) {
-		*clip_store() = s.into();
+		*clip_store() = (s.into(), true);
+	}
+	pub fn sync_clipboard(&self, w: &mut Window) {
+		let (str, changed) = clip_store();
+		if *changed {
+			w.set_clipboard(str);
+			*changed = false;
+		}
 	}
 }
 
@@ -124,8 +132,8 @@ fn check_borrow(id: u32) {
 	borrow_map().insert(id);
 }
 
-fn clip_store() -> &'static mut String {
-	UnsafeOnce!(String, { "".into() })
+fn clip_store() -> &'static mut (String, bool) {
+	UnsafeOnce!((String, bool), { ("".into(), false) })
 }
 
 fn theme() -> &'static mut Theme {

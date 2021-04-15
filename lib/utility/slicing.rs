@@ -1,17 +1,3 @@
-pub trait Sliceable<T> {
-	fn slice(&self) -> &[T];
-}
-impl<T> Sliceable<T> for &[T] {
-	fn slice(&self) -> &[T] {
-		self
-	}
-}
-impl<T> Sliceable<T> for &Vec<T> {
-	fn slice(&self) -> &[T] {
-		self.as_slice()
-	}
-}
-
 pub fn split<F: Fn(char) -> bool>(s: &str, f: F) -> (&str, &str) {
 	let at = find(s, f);
 	(&s[..at], &s[at..])

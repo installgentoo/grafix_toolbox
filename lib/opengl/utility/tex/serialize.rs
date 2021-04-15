@@ -40,8 +40,8 @@ impl<S: TexSize, F: TexFmt> Image<S, F> {
 	pub fn to_bytes(&self) -> Vec<u8> {
 		let mut v = vec![];
 		let Self { w, h, data, .. } = self;
-		let w: [u8; 4] = w.to_le_bytes();
-		let h: [u8; 4] = h.to_le_bytes();
+		let w: [_; 4] = w.to_le_bytes();
+		let h: [_; 4] = h.to_le_bytes();
 		let (_, d, _) = unsafe { data.align_to() };
 		v.extend(w.iter().chain(h.iter()).chain(d));
 		v
