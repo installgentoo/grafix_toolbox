@@ -1,4 +1,4 @@
-use super::{bindless::*, format::*, object::*, policy::*, texture::*, types::*};
+use super::{bindless::*, object::*, policy::*, texture::*, types::*};
 use crate::uses::*;
 
 pub type Framebuffer = Object<Framebuff>;
@@ -9,7 +9,7 @@ impl Framebuffer {
 		args.apply(self.obj);
 		self
 	}
-	pub fn Bind<T: TexType, S: TexSize, F: TexFmt>(&mut self, tex: &Tex<T, S, F>) -> Binding<Framebuff> {
+	pub fn Bind<T: TexType, S, F>(&mut self, tex: &Tex<T, S, F>) -> Binding<Framebuff> {
 		let TexParam { w, h, .. } = tex.param;
 		GL::Viewport::Set((0, 0, w, h));
 		Binding::new(self)
@@ -29,7 +29,7 @@ impl Framebuffer {
 pub trait FramebuffArg {
 	fn apply(self, _: u32);
 }
-impl<T: TexType, S: TexSize, F: TexFmt> FramebuffArg for (&Tex<T, S, F>, GLenum) {
+impl<T: TexType, S, F> FramebuffArg for (&Tex<T, S, F>, GLenum) {
 	fn apply(self, obj: u32) {
 		GLCheck!(glFramebuffTex(obj, self.0.obj(), self.1));
 	}

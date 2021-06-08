@@ -1,4 +1,4 @@
-use super::{policy::*, state::*, texture::TextureBinding};
+use super::{policy::*, texture::TextureBinding};
 use crate::uses::*;
 
 #[macro_export]
@@ -145,7 +145,10 @@ impl<'l, T: TexType> UniformArgs for &TextureBinding<'l, T> {
 		let u = i32::to(self.u);
 		let ent = tex_cache.entry(name).or_insert(-1);
 		if *ent != u {
-			DEBUG!("Updating GL tex {} to {} in shader {}", *ent, u, ShdProg::bound_obj());
+			DEBUG!("Updating GL tex {} to {} in shader {}", *ent, u, {
+				use super::state::*;
+				ShdProg::bound_obj()
+			});
 			GLCheck!(gl::Uniform1i(name, u));
 			*ent = u;
 		}

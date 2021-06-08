@@ -16,7 +16,7 @@ macro_rules! CONCAT {
 macro_rules! EXPECT {
 	($e: expr) => {{
 		use logging::UniformUnwrap;
-		$e.uni_or_else(|e| ASSERT!(false, "{:?}", e))
+		$e.uni_or_else(|_e| ASSERT!(false, "{:?}", _e))
 	}};
 	($e: expr, $($t: tt)+) => {{
 		use logging::UniformUnwrap;

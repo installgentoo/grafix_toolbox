@@ -2,7 +2,7 @@ use super::obj::*;
 use crate::uses::{math::*, *};
 use crate::GL::{sampler::*, shader::*, tex::*, window::*, VTex2d, VaoBinding};
 
-pub struct Sprite<'a, S: TexSize> {
+pub struct Sprite<'a, S> {
 	pub pos: Vec2,
 	pub size: Vec2,
 	pub color: Color,
@@ -26,7 +26,7 @@ impl<'a, S: TexSize> Sprite<'a, S> {
 		}
 	}
 }
-pub struct SpriteImpl<S: TexSize> {
+pub struct SpriteImpl<S> {
 	base: Base,
 	tex: *const VTex2d<S, u8>,
 }

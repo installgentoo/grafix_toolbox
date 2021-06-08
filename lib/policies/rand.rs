@@ -10,4 +10,7 @@ pub mod rng {
 	pub fn new() -> Rng {
 		Rng::from_rng(rand::thread_rng()).unwrap()
 	}
+	pub fn seeded(s: u64) -> Rng {
+		Rng::seed_from_u64(s)
+	}
 }

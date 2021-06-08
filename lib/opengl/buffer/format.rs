@@ -1,6 +1,6 @@
 use crate::GL::types::*;
 
-pub trait IdxType: Copy {
+pub trait IdxType {
 	const TYPE: GLenum;
 }
 impl IdxType for u8 {
@@ -13,7 +13,7 @@ impl IdxType for u32 {
 	const TYPE: GLenum = gl::UNSIGNED_INT;
 }
 
-pub trait AttrType: Copy {
+pub trait AttrType {
 	const TYPE: GLenum;
 }
 impl AttrType for i8 {

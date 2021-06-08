@@ -98,7 +98,7 @@ impl Batch {
 				} else {
 					if new_size > *size {
 						const O: f16 = f16::ZERO;
-						let (at, s) = vec2::<usize>::to((start, new_size - *size));
+						let (at, s) = ulVec2::to((start, new_size - *size));
 						xyzw.splice(at * 4..at * 4, vec![O; s * 4]);
 						rgba.splice(at * 4..at * 4, vec![0; s * 4]);
 						uv.splice(at * 2..at * 2, vec![O; s * 2]);
@@ -106,7 +106,7 @@ impl Batch {
 					}
 
 					if new_size < *size {
-						let (from, to) = vec2::<usize>::to((start + new_size, start + *size));
+						let (from, to) = ulVec2::to((start + new_size, start + *size));
 						xyzw.drain(from * 4..to * 4);
 						rgba.drain(from * 4..to * 4);
 						uv.drain(from * 2..to * 2);

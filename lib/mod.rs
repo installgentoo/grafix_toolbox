@@ -10,7 +10,7 @@ pub mod uses {
 	pub use std::borrow::{self, Borrow, ToOwned};
 	pub use std::collections::{BTreeMap, BTreeSet, VecDeque};
 	pub use std::marker::PhantomData as Dummy;
-	pub use std::{cell::Cell, cell::UnsafeCell, cmp, convert::TryInto, fmt, fmt::Debug, hash, io, iter, mem, ops, path, path::Path, ptr, rc::Rc, rc::Weak, slice, time};
+	pub use std::{cell::Cell, cell::UnsafeCell, char, cmp, convert::TryInto, fmt, fmt::Debug, hash, io, iter, mem, ops, path, path::Path, ptr, rc::Rc, rc::Weak, slice, time};
 	pub mod ord {
 		pub use std::cmp::Ordering::*;
 	}
@@ -59,7 +59,7 @@ pub mod uses {
 		utility::profiling,
 	};
 	pub mod math {
-		pub use super::super::utility::{tuple_math::*, tuple_swizzle::swizzle::*};
+		pub use super::super::utility::tuple::*;
 	}
 	pub use super::policies::{casts::cast::Cast, math::*, rand, type_tools};
 	pub use super::utility::{cached_str::CachedStr, ext::*, prefetch, slicing};

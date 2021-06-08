@@ -13,7 +13,7 @@ impl TexParam {
 	where
 		u32: Cast<T>,
 	{
-		let (w, h, d) = vec3::<usize>::to(self.dim(lvl));
+		let (w, h, d) = ulVec3::to(self.dim(lvl));
 		w * h * d
 	}
 	pub fn dim<T>(self, lvl: T) -> iVec3
@@ -39,7 +39,7 @@ impl TexParam {
 }
 
 #[derive(Debug, Default)]
-pub struct Tex<T: TexType, S: TexSize, F: TexFmt> {
+pub struct Tex<T: TexType, S, F> {
 	pub param: TexParam,
 	tex: Object<Texture<T>>,
 	unit: Cell<u32>,
@@ -58,9 +58,9 @@ macro_rules! tex_decl {
 			pub fn new_empty(args: impl $arg_n) -> Self {
 				let (tex, f, s) = (Object::new(), Dummy, Dummy);
 				let fmt = normalize_internal_fmt(get_internal_fmt::<S, F>());
-				let check = |m, l| {
-					let m = TexParam::mip_levels(m);
-					ASSERT!(l > 0 && l <= m, "GL Texture can only have {} levels, asked for {}", m, l);
+				let check = |m, _l| {
+					let _m = TexParam::mip_levels(m);
+					ASSERT!(_l > 0 && _l <= _m, "GL Texture can only have {} levels, asked for {}", _m, _l);
 				};
 				macro_rules! tex_new {
 					(NewArgs1) => {{
@@ -124,7 +124,7 @@ macro_rules! tex_decl {
 		}
 	};
 }
-impl<T: TexType, S: TexSize, F: TexFmt> Tex<T, S, F> {
+impl<T: TexType, S, F> Tex<T, S, F> {
 	pub fn obj(&self) -> u32 {
 		self.tex.obj
 	}
@@ -157,7 +157,7 @@ tex_decl!(GL_TEXTURE_2D_ARRAY, NewArgs3, UpdArgs3);
 tex_decl!(GL_TEXTURE_CUBE_MAP, NewArgs2, UpdArgs3);
 tex_decl!(GL_TEXTURE_CUBE_MAP_ARRAY, NewArgs3, UpdArgs3);
 
-pub struct TextureBinding<'l, T: TexType> {
+pub struct TextureBinding<'l, T> {
 	t: Dummy<&'l T>,
 	pub u: u32,
 }
@@ -167,7 +167,7 @@ impl<'l, T: TexType> TextureBinding<'l, T> {
 		(Self { t: Dummy, u }, u)
 	}
 }
-impl<'l, T: TexType> Drop for TextureBinding<'l, T> {
+impl<'l, T> Drop for TextureBinding<'l, T> {
 	fn drop(&mut self) {
 		TexState::Unbind(self.u);
 	}

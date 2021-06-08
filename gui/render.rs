@@ -279,7 +279,7 @@ impl Renderer {
 }
 
 #[derive(Default)]
-struct Storage<T: spec::State, D: Copy> {
+struct Storage<T: spec::State, D> {
 	pub obj: spec::ArrObject<T, D>,
 	pub buff: Vec<D>,
 	size: usize,
@@ -295,7 +295,7 @@ impl<T: spec::State + spec::Buffer, D: Copy> Storage<T, D> {
 			}
 
 			*size = new_size;
-			*obj = spec::ArrObject::allocate((&buff[..], gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT));
+			*obj = spec::ArrObject::new((&buff[..], gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT));
 			rebind(obj);
 		}
 	}

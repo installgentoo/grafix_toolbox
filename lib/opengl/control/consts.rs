@@ -17,7 +17,7 @@ macro_rules! CONST {
 	};
 }
 
-pub trait Get: Copy {
+pub trait Get {
 	const ZERO: Self;
 	fn get(_: GLenum) -> Self;
 }

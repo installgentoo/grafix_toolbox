@@ -68,7 +68,7 @@ impl<I: 'static + IdxType, C: 'static + AttrType, T: 'static + AttrType, N: 'sta
 		return Box::new(self);
 	}
 }
-pub struct Mesh<I: IdxType, C: AttrType, T: AttrType, N: AttrType> {
+pub struct Mesh<I, C, T, N> {
 	pub vao: Vao<I>,
 	pub buff: (IdxArr<I>, AttrArr<C>, Option<AttrArr<T>>, AttrArr<N>),
 	pub draw: (u32, GLenum),

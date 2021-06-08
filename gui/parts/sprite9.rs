@@ -3,7 +3,7 @@ use super::sprite::{gui__col_tex_ps, gui__pos_col_tex_vs, sampler};
 use crate::uses::{math::*, *};
 use crate::GL::{shader::*, tex::*, window::*, VTex2d, VaoBinding};
 
-pub struct Sprite9<'a, S: TexSize> {
+pub struct Sprite9<'a, S> {
 	pub pos: Vec2,
 	pub size: Vec2,
 	pub corner: f32,
@@ -29,7 +29,7 @@ impl<'a, S: TexSize> Sprite9<'a, S> {
 		}
 	}
 }
-pub struct Sprite9Impl<S: TexSize> {
+pub struct Sprite9Impl<S> {
 	base: Base,
 	corner: f32,
 	tex: *const VTex2d<S, u8>,

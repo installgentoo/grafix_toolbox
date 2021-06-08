@@ -2,18 +2,18 @@ use crate::uses::{prefetch::*, *};
 use crate::GL::{atlas, tex::*, uImage};
 
 #[derive(Debug)]
-pub struct VTex2d<S: TexSize, F: TexFmt> {
+pub struct VTex2d<S, F> {
 	pub region: Vec4,
 	pub tex: Rc<Tex2d<S, F>>,
 }
-impl<S: TexSize, F: TexFmt> PartialEq for VTex2d<S, F> {
+impl<S, F> PartialEq for VTex2d<S, F> {
 	fn eq(&self, r: &Self) -> bool {
 		let Self { region, tex } = self;
 		Rc::ptr_eq(tex, &r.tex) && *region == r.region
 	}
 }
-impl<S: TexSize, F: TexFmt> Eq for VTex2d<S, F> {}
-impl<S: TexSize, F: TexFmt> Clone for VTex2d<S, F> {
+impl<S, F> Eq for VTex2d<S, F> {}
+impl<S, F> Clone for VTex2d<S, F> {
 	fn clone(&self) -> Self {
 		let VTex2d { region, tex } = self;
 		let (region, tex) = (*region, tex.clone());
@@ -24,7 +24,7 @@ impl<S: TexSize, F: TexFmt> Clone for VTex2d<S, F> {
 pub type AtlasTex2d<'a, S> = Prefetched<'a, u32, VTex2d<S, u8>, TexAtlas<S>>;
 
 #[derive(Default)]
-pub struct TexAtlas<S: TexSize> {
+pub struct TexAtlas<S> {
 	t: UnsafeCell<(Vec<FS::File::Resource>, HashMap<u32, VTex2d<S, u8>>)>,
 }
 impl<S: TexSize> TexAtlas<S> {
@@ -32,15 +32,15 @@ impl<S: TexSize> TexAtlas<S> {
 		Self::default()
 	}
 	pub fn load(&self, name: &str) -> AtlasTex2d<S> {
-		let (reqs, textures) = unsafe { &mut *self.t.get() };
-		ASSERT!(textures.is_empty(), "Loading into atlas after batching");
+		let (reqs, _textures) = unsafe { &mut *self.t.get() };
+		ASSERT!(_textures.is_empty(), "Loading into atlas after batching");
 		let k = u32::to(reqs.len());
 		reqs.push(FS::Preload::File(CONCAT!("res/", name)));
 		Prefetched::new(k, self)
 	}
 	fn initialize(&self) {
 		let (reqs, textures) = unsafe { &mut *self.t.get() };
-		let reqs: Vec<(u32, _)> = reqs.into_iter().enumerate().map(|(n, r)| (u32::to(n), uImage::<S>::new(r.get()))).collect();
+		let reqs: Vec<(u32, _)> = reqs.into_iter().enumerate().map(|(n, r)| (u32::to(n), EXPECT!(uImage::<S>::new(r.get())))).collect();
 		let max_side = GL::MAX_TEXTURE_SIZE();
 		let (mut atlas, mut tail) = atlas::pack_into_atlas::<_, _, S, _>(reqs, max_side, max_side);
 		if tail.is_empty() {

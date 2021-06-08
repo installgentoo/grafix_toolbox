@@ -1,3 +1,5 @@
+use crate::uses::{ops::*, Cast};
+
 pub type CowStr = std::borrow::Cow<'static, str>;
 pub type Res<T> = Result<T, String>;
 pub type Str = &'static str;
@@ -50,6 +52,7 @@ pub trait OrAssignment {
 	fn or_val(self, with: bool, v: Self) -> Self;
 }
 impl<T: Default> OrAssignment for T {
+	#[inline(always)]
 	fn or_def(self, with: bool) -> Self {
 		if with {
 			self
@@ -57,12 +60,28 @@ impl<T: Default> OrAssignment for T {
 			Self::default()
 		}
 	}
+	#[inline(always)]
 	fn or_val(self, with: bool, v: Self) -> Self {
 		if with {
 			self
 		} else {
 			v
 		}
+	}
+}
+
+pub trait LerpMix: Cast<f32> {
+	fn mix<M>(self, a: M, r: Self) -> Self
+	where
+		f32: Cast<M>;
+}
+impl<T: Cast<f32> + Copy + Add<Output = T> + Mul<Output = T>> LerpMix for T {
+	fn mix<M>(self, a: M, r: Self) -> Self
+	where
+		f32: Cast<M>,
+	{
+		let a = f32::to(a);
+		self * Self::to(1. - a) + r * Self::to(a)
 	}
 }
 

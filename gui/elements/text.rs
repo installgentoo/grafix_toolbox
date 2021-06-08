@@ -61,7 +61,7 @@ impl TextEdit {
 		let start = (1. - scrollbar.pip_pos) * (whole_text_h - size.y());
 		let line_pos = |n| start + size.y() - scale * f32::to(n + 1);
 		let vis_range = move || (start, size.y()).mul(len).div(whole_text_h).fmax(0).sum((0, 1)).fmin(len);
-		let (start, len) = vec2::<usize>::to(vis_range());
+		let (start, len) = ulVec2::to(vis_range());
 		let p = |x, n| pos.sum((x, line_pos(n)));
 
 		if caret != select {
@@ -355,8 +355,8 @@ struct History {
 }
 #[derive(Debug, Clone)]
 enum Change {
-	Insert(String, usize, vec2<usize>),
-	Delete(String, usize, vec2<usize>),
+	Insert(String, usize, Caret),
+	Delete(String, usize, Caret),
 }
 impl Change {
 	fn invert(self) -> Self {

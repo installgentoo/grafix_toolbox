@@ -1,8 +1,8 @@
-use super::{bindless::*, buffer::*, format::*, object::*, policy::*, state::*, types::*, vao_args::*};
+use super::{bindless::*, buffer::*, format::*, object::*, policy::*, types::*, vao_args::*};
 use crate::uses::*;
 
 #[derive(Default)]
-pub struct Vao<D: IdxType> {
+pub struct Vao<D> {
 	o: Object<VertArrObj>,
 	d: Dummy<D>,
 }
@@ -40,6 +40,8 @@ impl<I: IdxType> Vao<I> {
 		GLCheck!(glVertexAttribFormat(self.obj(), o.obj, idx, size, A::TYPE, to_glbool(norm), stride, offset, t_size));
 	}
 }
+#[allow(unused_imports)]
+use super::state::*;
 impl<'l, I: IdxType> VaoBinding<'l, I> {
 	pub fn Draw(&self, args: impl DrawArgs) {
 		ASSERT!(

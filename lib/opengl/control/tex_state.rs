@@ -138,9 +138,9 @@ pub mod TexState {
 	pub fn drop_tex(obj: u32) {
 		let Units { at, len, units } = bound_units();
 		for i in 0..*len {
-			let (unit, _, counter) = unsafe { units.get_unchecked_mut(i) };
+			let (unit, _, _counter) = unsafe { units.get_unchecked_mut(i) };
 			if obj == *unit {
-				ASSERT!(*counter == 0, "Leakage in GL texture {} binding", obj);
+				ASSERT!(*_counter == 0, "Leakage in GL texture {} binding", obj);
 				*unit = 0;
 				if *at == i + 1 {
 					*at = i;

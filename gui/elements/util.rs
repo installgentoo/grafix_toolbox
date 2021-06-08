@@ -39,11 +39,11 @@ pub fn move_caret(lines: &[&str], (x, y): Caret, (ox, oy): iVec2, clamp_x: bool)
 			if y == last_idx {
 				return (lines[last_idx].utf8_len() + 1, last_idx);
 			};
-			return move_caret(lines, vec2::<usize>::to((x - isize::to(text.utf8_len() + 1), y + 1)), (0, 0), true);
+			return move_caret(lines, Caret::to((x - isize::to(text.utf8_len() + 1), y + 1)), (0, 0), true);
 		}
 		x
 	};
-	vec2::<usize>::to((x, y))
+	Caret::to((x, y))
 }
 
 pub fn caret_to_cursor(lines: &[&str], (start, len): Vec2, t: &Theme, scale: f32, pos: Vec2, (x, y): Vec2) -> Caret {
@@ -74,4 +74,4 @@ where
 	}
 }
 
-pub type Caret = vec2<usize>;
+pub type Caret = ulVec2;

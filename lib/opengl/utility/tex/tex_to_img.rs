@@ -1,12 +1,12 @@
 use crate::uses::{GL::tex::*, *};
 
-impl<S: TexSize, F: TexFmt, RS: TexSize, RF: TexFmt> From<&Tex2d<RS, RF>> for Image<S, F> {
+impl<S: TexSize, F: TexFmt, RS, RF> From<&Tex2d<RS, RF>> for Image<S, F> {
 	fn from(tex: &Tex2d<RS, RF>) -> Self {
 		let ((w, h), data) = (uVec2::to((tex.param.w, tex.param.h)), tex.Save::<S, F>(0));
 		Self { w, h, data, s: Dummy }
 	}
 }
-impl<S: TexSize, F: TexFmt, RS: TexSize, RF: TexFmt> From<Tex2d<RS, RF>> for Image<S, F> {
+impl<S: TexSize, F: TexFmt, RS, RF> From<Tex2d<RS, RF>> for Image<S, F> {
 	fn from(tex: Tex2d<RS, RF>) -> Self {
 		(&tex).into()
 	}
@@ -32,8 +32,8 @@ impl<S: TexSize, F: TexFmt> From<&[&Cube<S, F>]> for CubeTex<S, F> {
 		mips.iter().enumerate().for_each(|(l, cube)| {
 			cube.iter().enumerate().for_each(|(n, i)| {
 				debug_assert!({
-					let (w, h, _) = uVec3::to(p.dim(l));
-					ASSERT!(w == i.w && h == i.h, "Mip size at level {} is {:?}, must be {:?}", l, (w, h), (i.w, i.h));
+					let (_w, _h, _) = uVec3::to(p.dim(l));
+					ASSERT!(_w == i.w && _h == i.h, "Mip size at level {} is {:?}, must be {:?}", l, (_w, _h), (i.w, i.h));
 					true
 				});
 

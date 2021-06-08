@@ -20,6 +20,10 @@ pub type iVec2 = vec2<i32>;
 pub type iVec3 = vec3<i32>;
 pub type iVec4 = vec4<i32>;
 
+pub type ulVec2 = vec2<usize>;
+pub type ulVec3 = vec3<usize>;
+pub type ulVec4 = vec4<usize>;
+
 pub type vec2<T> = (T, T);
 pub type vec3<T> = (T, T, T);
 pub type vec4<T> = (T, T, T, T);

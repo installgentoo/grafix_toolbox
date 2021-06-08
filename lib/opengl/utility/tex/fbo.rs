@@ -1,7 +1,7 @@
 use crate::uses::*;
 use crate::GL::{spec::*, tex::*, Framebuffer};
 
-pub struct Fbo<S: TexSize, F: TexFmt> {
+pub struct Fbo<S, F> {
 	pub fb: Framebuffer,
 	pub tex: Tex2d<S, F>,
 }
@@ -20,7 +20,7 @@ impl<S: TexSize, F: TexFmt> Fbo<S, F> {
 	}
 }
 
-pub struct Slab<S: TexSize, F: TexFmt> {
+pub struct Slab<S, F> {
 	pub src: Fbo<S, F>,
 	pub tgt: Fbo<S, F>,
 }

@@ -28,6 +28,22 @@ impl<'a> SliceArgs<'a> for (&'a str, usize) {
 	}
 }
 
+impl<'a> SliceArgs<'a> for (usize, &'a String, usize) {
+	fn get(self) -> Args<'a> {
+		(self.0, self.1, self.2)
+	}
+}
+impl<'a> SliceArgs<'a> for (usize, &'a String) {
+	fn get(self) -> Args<'a> {
+		(self.0, self.1 as &'a str).get()
+	}
+}
+impl<'a> SliceArgs<'a> for (&'a String, usize) {
+	fn get(self) -> Args<'a> {
+		(self.0 as &'a str, self.1).get()
+	}
+}
+
 ///TODO replace with Pattern
 impl<'a, F: Fn(char) -> bool> SliceArgs<'a> for (F, &'a str) {
 	fn get(self) -> Args<'a> {
@@ -49,6 +65,22 @@ impl<'a, F: Fn(char) -> bool> SliceArgs<'a> for (F, &'a str, F) {
 		let beg = find(s, f1);
 		let end = find(s, f2);
 		(beg, s, end)
+	}
+}
+
+impl<'a, F: Fn(char) -> bool> SliceArgs<'a> for (F, &'a String) {
+	fn get(self) -> Args<'a> {
+		(self.0, self.1 as &'a str).get()
+	}
+}
+impl<'a, F: Fn(char) -> bool> SliceArgs<'a> for (&'a String, F) {
+	fn get(self) -> Args<'a> {
+		(self.0 as &'a str, self.1).get()
+	}
+}
+impl<'a, F: Fn(char) -> bool> SliceArgs<'a> for (F, &'a String, F) {
+	fn get(self) -> Args<'a> {
+		(self.0, self.1 as &'a str, self.2).get()
 	}
 }
 

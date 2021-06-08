@@ -33,7 +33,7 @@ impl Environment {
 
 		let env: Res<_> = (|| {
 			let file = FS::Load::File(CONCAT!["res/", name, ".hdr"])?;
-			let equirect = Tex2d::from(Image::<RGB, f32>::new(file));
+			let equirect = Tex2d::from(EXPECT!(Image::<RGB, f32>::new(file)));
 			let env = Self::new(equirect);
 			let v = EXPECT!(SERDE::ToVec(&env));
 			FS::Save::Archive((cache, v));
@@ -65,7 +65,7 @@ impl Environment {
 		}
 		surf.tex.into()
 	}
-	pub fn new<S: TexSize, F: TexFmt>(equirect: Tex2d<S, F>) -> Self {
+	pub fn new<S, F>(equirect: Tex2d<S, F>) -> Self {
 		Screen::Prepare();
 		let VP_mats = {
 			use glm::vec3;

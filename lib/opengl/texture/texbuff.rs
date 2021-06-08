@@ -1,7 +1,7 @@
 use super::{bindless::*, format::*, object::*, policy::*, state::*, tex_state::*, tex_type::*};
 use crate::uses::*;
 
-pub struct TexBuffer<'a, S: TexSize, F: TexFmt, B: State + Buffer> {
+pub struct TexBuffer<'a, S, F, B: State> {
 	tex: Object<Texture<GL_TEXTURE_BUFFER>>,
 	unit: Cell<u32>,
 	b: Dummy<&'a ArrObject<B, F>>,

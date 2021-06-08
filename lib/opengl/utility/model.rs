@@ -87,7 +87,7 @@ impl Mesh<u16, f32, f16, f32> {
 					let (sx, sy) = Vec2::to((x, y)).div(segs);
 					let (rx, ry) = (sx.to_radians(), sy.to_radians());
 					let (x, y, z) = ((rx * 360.).cos() * (ry * 180.).sin(), (ry * 180.).cos(), (rx * 360.).sin() * (ry * 180.).sin()).mul(scale);
-					let (sx, sy) = vec2::<f16>::to(Vec2::to(glm::normalize(&glm::Vec2::to((sx, sy)))));
+					let (sx, sy) = vec2::<f16>::to((sx, sy).norm());
 					xyz.extend(&[x, y, z]);
 					uv.extend(&[sx, sy]);
 				}

@@ -115,7 +115,7 @@ impl Font {
 						let (w, h) = (bb.max.x, bb.max.y).sub((bb.min.x, bb.min.y));
 						ASSERT!(w != 0 && h != 0, "Corrupt font data");
 						let b = border * supersample;
-						vec3::<usize>::to((w + b * 2, h + b * 2, b))
+						ulVec3::to((w + b * 2, h + b * 2, b))
 					};
 					let (w, h, data) = {
 						let mut data = vec![0; w * h];

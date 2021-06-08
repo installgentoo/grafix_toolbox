@@ -98,25 +98,25 @@ impl GenericTimer {
 	fn new<T: New>() -> Self {
 		GenericTimer::Done(T::boxed_new())
 	}
-	fn start(self, name: Str) -> Self {
+	fn start(self, _name: Str) -> Self {
 		use GenericTimer::*;
 		match self {
 			Done(done) => GenericTimer::Started(done.start()),
-			Started { .. } => ASSERT!(false, "Timer '{}' already started", name),
+			Started { .. } => ASSERT!(false, "Timer '{}' already started", _name),
 		}
 	}
-	fn stop(self, name: Str) -> Self {
+	fn stop(self, _name: Str) -> Self {
 		use GenericTimer::*;
 		match self {
 			Started(started) => GenericTimer::Done(started.stop()),
-			Done { .. } => ASSERT!(false, "Timer '{}' not started", name),
+			Done { .. } => ASSERT!(false, "Timer '{}' not started", _name),
 		}
 	}
-	fn get_res(self, name: Str) -> (u128, u128) {
+	fn get_res(self, _name: Str) -> (u128, u128) {
 		use GenericTimer::*;
 		match self {
 			Done(done) => done.get_res(),
-			Started(_) => ASSERT!(false, "Timer '{}' not stopped", name),
+			Started(_) => ASSERT!(false, "Timer '{}' not stopped", _name),
 		}
 	}
 }

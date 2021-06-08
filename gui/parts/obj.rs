@@ -67,7 +67,7 @@ pub fn ordering_cmp<S: TexSize, T: Object>(c: Color, r: &T) -> bool {
 	(S::TYPE == gl::RGBA || !opaque(c)) != r.ordered()
 }
 #[inline(always)]
-pub fn atlas_cmp<S: TexSize, F: TexFmt>(l: *const VTex2d<S, F>, r: *const VTex2d<S, F>) -> bool {
+pub fn atlas_cmp<S, F>(l: *const VTex2d<S, F>, r: *const VTex2d<S, F>) -> bool {
 	Rc::ptr_eq(&unsafe { &*l }.tex, &unsafe { &*r }.tex)
 }
 

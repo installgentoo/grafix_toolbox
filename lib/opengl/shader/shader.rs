@@ -181,8 +181,8 @@ impl ShaderManager {
 
 	fn inline_source(name: Str, source: Str) {
 		let m = Self::get();
-		if let Some(found) = m.sources.get(name) {
-			ASSERT!(*found == EXPECT!(CString::new(source)), "Shader source '{}' already loaded", name);
+		if let Some(_found) = m.sources.get(name) {
+			ASSERT!(*_found == EXPECT!(CString::new(source)), "Shader source '{}' already loaded", name);
 		} else {
 			m.sources.insert(name.into(), EXPECT!(CString::new(source)));
 		}

@@ -39,24 +39,24 @@ impl<'l, T: State> Drop for Binding<'l, T> {
 	}
 }
 
-pub struct ArrObject<T: State, D: Copy> {
+pub struct ArrObject<T: State, D> {
 	t: Dummy<T>,
 	d: Dummy<D>,
 	pub obj: u32,
 	pub len: usize,
 }
-impl<T: State, D: Copy> ArrObject<T, D> {
+impl<T: State, D> ArrObject<T, D> {
 	pub fn new_empty(len: usize) -> Self {
 		let (t, d, obj) = (Dummy, Dummy, T::New());
 		Self { t, d, obj, len }
 	}
 }
-impl<T: State, D: Copy> Drop for ArrObject<T, D> {
+impl<T: State, D> Drop for ArrObject<T, D> {
 	fn drop(&mut self) {
 		T::Drop(self.obj);
 	}
 }
-impl<T: State, D: Copy> Default for ArrObject<T, D> {
+impl<T: State, D> Default for ArrObject<T, D> {
 	fn default() -> Self {
 		Self::new_empty(0)
 	}

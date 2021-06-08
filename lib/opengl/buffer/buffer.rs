@@ -1,21 +1,11 @@
-use super::{args::*, bindless::*, format::*, mapping::*, object::*, policy::*, state::*};
+use super::{args::*, bindless::*, mapping::*, object::*, policy::*, state::*};
 use crate::uses::*;
 
 pub type AttrArr<D> = ArrObject<Attribute, D>;
 pub type IdxArr<D> = ArrObject<Index, D>;
 
-impl<D: AttrType> ArrObject<Attribute, D> {
+impl<T: State + Buffer, D> ArrObject<T, D> {
 	pub fn new(args: impl AllocArgs<D>) -> Self {
-		Self::allocate(args)
-	}
-}
-impl<D: IdxType> ArrObject<Index, D> {
-	pub fn new(args: impl AllocArgs<D>) -> Self {
-		Self::allocate(args)
-	}
-}
-impl<T: State + Buffer, D: Copy> ArrObject<T, D> {
-	pub fn allocate(args: impl AllocArgs<D>) -> Self {
 		let (ptr, size, usage) = args.geta();
 		let o = Self::new_empty(size);
 		GLCheck!(glBufferStorage(T::TYPE, o.obj, isize::to(size * type_size!(D)), ptr, usage));
