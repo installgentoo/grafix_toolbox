@@ -85,8 +85,5 @@ impl<'a, F: Fn(char) -> bool> SliceArgs<'a> for (F, &'a String, F) {
 }
 
 fn find<F: Fn(char) -> bool>(s: &str, f: F) -> usize {
-	match s.find(f) {
-		Some(at) => at,
-		None => s.len(),
-	}
+	s.find(f).unwrap_or_else(|| s.len())
 }

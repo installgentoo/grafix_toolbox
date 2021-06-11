@@ -5,9 +5,9 @@ use std::ffi::CString;
 
 #[macro_export]
 macro_rules! SHADER {
-	($n: ident, $($b: tt),+) => {
+	($n: ident, $($body: expr),+) => {
 		#[allow(non_upper_case_globals)]
-		pub const $n: shader_use::InlineShader = shader_use::InlineShader(stringify!($n), const_format::concatcp!($($b,)+));
+		pub const $n: shader_use::InlineShader = shader_use::InlineShader(stringify!($n), const_format::concatcp!($($body,)+));
 	};
 }
 
@@ -45,7 +45,7 @@ impl<'l> ShaderBinding<'l> {
 	pub fn Uniform(&mut self, (id, name): (u32, Str), args: impl UniformArgs) {
 		ASSERT!(uniforms_use::id(name).0 == id, "Use Uniforms!() macro to set uniforms");
 		let addr = if let Some(found) = self.shd.uniforms.get(&id) {
-			ASSERT!(collision_map().entry(id).or_insert(name.into()) == name, "Unifrom collision at entry {}", name);
+			ASSERT!(_collision_map().entry(id).or_insert(name.into()) == name, "Unifrom collision at entry {}", name);
 			*found
 		} else {
 			let c_name = match CString::new(name) {
@@ -216,6 +216,6 @@ pub mod inline_shd_use {
 	}
 }
 
-fn collision_map() -> &'static mut HashMap<u32, String> {
+fn _collision_map() -> &'static mut HashMap<u32, String> {
 	UnsafeOnce!(HashMap<u32, String>, { HashMap::new() })
 }

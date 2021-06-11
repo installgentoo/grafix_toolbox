@@ -1,19 +1,19 @@
 #[macro_export]
 macro_rules! impl_for_asref {
-	($t: tt, $f: tt, $r: ty) => {
+	($t: tt, $met: tt, $ret: ty) => {
 		impl<T, const L: usize> $t<T> for [T; L] {
-			fn $f(&self) -> $r {
-				(&self[..]).$f()
+			fn $met(&self) -> $ret {
+				(&self[..]).$met()
 			}
 		}
 		impl<T> $t<T> for &Vec<T> {
-			fn $f(&self) -> $r {
-				(&self[..]).$f()
+			fn $met(&self) -> $ret {
+				(&self[..]).$met()
 			}
 		}
 		impl<T> $t<T> for Vec<T> {
-			fn $f(&self) -> $r {
-				(&self).$f()
+			fn $met(&self) -> $ret {
+				(&self).$met()
 			}
 		}
 	};

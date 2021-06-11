@@ -4,10 +4,10 @@ use crate::uses::{math::*, *};
 use crate::GL::{opengl, spec, window::*, Vao, RGB, RGBA};
 
 macro_rules! Draw {
-	($t: ty, $n: tt) => {
+	($t: ty, $draw_spec: tt) => {
 		impl<'l, 'a> DrawablePrimitive<'l, 'a> for $t {
 			fn draw(self, obj_n: u32, clip: &Crop, r: &mut Renderer) {
-				use ObjStore::$n as object;
+				use ObjStore::$draw_spec as object;
 				if obj_n < u32::to(r.objs.objs.len()) {
 					let Primitive { state, o, .. } = r.objs.get(obj_n);
 					if let object(l) = o {

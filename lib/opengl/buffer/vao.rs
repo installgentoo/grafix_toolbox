@@ -19,13 +19,13 @@ impl<D: IdxType> Vao<D> {
 }
 
 pub struct VaoBinding<'l, D> {
-	b: Binding<'l, VertArrObj>,
+	_b: Binding<'l, VertArrObj>,
 	d: Dummy<D>,
 }
 impl<'l, D: IdxType> VaoBinding<'l, D> {
 	pub fn new(o: &'l mut Vao<D>) -> Self {
-		let b = Binding::new(&mut o.o);
-		Self { b, d: Dummy }
+		let _b = Binding::new(&mut o.o);
+		Self { _b, d: Dummy }
 	}
 }
 impl<I: IdxType> Vao<I> {

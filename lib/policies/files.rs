@@ -116,16 +116,16 @@ pub mod Preload {
 	pub use Text::load as Text;
 }
 macro_rules! LOADER {
-	($n: ident, $t: ty, $a: ident, $b: block) => {
-		pub mod $n {
+	($type: ident, $ret: ty, $a: ident, $b: block) => {
+		pub mod $type {
 			use {super::*, Resource::*};
 			#[derive(Debug)]
 			pub enum Resource {
-				Loading(Task<Res<$t>>),
-				Done($t),
+				Loading(Task<Res<$ret>>),
+				Done($ret),
 			}
 			impl Resource {
-				pub fn if_ready(&mut self) -> Option<&mut $t> {
+				pub fn if_ready(&mut self) -> Option<&mut $ret> {
 					match self {
 						Done(vec) => Some(vec),
 						Loading(handle) => {
@@ -138,7 +138,7 @@ macro_rules! LOADER {
 						}
 					}
 				}
-				pub fn check(&mut self) -> Res<&mut $t> {
+				pub fn check(&mut self) -> Res<&mut $ret> {
 					match self {
 						Done(vec) => Ok(vec),
 						Loading(handle) => {
@@ -148,7 +148,7 @@ macro_rules! LOADER {
 						}
 					}
 				}
-				pub fn get(&mut self) -> &mut $t {
+				pub fn get(&mut self) -> &mut $ret {
 					match self {
 						Done(vec) => vec,
 						Loading(handle) => {
@@ -158,14 +158,14 @@ macro_rules! LOADER {
 						}
 					}
 				}
-				pub fn take(self) -> $t {
+				pub fn take(self) -> $ret {
 					match self {
 						Done(vec) => vec,
 						Loading(handle) => OR_DEF!(task::block_on(async move { handle.await })),
 					}
 				}
 			}
-			pub fn load<P: Into<PathBuf>>(p: P) -> $n::Resource {
+			pub fn load<P: Into<PathBuf>>(p: P) -> $type::Resource {
 				let $a = p.into();
 				Resource::Loading(task::spawn(async move { Res::to($b) }))
 			}

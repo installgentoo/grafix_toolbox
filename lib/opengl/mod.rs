@@ -1,17 +1,15 @@
 #[macro_use]
 mod control;
-mod buffer;
-#[macro_use]
-mod shader;
-#[macro_use]
-mod texture;
-
-mod consts_def;
 #[macro_use]
 mod funcs_def;
-mod screen;
+#[macro_use]
+mod shader;
 
+mod buffer;
+mod consts_def;
 mod debug;
+mod screen;
+mod texture;
 mod utility;
 
 use control::*;

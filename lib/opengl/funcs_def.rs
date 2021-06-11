@@ -34,39 +34,39 @@ SWITCH!(TEXTURE_CUBE_MAP_SEAMLESS);
 #[macro_export]
 macro_rules! GLEnable {
 ($f: ty) => {{ use opengl::*; <$f>::Enable(); }};
-($f: ty, $($t: ty),+) => {{
+($f: ty, $($n: ty),+) => {{
 	use opengl::*;
 	<$f>::Enable();
-	GLEnable!($($t),+);
+	GLEnable!($($n),+);
 }};
 }
 
 #[macro_export]
 macro_rules! GLDisable {
 ($f: ty) => {{ use opengl::*; <$f>::Disable(); }};
-($f: ty, $($t: ty),+) => {{
+($f: ty, $($n: ty),+) => {{
 	use opengl::*;
 	<$f>::Disable();
-	GLDisable!($($t),+);
+	GLDisable!($($n),+);
 }};
 }
 
 #[macro_export]
 macro_rules! GLSave {
 ($f: ty) => {{ use opengl::*; <$f>::Save(); }};
-($f: ty, $($t: ty),+) => {{
+($f: ty, $($n: ty),+) => {{
 	use opengl::*;
 	<$f>::Save();
-	GLSave!($($t),+);
+	GLSave!($($n),+);
 }};
 }
 
 #[macro_export]
 macro_rules! GLRestore {
 ($f: ty) => {{ use opengl::*; <$f>::Restore(); }};
-($f: ty, $($t: ty),+) => {{
+($f: ty, $($n: ty),+) => {{
 	use opengl::*;
 	<$f>::Restore();
-	GLRestore!($($t),+);
+	GLRestore!($($n),+);
 }};
 }

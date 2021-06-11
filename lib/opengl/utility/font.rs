@@ -23,11 +23,7 @@ pub struct Font {
 }
 impl Font {
 	pub fn tex(&self) -> &Tex2d<RED, u8> {
-		if let Some(t) = self.tex.as_ref() {
-			t
-		} else {
-			UnsafeOnce!(Tex2d<RED, u8>, { Tex2d::default() })
-		}
+		self.tex.as_ref().unwrap_or_else(|| UnsafeOnce!(Tex2d<RED, u8>, { Tex2d::default() }))
 	}
 	pub fn char(&self, c: char) -> &Glyph {
 		let g = &self.glyphs;
@@ -42,12 +38,7 @@ impl Font {
 		})
 	}
 	pub fn kern(&self, l: char, r: char) -> f32 {
-		if let Some(k) = self.kerning.get(&l) {
-			if let Some(k) = k.get(&r) {
-				return *k;
-			}
-		}
-		0.
+		(|| Some(*self.kerning.get(&l)?.get(&r)?))().unwrap_or(0.)
 	}
 	pub fn new_cached(name: &str, alphabet: &str) -> Self {
 		let alph_chksum = chksum::const_fnv1(alphabet.as_bytes()).to_string();
@@ -82,18 +73,10 @@ impl Font {
 				let kern = alphabet()
 					.filter_map(|g| {
 						let k = font.pair_kerning(scale, c, g) * divisor;
-						if k != 0. {
-							Some((g, k))
-						} else {
-							None
-						}
+						Some((g, k)).filter(|_| k != 0.)
 					})
 					.collect::<HashMap<char, f32>>();
-				if !kern.is_empty() {
-					Some((c, kern))
-				} else {
-					None
-				}
+				Some((c, kern)).filter(|(_, k)| !k.is_empty())
 			})
 			.collect::<HashMap<_, _>>();
 		DEBUG!("Font kerning: {:?}", kerning);

@@ -4,26 +4,26 @@ use crate::GL::{tex::*, window::*, Fbo, Sampler};
 
 #[macro_export]
 macro_rules! ComputeShader {
-	($s: ident, $samp: ident, $fbo: ident, $(($n: expr, $v: expr)),+) => {{
+	($shd: ident, $samp: ident, $fbo: ident, $(($n: expr, $v: expr)),+) => {{
 		(&mut $fbo).bind_appl();
 		let samp = &$samp;
-		let s = $s.Bind();
+		let s = $shd.Bind();
 		$(let s = Uniform!(s, ($n, ($v, samp)));)+
 		Screen::Draw();
 	}};
-	($s: ident, $samp: ident, ($n0: expr, $slab: ident), $(($n: expr, $v: expr)),+) => {{
+	($shd: ident, $samp: ident, ($n0: expr, $slab: ident), $(($n: expr, $v: expr)),+) => {{
 		{
 			let mut fbo = &mut $slab.tgt;
 			let src = &$slab.src.tex.Bind(&$samp);
-			ComputeShader!($s, $samp, fbo, ($n0, src), $(($n, $v)),+);
+			ComputeShader!($shd, $samp, fbo, ($n0, src), $(($n, $v)),+);
 		}
 		$slab.swap();
 	}};
-	($s: ident, $samp: ident, ($n0: expr, $slab: ident)) => {{
+	($shd: ident, $samp: ident, ($n0: expr, $slab: ident)) => {{
 		{
 			let mut fbo = &mut $slab.tgt;
 			let src = &$slab.src.tex.Bind(&$samp);
-			ComputeShader!($s, $samp, fbo, ($n0, src));
+			ComputeShader!($shd, $samp, fbo, ($n0, src));
 		}
 		$slab.swap();
 	}};

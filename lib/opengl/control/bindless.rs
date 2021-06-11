@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::uses::*;
 
 #[cfg(not(feature = "gl45"))]

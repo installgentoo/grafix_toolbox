@@ -1,15 +1,15 @@
 use crate::uses::*;
 
 macro_rules! CONST {
-	($p: ident, $t: ty) => {
-		pub fn $p() -> $t {
+	($n: ident, $t: ty) => {
+		pub fn $n() -> $t {
 			static mut DONE: bool = false;
 			static mut RES: $t = <$t>::ZERO;
 			unsafe {
 				if DONE == true {
 				} else {
 					DONE = true;
-					RES = <$t>::get(gl::$p)
+					RES = <$t>::get(gl::$n)
 				}
 			}
 			unsafe { RES }

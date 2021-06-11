@@ -1,9 +1,9 @@
-use crate::uses::*;
+use crate::{impl_trait_for, uses::*};
 
 macro_rules! APPLICATOR {
 	($n: ident, $($t: ident),+) => {
 		pub trait $n<$($t),+> {
-			fn apply(&self, _: unsafe fn($($t),+)) {}
+			fn apply(&self, _: unsafe fn($($t),+));
 		}
 		#[allow(unused_parens)]
 		impl<$($t: Copy + GLPrimitive),+> $n<$($t),+> for ($($t),+) {
@@ -27,10 +27,10 @@ pub fn states_map() -> &'static mut HashMap<usize, (bool, bool)> {
 }
 
 macro_rules! FUNC {
-	($m: ident, $p: ident, $($t: ident),+) => {
-pub struct $p;
+	($m: ident, $n: ident, $($t: ident),+) => {
+pub struct $n;
 #[allow(unused_parens)]
-impl $p {
+impl $n {
 	fn state() -> &'static mut ($($t),+) {
 		static mut STATE: ($($t),+) = ($($t::ZERO),+);
 		unsafe { &mut STATE }
@@ -43,19 +43,19 @@ impl $p {
 	pub fn Set(state: ($($t),+)) {
 		let last_s = Self::state();
 		debug_assert!({
-			states_map().entry($m::$p as *const () as usize).or_insert_with(|| { ASSERT!(state != *last_s, "First call to GL::{}::Set() must not have all zeros as arguments", stringify!($p)); (false, false) });
+			states_map().entry($m::$n as *const () as usize).or_insert_with(|| { ASSERT!(state != *last_s, "First call to GL::{}::Set() must not have all zeros as arguments", stringify!($n)); (false, false) });
 			true
 		});
 		if *last_s != state {
 			*last_s = state;
-			state.apply($m::$p);
-			DEBUG!("Set {}::{}({:?})", stringify!($m), stringify!($p), state);
+			state.apply($m::$n);
+			DEBUG!("Set {}::{}({:?})", stringify!($m), stringify!($n), state);
 		}
 	}
 
 	pub fn Save() {
 		debug_assert!({
-			let (valid, _) = EXPECT!(states_map().get_mut(&($m::$p as *const () as usize)), "GL::{}::Set() must be called at least once", stringify!($p));
+			let (valid, _) = EXPECT!(states_map().get_mut(&($m::$n as *const () as usize)), "GL::{}::Set() must be called at least once", stringify!($n));
 			*valid = true;
 			true
 		});
@@ -65,20 +65,20 @@ impl $p {
 	pub fn Restore() {
 		ASSERT!(
 			{
-				let (valid, _) = states_map().entry($m::$p as *const () as usize).or_insert((false, false));
+				let (valid, _) = states_map().entry($m::$n as *const () as usize).or_insert((false, false));
 				let r = *valid;
 				*valid = false;
 				r
 			},
 			"GL::{}::Restore() call not paired with Set()",
-			stringify!($p)
+			stringify!($n)
 		);
 		let state = Self::state();
 		let prev_s = Self::saved_state();
 		if *state != *prev_s {
 			*state = *prev_s;
-			state.apply($m::$p);
-			DEBUG!("Restored {}::{}({:?})", stringify!($m), stringify!($p), state);
+			state.apply($m::$n);
+			DEBUG!("Restored {}::{}({:?})", stringify!($m), stringify!($n), state);
 		}
 	}
 }
@@ -99,18 +99,18 @@ pub fn overflow_map() -> &'static mut HashMap<GLenum, i32> {
 }
 
 macro_rules! SWITCH {
-	($p: ident) => {
-		impl State for $p {}
-		SWITCH_IMPL!($p, 0);
+	($n: ident) => {
+		impl State for $n {}
+		SWITCH_IMPL!($n, 0);
 	};
 
-	($p: ident, DEFAULT_TRUE) => {
-		impl State for $p {}
-		SWITCH_IMPL!($p, 18446744073709551615);
+	($n: ident, DEFAULT_TRUE) => {
+		impl State for $n {}
+		SWITCH_IMPL!($n, 18446744073709551615);
 	};
 
-	($p: ident, $e: expr, $d: expr, $i: literal) => {
-		impl State for $p {
+	($n: ident, $e: expr, $d: expr, $i: literal) => {
+		impl State for $n {
 			fn gl_enable(_: GLenum) {
 				GLCheck!($e)
 			}
@@ -118,20 +118,20 @@ macro_rules! SWITCH {
 				GLCheck!($d)
 			}
 		}
-		SWITCH_IMPL!($p, $i);
+		SWITCH_IMPL!($n, $i);
 	};
-	($p: ident, $e: expr, $d: expr) => {
-		SWITCH!($p, $e, $d, 0);
+	($n: ident, $e: expr, $d: expr) => {
+		SWITCH!($n, $e, $d, 0);
 	};
-	($p: ident, $e: expr, $d: expr, DEFAULT_TRUE) => {
-		SWITCH!($p, $e, $d, 18446744073709551615);
+	($n: ident, $e: expr, $d: expr, DEFAULT_TRUE) => {
+		SWITCH!($n, $e, $d, 18446744073709551615);
 	};
 }
 
 macro_rules! SWITCH_IMPL {
-	($p: ident, $i: literal) => {
-		pub struct $p;
-		impl $p {
+	($n: ident, $i: literal) => {
+		pub struct $n;
+		impl $n {
 			fn state() -> &'static mut u64 {
 				static mut STATE: u64 = $i;
 				unsafe { &mut STATE }
@@ -140,8 +140,8 @@ macro_rules! SWITCH_IMPL {
 			pub fn Enable() {
 				let state = Self::state();
 				if (*state & 1u64) != 1u64 {
-					Self::gl_enable(gl::$p);
-					DEBUG!("Enabled {}::{}", stringify!($m), stringify!($p));
+					Self::gl_enable(gl::$n);
+					DEBUG!("Enabled {}::{}", stringify!($m), stringify!($n));
 					*state |= 1u64;
 				}
 			}
@@ -149,15 +149,15 @@ macro_rules! SWITCH_IMPL {
 			pub fn Disable() {
 				let state = Self::state();
 				if (*state & 1u64) != 0u64 {
-					Self::gl_disable(gl::$p);
-					DEBUG!("Disabled {}::{}", stringify!($m), stringify!($p));
+					Self::gl_disable(gl::$n);
+					DEBUG!("Disabled {}::{}", stringify!($m), stringify!($n));
 					*state &= !1u64;
 				}
 			}
 
 			pub fn Save() {
 				debug_assert!({
-					let v = overflow_map().entry(gl::$p).or_insert(0);
+					let v = overflow_map().entry(gl::$n).or_insert(0);
 					*v = 64.min(*v + 1);
 					true
 				});
@@ -169,23 +169,23 @@ macro_rules! SWITCH_IMPL {
 			pub fn Restore() {
 				ASSERT!(
 					{
-						let v = overflow_map().entry(gl::$p).or_insert(0);
+						let v = overflow_map().entry(gl::$n).or_insert(0);
 						*v -= 1;
 						*v >= 0
 					},
 					"No state for GL::{} in stack",
-					stringify!($p)
+					stringify!($n)
 				);
 
 				let state = Self::state();
 				let s = *state & 1u64;
 				*state >>= 1;
 				if s != (*state & 1u64) {
-					DEBUG!("Restored {}::{}({})", stringify!($m), stringify!($p), s);
+					DEBUG!("Restored {}::{}({})", stringify!($m), stringify!($n), s);
 					if *state == 0u64 {
-						Self::gl_disable(gl::$p);
+						Self::gl_disable(gl::$n);
 					} else {
-						Self::gl_enable(gl::$p);
+						Self::gl_enable(gl::$n);
 					}
 				}
 			}
@@ -194,15 +194,4 @@ macro_rules! SWITCH_IMPL {
 }
 
 pub trait GLPrimitive {}
-impl GLPrimitive for u8 {}
-impl GLPrimitive for i8 {}
-impl GLPrimitive for u16 {}
-impl GLPrimitive for i16 {}
-impl GLPrimitive for u32 {}
-impl GLPrimitive for i32 {}
-impl GLPrimitive for u64 {}
-impl GLPrimitive for i64 {}
-impl GLPrimitive for f32 {}
-impl GLPrimitive for f64 {}
-impl GLPrimitive for usize {}
-impl GLPrimitive for isize {}
+impl_trait_for!(GLPrimitive, u8, i8, u16, i16, u32, i32, u64, i64, f32, f64, usize, isize);

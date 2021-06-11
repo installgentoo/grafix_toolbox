@@ -1,4 +1,4 @@
-use crate::uses::*;
+use crate::{impl_trait_for, uses::*};
 
 pub trait TupleAllAny {
 	fn all(self) -> bool;
@@ -81,7 +81,7 @@ impl EpsilonEqual for f64 {
 	}
 }
 
-pub trait Rounding: Sized {
+pub trait Round: Sized {
 	fn round(self) -> Self {
 		self
 	}
@@ -89,9 +89,10 @@ pub trait Rounding: Sized {
 		self
 	}
 }
+impl_trait_for!(Round, u8, u16, u32, u64, u128, usize);
 macro_rules! rounding {
 	($t: ty) => {
-		impl Rounding for $t {
+		impl Round for $t {
 			fn abs(self) -> Self {
 				self.abs()
 			}
@@ -104,7 +105,7 @@ rounding!(i32);
 rounding!(i64);
 rounding!(i128);
 rounding!(isize);
-impl Rounding for f16 {
+impl Round for f16 {
 	fn round(self) -> Self {
 		f16::to(f32::to(self).round())
 	}
@@ -114,7 +115,7 @@ impl Rounding for f16 {
 }
 macro_rules! rounding_f {
 	($t: ty) => {
-		impl Rounding for $t {
+		impl Round for $t {
 			fn round(self) -> Self {
 				self.round()
 			}
@@ -154,6 +155,14 @@ pow!(u32);
 pow!(u64);
 pow!(u128);
 pow!(usize);
+impl<T> Pow<T> for f16
+where
+	i32: Cast<T>,
+{
+	fn power(self, r: T) -> Self {
+		f16::to(f32::to(self).powi(i32::to(r)))
+	}
+}
 macro_rules! powi {
 	($t: ty) => {
 		impl<T> Pow<T> for $t
@@ -168,14 +177,6 @@ macro_rules! powi {
 }
 powi!(f32);
 powi!(f64);
-impl<T> Pow<T> for f16
-where
-	i32: Cast<T>,
-{
-	fn power(self, r: T) -> Self {
-		f16::to(f32::to(self).powi(i32::to(r)))
-	}
-}
 
 pub trait EucMod<T> {
 	fn euc_mod(self, _: T) -> Self;
@@ -204,8 +205,6 @@ euc_mod!(u32);
 euc_mod!(u64);
 euc_mod!(u128);
 euc_mod!(usize);
-euc_mod!(f32);
-euc_mod!(f64);
 impl<T> EucMod<T> for f16
 where
 	f32: Cast<T>,
@@ -214,14 +213,20 @@ where
 		f16::to(self.to_f32().rem_euclid(f32::to(r)))
 	}
 }
+euc_mod!(f32);
+euc_mod!(f64);
 
-pub trait Sqrt {
+pub trait Precise {
+	fn mix(self, a: f32, r: Self) -> Self;
 	fn root(self) -> Self;
 	fn is_zero(self) -> bool;
 }
 macro_rules! sqrt {
 	($t: ty) => {
-		impl Sqrt for $t {
+		impl Precise for $t {
+			fn mix(self, a: f32, r: Self) -> Self {
+				Self::to(f32::to(self) * (1. - a) + f32::to(r) * a)
+			}
 			fn root(self) -> Self {
 				Self::to(f32::to(self).sqrt())
 			}
@@ -245,7 +250,11 @@ sqrt!(u128);
 sqrt!(usize);
 sqrt!(f16);
 sqrt!(f32);
-impl Sqrt for f64 {
+impl Precise for f64 {
+	fn mix(self, a: f32, r: Self) -> Self {
+		let a = f64::to(a);
+		self * (1. - a) + r * a
+	}
 	fn root(self) -> Self {
 		self.sqrt()
 	}

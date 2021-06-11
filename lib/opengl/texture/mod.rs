@@ -1,10 +1,8 @@
 mod args;
 mod format;
 mod framebuff;
-#[macro_use]
-mod sampler;
-#[macro_use]
 mod sampl_pool;
+mod sampler;
 mod tex_type;
 mod texbuff;
 mod texture;

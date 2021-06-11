@@ -5,15 +5,15 @@ pub mod Screen {
 	use super::*;
 	struct Model {
 		vao: Vao<u8>,
-		xyuv: AttrArr<i8>,
+		_xyuv: AttrArr<i8>,
 	}
 	pub fn Draw() {
 		UnsafeOnce!(Model, {
 			#[rustfmt::skip]
-			let xyuv = AttrArr::new([ -1, -1, 0, 0,  3, -1, 2, 0,  -1, 3, 0, 2 ]);
+			let _xyuv = AttrArr::new([ -1, -1, 0, 0,  3, -1, 2, 0,  -1, 3, 0, 2 ]);
 			let mut vao = Vao::new();
-			vao.AttribFmt(&xyuv, (0, 4));
-			Model { vao, xyuv }
+			vao.AttribFmt(&_xyuv, (0, 4));
+			Model { vao, _xyuv }
 		})
 		.vao
 		.Bind()
@@ -30,25 +30,25 @@ pub mod Skybox {
 	use super::*;
 	struct Model {
 		vao: Vao<u8>,
-		idx: IdxArr<u8>,
-		xyz: AttrArr<i8>,
+		_idx: IdxArr<u8>,
+		_xyz: AttrArr<i8>,
 	}
 	pub fn Draw() {
 		UnsafeOnce!(Model, {
 			#[rustfmt::skip]
-			let idx = IdxArr::new([ 0, 1, 3,  3, 1, 2,
-									4, 5, 7,  7, 5, 6,
-									0, 1, 4,  4, 1, 5,
-									3, 2, 7,  7, 2, 6,
-									2, 1, 6,  6, 1, 5,
-									3, 7, 0,  0, 7, 4, ]);
+			let _idx = IdxArr::new([ 0, 1, 3,  3, 1, 2,
+									 4, 5, 7,  7, 5, 6,
+									 0, 1, 4,  4, 1, 5,
+									 3, 2, 7,  7, 2, 6,
+									 2, 1, 6,  6, 1, 5,
+									 3, 7, 0,  0, 7, 4, ]);
 			#[rustfmt::skip]
-			let xyz = AttrArr::new([ -1,  1, 1,   1,  1, 1,   1,  1, -1,  -1,  1, -1,
-									 -1, -1, 1,   1, -1, 1,   1, -1, -1,  -1, -1, -1 ]);
+			let _xyz = AttrArr::new([ -1,  1, 1,   1,  1, 1,   1,  1, -1,  -1,  1, -1,
+									  -1, -1, 1,   1, -1, 1,   1, -1, -1,  -1, -1, -1 ]);
 			let mut vao = Vao::new();
-			vao.BindIdxs(&idx);
-			vao.AttribFmt(&xyz, (0, 3));
-			Model { vao, idx, xyz }
+			vao.BindIdxs(&_idx);
+			vao.AttribFmt(&_xyz, (0, 3));
+			Model { vao, _idx, _xyz }
 		})
 		.vao
 		.Bind()

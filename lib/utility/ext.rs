@@ -6,12 +6,19 @@ pub type Str = &'static str;
 
 #[macro_export]
 macro_rules! map_enum {
-	($i: expr, $v: pat, $m: expr) => {
-		if let $v = $i {
-			Some($m)
+	($e: expr, $t: pat, $do: expr) => {
+		if let $t = $e {
+			Some($do)
 		} else {
 			None
 		}
+	};
+}
+
+#[macro_export]
+macro_rules! impl_trait_for {
+	($trait: ty, $($types: ty),+) => {
+		$(impl $trait for $types {})+
 	};
 }
 

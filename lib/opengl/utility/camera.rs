@@ -41,5 +41,4 @@ impl Camera {
 		Mat3::to(glm::inverse_transpose((self.view * model).fixed_resize(0.)))
 	}
 }
-type M3 = glm::Mat3;
 type M4 = glm::Mat4;

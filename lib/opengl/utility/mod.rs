@@ -1,10 +1,9 @@
 mod camera;
 mod font;
-mod pbrt;
-#[macro_use]
-mod pingpong;
 mod mesh;
 mod model;
+mod pbrt;
+mod pingpong;
 mod sdf;
 mod tex;
 

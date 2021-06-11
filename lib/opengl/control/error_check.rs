@@ -1,15 +1,15 @@
 #[cfg(not(debug_assertions))]
 #[macro_export]
 macro_rules! GLCheck {
-	($v: expr) => {{
-		unsafe { $v }
+	($fun: expr) => {{
+		unsafe { $fun }
 	}};
 }
 
 #[cfg(debug_assertions)]
 #[macro_export]
 macro_rules! GLCheck {
-	($v: expr) => {{
+	($fun: expr) => {{
 		pub type CowStr = std::borrow::Cow<'static, str>;
 		fn code_to_error(code: gl::types::GLenum) -> CowStr {
 			match code {
@@ -25,9 +25,9 @@ macro_rules! GLCheck {
 			}
 		}
 
-		let (val, err) = unsafe { ($v, gl::GetError()) };
+		let (val, err) = unsafe { ($fun, gl::GetError()) };
 		if err != gl::NO_ERROR {
-			WARN!("OpenGL error {} in {}", code_to_error(err), stringify!($v));
+			WARN!("OpenGL error {} in {}", code_to_error(err), stringify!($fun));
 		}
 		val
 	}};

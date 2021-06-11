@@ -16,6 +16,13 @@ pub trait TupleMath<RA, A: TupleMathReq<A>>: TupleApply<RA, A, A, AR = Self> {
 	{
 		self.fmax(RA::to(l)).fmin(r)
 	}
+	fn mix<M>(self, a: M, r: RA) -> Self
+	where
+		f32: Cast<M>,
+	{
+		let a = f32::to(a);
+		self.apply(r, move |l, r| l.mix(a, r))
+	}
 	fn sum(self, r: RA) -> Self {
 		self.apply(r, |l, r| l + r)
 	}
@@ -28,7 +35,7 @@ pub trait TupleMath<RA, A: TupleMathReq<A>>: TupleApply<RA, A, A, AR = Self> {
 	fn div(self, r: RA) -> Self {
 		self.apply(r, |l, r| l / r)
 	}
-	fn pow(self, r: RA) -> Self {
+	fn powi(self, r: RA) -> Self {
 		self.apply(r, |l, r| l.power(r))
 	}
 	fn fmin(self, r: RA) -> Self {
@@ -43,23 +50,16 @@ pub trait TupleMath<RA, A: TupleMathReq<A>>: TupleApply<RA, A, A, AR = Self> {
 }
 impl<S: TupleApply<RA, A, A, AR = Self>, RA, A: TupleMathReq<A>> TupleMath<RA, A> for S {}
 
-pub trait TupleSigned<A: TupleMathReq<A> + Rounding + Neg<Output = A>>: TupleTrans<A> {
-	fn neg(self) -> Self {
-		self.trans(|s| -s)
-	}
-	fn sgn(self) -> Self {
-		self.trans(|s| A::to((s > A::to(0)) as i32) * A::to(2) - A::to(1))
-	}
+pub trait TupleSelf<A: TupleMathReq<A>>: TupleTrans<A> + TupleMath<A, A> + TupleVecIdentity + Copy {
 	fn round(self) -> Self {
-		self.trans(|s| s.round())
+		self.trans(|v| v.round())
 	}
 	fn abs(self) -> Self {
-		self.trans(|s| s.abs())
+		self.trans(|v| v.abs())
 	}
-}
-impl<S: TupleTrans<A>, A: TupleMathReq<A> + Rounding + Neg<Output = A>> TupleSigned<A> for S {}
-
-pub trait TupleSelf<A: TupleMathReq<A>>: TupleTrans<A> + TupleMath<A, A> + TupleVecIdentity + Copy {
+	fn sgn(self) -> Self {
+		self.trans(|v| A::to((v > A::to(0)) as i32) * A::to(2) - A::to(1))
+	}
 	fn pow2(self) -> Self {
 		self.trans(|v| v * v)
 	}
@@ -73,16 +73,12 @@ pub trait TupleSelf<A: TupleMathReq<A>>: TupleTrans<A> + TupleMath<A, A> + Tuple
 }
 impl<S: TupleTrans<A> + TupleTrans<A> + TupleMath<A, A> + TupleVecIdentity + Copy, A: TupleMathReq<A>> TupleSelf<A> for S {}
 
-pub trait TupleMathEext<RA: TupleMath<f32, A>, A: TupleMathReq<A>>: TupleMath<RA, A> + TupleMath<f32, A> {
-	fn mix<M>(self, a: M, r: RA) -> Self
-	where
-		f32: Cast<M>,
-	{
-		let a = f32::to(a);
-		self.mul(1. - a).sum(r.mul(a))
+pub trait TupleSigned<A: Neg<Output = A>>: TupleTrans<A> {
+	fn neg(self) -> Self {
+		self.trans(|v| -v)
 	}
 }
-impl<S: TupleMath<RA, A> + TupleMath<f32, A>, RA: TupleMath<f32, A>, A: TupleMathReq<A>> TupleMathEext<RA, A> for S {}
+impl<S: TupleTrans<A>, A: Neg<Output = A>> TupleSigned<A> for S {}
 
 pub trait TupleComparison<RA, A>: TupleApply<RA, A, bool> {
 	type B;
@@ -117,8 +113,8 @@ macro_rules! impl_comparison {
 }
 
 //TODO trait alias
-pub trait TupleMathReq<A>: O + Cast<i32> + Cast<A> + Add<Output = A> + Sub<Output = A> + Mul<Output = A> + Div<Output = A> + Pow<A> + EucMod<A> + Sqrt + Copy {}
-impl<A: O + Cast<i32> + Cast<A> + Add<Output = A> + Sub<Output = A> + Mul<Output = A> + Div<Output = A> + Pow<A> + EucMod<A> + Sqrt + Copy> TupleMathReq<A> for A {}
+pub trait TupleMathReq<A>: O + Cast<i32> + Cast<A> + Add<Output = A> + Sub<Output = A> + Mul<Output = A> + Div<Output = A> + Pow<A> + EucMod<A> + Precise + Round + Copy {}
+impl<A: O + Cast<i32> + Cast<A> + Add<Output = A> + Sub<Output = A> + Mul<Output = A> + Div<Output = A> + Pow<A> + EucMod<A> + Precise + Round + Copy> TupleMathReq<A> for A {}
 
 impl<RA, A, R> TupleApply<RA, A, R> for (A, A)
 where

@@ -3,9 +3,9 @@ use crate::uses::*;
 
 #[macro_export]
 macro_rules! Uniform {
-	($b: ident, ($n: expr, $v: expr)) => {{
+	($bind: ident, ($n: expr, $v: expr)) => {{
 		const _ID: (u32, &str) = shader_use::id($n);
-		let mut b = $b;
+		let mut b = $bind;
 		b.Uniform(_ID, $v);
 		b
 	}};
@@ -13,8 +13,8 @@ macro_rules! Uniform {
 
 #[macro_export]
 macro_rules! Uniforms {
-($s: ident, $(($n: expr, $v: expr)),+) => {{
-	let b = $s.Bind();
+($shd: ident, $(($n: expr, $v: expr)),+) => {{
+	let b = $shd.Bind();
 	$(let b = Uniform!(b, ($n, $v));)+
 	b
 }};

@@ -2,7 +2,6 @@
 mod policies;
 #[macro_use]
 mod opengl;
-#[macro_use]
 mod utility;
 
 pub mod uses {
