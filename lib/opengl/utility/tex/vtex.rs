@@ -29,7 +29,7 @@ pub struct TexAtlas<S> {
 }
 impl<S: TexSize> TexAtlas<S> {
 	pub fn new() -> Self {
-		Self::default()
+		Def()
 	}
 	pub fn load(&self, name: &str) -> AtlasTex2d<S> {
 		let (reqs, _textures) = unsafe { &mut *self.t.get() };

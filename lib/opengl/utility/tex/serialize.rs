@@ -43,7 +43,7 @@ impl<S: TexSize, F: TexFmt> Image<S, F> {
 		let w: [_; 4] = w.to_le_bytes();
 		let h: [_; 4] = h.to_le_bytes();
 		let (_, d, _) = unsafe { data.align_to() };
-		v.extend(w.iter().chain(h.iter()).chain(d));
+		v.extend(w.iter().chain(&h).chain(d));
 		v
 	}
 	pub fn from_bytes(v: &[u8]) -> Self {

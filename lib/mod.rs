@@ -13,19 +13,27 @@ pub mod uses {
 	pub mod ord {
 		pub use std::cmp::Ordering::*;
 	}
-	pub mod Sync {
+	pub mod threads {
+		pub use crossbeam::thread::{Scope, ScopedJoinHandle};
+		pub use std::thread::{JoinHandle, Thread};
+		pub mod thread {
+			pub use crossbeam::thread::scope;
+			pub use std::thread::*;
+		}
+	}
+	pub mod sync {
 		pub mod sync {
-			pub use std::sync::*;
+			pub use std::sync::{atomic::*, Arc, Mutex, Once};
 		}
 		pub mod chan {
 			pub use chan::{Receiver, Sender};
-			pub use std::sync::mpsc as chan;
+			pub use crossbeam::channel as chan;
 		}
 	}
-	pub mod Async {
+	pub mod asyn {
 		pub mod sync {
 			pub use smol::lock::*;
-			pub use std::sync::{atomic, Once};
+			pub use std::sync::{atomic::*, Arc, Once};
 		}
 		pub mod chan {
 			pub use chan::{Receiver, Sender};
@@ -62,10 +70,9 @@ pub mod uses {
 	}
 	pub use super::policies::{casts::cast::Cast, math::*, rand, type_tools};
 	pub use super::utility::{cached_str::CachedStr, ext::*, prefetch, slicing};
-	pub use super::{GL, GL::opengl, GL::types::*};
-	pub use bitflags::bitflags;
-	pub use nalgebra as na;
-	pub use nalgebra_glm as glm;
+	pub use super::{GL, GL::types::*};
+	pub use {bitflags::bitflags, const_format, num_cpus};
+	pub use {nalgebra as na, nalgebra_glm as glm};
 }
 
 pub mod events {

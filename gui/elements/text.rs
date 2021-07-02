@@ -150,11 +150,11 @@ impl TextEdit {
 					}
 				};
 				let range = |beg: Caret, end: Caret, text: &str| {
-					let lw = lines[..beg.y()].iter().zip(wraps[..beg.y()].iter());
+					let lw = lines[..beg.y()].iter().zip(&wraps[..beg.y()]);
 					let start_l = util::line(lines, beg);
 					let start_c = start_l.len_at_char(beg.x() - 1);
 					let start = lw.fold(0, |s, (l, w)| s + l.len() + (*w != 0) as usize);
-					let lw = lines[beg.y()..end.y()].iter().zip(wraps[beg.y()..end.y()].iter());
+					let lw = lines[beg.y()..end.y()].iter().zip(&wraps[beg.y()..end.y()]);
 					let end_l = util::line(lines, end);
 					let wrap = wraps[end.y().max(1) - 1] == 0 && end.x() == 1;
 					let end_c = end_l.len_at_char(end.x().max(1) - 1.or_def(!wrap));

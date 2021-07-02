@@ -17,11 +17,11 @@ out vec3 glNormal;
 
 void main()
 {
-  vec4 pos = vec4(Position, 1.);
-  gl_Position = MVPMat * pos;
-  glPos = (ModelViewMat * pos).xyz;
-  glTexCoord = TexCoord;
-  glNormal = normalize(NormalViewMat * Normal);
+	vec4 pos = vec4(Position, 1.);
+	gl_Position = MVPMat * pos;
+	glPos = (ModelViewMat * pos).xyz;
+	glTexCoord = TexCoord;
+	glNormal = normalize(NormalViewMat * Normal);
 }
 
 
@@ -37,12 +37,12 @@ uniform vec4 light_color[4];
 
 void main()
 {
-  vec3 lightDir = normalize(glPos - light_pos[0]);
-  vec3 viewDir = -normalize(-glPos);
-  vec3 reflectDir = reflect(-lightDir, glNormal);
-  float diff = max(dot(normalize(glNormal), -lightDir), 0.);
-  float spec = pow(max(dot(viewDir, reflectDir), 0.), 64);
-  glFragColor = vec4(vec3(0.1 + spec + diff * 0.3), 1.);
+	vec3 lightDir = normalize(glPos - light_pos[0]);
+	vec3 viewDir = -normalize(-glPos);
+	vec3 reflectDir = reflect(-lightDir, glNormal);
+	float diff = max(dot(normalize(glNormal), -lightDir), 0.);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.), 64);
+	glFragColor = vec4(vec3(0.1 + spec + diff * 0.3), 1.);
 }
 
 
@@ -56,25 +56,25 @@ uniform sampler2D src;
 
 float contour(in float d, in float w)
 {
-return smoothstep(0.5 - w, 0.5 + w, d);
+	return smoothstep(0.5 - w, 0.5 + w, d);
 }
 
 float samp(in vec2 uv, float w)
 {
-return contour(texture2D(src, uv).a, w);
+	return contour(texture2D(src, uv).a, w);
 }
 
 void main()
 {
-float d = texture(src, glTexCoord).r;
-float w = fwidth(d);
-float a = smoothstep(0.5 - w, 0.5 + w, d);
-float ds = 0.354;
-vec2 duv = ds * (dFdx(glTexCoord) + dFdy(glTexCoord));
-vec4 box = vec4(glTexCoord - duv, glTexCoord + duv);
-float ass = samp(box.xy, w) + samp(box.zw, w) + samp(box.xw, w) + samp(box.zy, w);
-a = (a + 0.5 * ass) / 3.0;
-glFragColor = vec4(a, a, a, 1.);
+	float d = texture(src, glTexCoord).r;
+	float w = fwidth(d);
+	float a = smoothstep(0.5 - w, 0.5 + w, d);
+	float ds = 0.354;
+	vec2 duv = ds * (dFdx(glTexCoord) + dFdy(glTexCoord));
+	vec4 box = vec4(glTexCoord - duv, glTexCoord + duv);
+	float ass = samp(box.xy, w) + samp(box.zw, w) + samp(box.xw, w) + samp(box.zy, w);
+	a = (a + 0.5 * ass) / 3.0;
+	glFragColor = vec4(a, a, a, 1.);
 }
 
 
@@ -88,12 +88,12 @@ const float i_PI = 1. / 3.14159265358979323846;
 
 void main()
 {
-  vec2 pos = (glTexCoord.xy - vec2(0.5)) * 2;
-  float sin_theta = sqrt(1. - pos.y * pos.y);
+	vec2 pos = (glTexCoord.xy - vec2(0.5)) * 2;
+	float sin_theta = sqrt(1. - pos.y * pos.y);
 
-  float v = acos(pos.y) * i_PI;
-  float z = max(sqrt(1. - pos.y * pos.y - pos.x * pos.x), 0.);
-  float u = atan(z, pos.x) * 0.5 * i_PI;
+	float v = acos(pos.y) * i_PI;
+	float z = max(sqrt(1. - pos.y * pos.y - pos.x * pos.x), 0.);
+	float u = atan(z, pos.x) * 0.5 * i_PI;
 
-  glFragColor = vec4(normalize(vec3(1.-u, 1.-v, z)), 1.);
+	glFragColor = vec4(normalize(vec3(1.-u, 1.-v, z)), 1.);
 }

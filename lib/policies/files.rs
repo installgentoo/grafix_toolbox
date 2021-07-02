@@ -1,4 +1,4 @@
-use crate::uses::Async::{chan::*, fs, pre::*, sync::Once, task::*};
+use crate::uses::asyn::{chan::*, fs, pre::*, sync::Once, task::*};
 use crate::uses::*;
 use path::PathBuf;
 
@@ -201,6 +201,5 @@ pub async fn read_text<P: AsRef<Path>>(p: P) -> Res<String> {
 }
 
 fn map_err<T, E: std::fmt::Display>(r: Result<T, E>, p: &Path) -> Res<T> {
-	let r = Res::to(r);
-	r.map_err(|e| format!("Could not open file '{:?}'\nErr: {}", p, e))
+	r.map_err(|e| format!("Could not open file {:?}\n{}", p, e))
 }

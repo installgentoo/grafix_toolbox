@@ -2,7 +2,7 @@ use super::obj::*;
 use super::sprite::{gui__pos_col_tex_vs, sampler};
 use super::sprite9::{sprite9_idxs, write_sprite9};
 use crate::uses::{math::*, *};
-use crate::GL::{shader::*, window::*, VTex2d, VaoBinding, RGBA};
+use crate::GL::{atlas::VTex2d, shader::*, window::*, VaoBinding, RGBA};
 
 pub struct Frame9<'a> {
 	pub pos: Vec2,
@@ -70,16 +70,16 @@ impl Object for Frame9Impl {
 SHADER!(
 	gui__frame_ps,
 	r"#version 330 core
-in vec4 glColor;
-in vec2 glTexCoord;
-layout(location = 0)out vec4 glFragColor;
-uniform sampler2D src;
-uniform vec3 theme_coords;
+	in vec4 glColor;
+	in vec2 glTexCoord;
+	layout(location = 0)out vec4 glFragColor;
+	uniform sampler2D src;
+	uniform vec3 theme_coords;
 
-void main()
-{
-float d = min(0.9, length(glTexCoord));
-vec4 c = texture(src, theme_coords.xy + vec2(d * theme_coords.z, 0.));
-glFragColor = glColor * c;
-}"
+	void main()
+	{
+		float d = min(0.9, length(glTexCoord));
+		vec4 c = texture(src, theme_coords.xy + vec2(d * theme_coords.z, 0.));
+		glFragColor = glColor * c;
+	}"
 );

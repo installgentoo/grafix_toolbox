@@ -5,7 +5,7 @@ pub trait State {
 	fn tracked_obj() -> &'static mut u32;
 	unsafe fn bind(_: u32) {}
 	unsafe fn gen(obj: &mut u32) {
-		GL::glCreateBuffer(obj);
+		GL::unigl::glCreateBuffer(obj);
 	}
 	unsafe fn del(obj: &mut u32) {
 		gl::DeleteBuffers(1, obj);

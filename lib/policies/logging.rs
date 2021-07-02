@@ -1,13 +1,21 @@
 pub use crate::lib::policies::casts::result::{UniformUnwrap, UniformUnwrapOrDefault};
-use crate::uses::Async::{chan::*, fs::File, pre::*, sync::Once, task::*};
-use crate::uses::{Sync::sync::Mutex, *};
+use crate::uses::asyn::{chan::*, fs::File, pre::*, sync::Once, task::*};
+use crate::uses::{sync::sync::Mutex, *};
 
 pub async fn Term() -> Unblock<io::Stdout> {
 	Unblock::new(io::stdout())
 }
 
+pub async fn TermErr() -> Unblock<io::Stderr> {
+	Unblock::new(io::stderr())
+}
+
 pub async fn File() -> File {
 	File::create("log.txt").await.expect("E| Couldn't create log file")
+}
+
+pub async fn Null() -> Unblock<io::Sink> {
+	Unblock::new(io::sink())
 }
 
 #[derive(Copy, Clone)]

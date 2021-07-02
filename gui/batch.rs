@@ -17,7 +17,7 @@ impl Batch {
 	pub fn new(z: u32) -> Self {
 		Self {
 			idxs: vec![Obj { idx: z, size: 0 }],
-			..Default::default()
+			..Def()
 		}
 	}
 	pub fn typ<'a>(&self, objs: &'a [Primitive]) -> &'a ObjStore {

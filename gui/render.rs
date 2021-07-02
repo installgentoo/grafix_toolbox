@@ -1,7 +1,7 @@
 use super::{objects::*, parts::*};
 use crate::events::*;
 use crate::uses::{math::*, *};
-use crate::GL::{opengl, spec, window::*, Vao, RGB, RGBA};
+use crate::GL::{spec, window::*, Vao, RGB, RGBA};
 
 macro_rules! Draw {
 	($t: ty, $draw_spec: tt) => {
@@ -132,13 +132,13 @@ impl Renderer {
 		RenderLock {
 			r: self,
 			clip: vec![((-L, -L), (L, L))],
-			..Default::default()
+			..Def()
 		}
 	}
 	pub fn default() -> Self {
 		Self {
 			aspect: Window::aspect(),
-			..Default::default()
+			..Def()
 		}
 	}
 	fn consume_events(&mut self, logics: Vec<LogicStorage>, events: &mut Vec<Event>) {

@@ -1,4 +1,4 @@
-use super::{state::*, tex_state::*};
+use super::{state::*, tex_state::*, universion::*};
 use crate::uses::*;
 
 macro_rules! m_state {
@@ -59,7 +59,7 @@ impl State for VertArrObj {
 		gl::BindVertexArray(obj);
 	}
 	unsafe fn gen(obj: &mut u32) {
-		GL::glCreateVao(obj);
+		glCreateVao(obj);
 	}
 	unsafe fn del(obj: &mut u32) {
 		gl::DeleteVertexArrays(1, obj);
@@ -86,7 +86,7 @@ impl State for Framebuff {
 		gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, obj);
 	}
 	unsafe fn gen(obj: &mut u32) {
-		GL::glCreateFramebuff(obj);
+		glCreateFramebuff(obj);
 	}
 	unsafe fn del(obj: &mut u32) {
 		gl::DeleteFramebuffers(1, obj);
@@ -98,7 +98,7 @@ pub struct Renderbuff;
 impl State for Renderbuff {
 	m_state!();
 	unsafe fn gen(obj: &mut u32) {
-		GL::glCreateRenderbuff(obj);
+		glCreateRenderbuff(obj);
 	}
 	unsafe fn del(obj: &mut u32) {
 		gl::DeleteRenderbuffers(1, obj);
@@ -125,11 +125,11 @@ pub struct Texture<T> {
 impl<T: TexType> State for Texture<T> {
 	m_state!();
 	unsafe fn gen(obj: &mut u32) {
-		GL::glCreateTexture(T::TYPE, obj);
+		glCreateTexture(T::TYPE, obj);
 	}
 	unsafe fn del(obj: &mut u32) {
 		TexState::drop_tex(*obj);
-		GL::glDeleteTexture(obj);
+		glDeleteTexture(obj);
 	}
 }
 

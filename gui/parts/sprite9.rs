@@ -1,7 +1,7 @@
 use super::obj::*;
 use super::sprite::{gui__col_tex_ps, gui__pos_col_tex_vs, sampler};
 use crate::uses::{math::*, *};
-use crate::GL::{shader::*, tex::*, window::*, VTex2d, VaoBinding};
+use crate::GL::{atlas::VTex2d, shader::*, tex::*, window::*, VaoBinding};
 
 pub struct Sprite9<'a, S> {
 	pub pos: Vec2,

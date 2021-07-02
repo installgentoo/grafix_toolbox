@@ -22,6 +22,10 @@ macro_rules! impl_trait_for {
 	};
 }
 
+pub fn Def<T: Default>() -> T {
+	Default::default()
+}
+
 pub trait Utf8Len {
 	fn utf8_len(&self) -> usize;
 	fn len_at_char(&self, i: usize) -> usize;
@@ -64,7 +68,7 @@ impl<T: Default> OrAssignment for T {
 		if with {
 			self
 		} else {
-			Self::default()
+			Def()
 		}
 	}
 	#[inline(always)]
@@ -100,7 +104,7 @@ impl<T: Default> ResizeDefault for Vec<T> {
 		if self.len() <= size {
 			self.reserve(size);
 			for _ in 0..size - self.len() {
-				self.push(T::default());
+				self.push(Def());
 			}
 		} else {
 			self.truncate(size);

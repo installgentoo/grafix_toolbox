@@ -1,7 +1,7 @@
 use super::obj::*;
 use super::sprite::{gui__pos_col_tex_vs, sampler};
 use crate::uses::{math::*, *};
-use crate::GL::{font::*, shader::*, window::*, Font, VaoBinding};
+use crate::GL::{font::*, shader::*, window::*, VaoBinding};
 
 pub struct Text<'a, 'b> {
 	pub pos: Vec2,
@@ -33,8 +33,7 @@ impl<'a, 'b> Text<'a, 'b> {
 		(size, (&text[..i], &text[i..]))
 	}
 	pub fn adv_at(text: &str, font: &Font, scale: f32, at_glyph: usize) -> f32 {
-		text
-			.chars()
+		text.chars()
 			.take(at_glyph)
 			.scan((-font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char), |(x, last_c), c| {
 				*x += font.kern(*last_c, c);
@@ -49,7 +48,7 @@ impl<'a, 'b> Text<'a, 'b> {
 	}
 	pub fn char_at(text: &str, font: &Font, scale: f32, at_glyph: usize) -> Glyph {
 		text.chars().take(at_glyph + 1).last().map_or_else(
-			|| Glyph::default(),
+			|| Def(),
 			|c| {
 				let Glyph { adv, coord, uv } = *font.char(c);
 				let coord = coord.mul(scale);
@@ -181,50 +180,50 @@ impl<'a> Object for TextImpl {
 SHADER!(
 	gui_sdftext_ps,
 	r"#version 330 core
-in vec4 glColor;
-in vec2 glTexCoord;
-layout(location = 0)out vec4 glFragColor;
-uniform sampler2D src;
+	in vec4 glColor;
+	in vec2 glTexCoord;
+	layout(location = 0)out vec4 glFragColor;
+	uniform sampler2D src;
 
-void main()
-{
-ivec2 sz = textureSize(src, 0);
+	void main()
+	{
+		ivec2 sz = textureSize(src, 0);
 
-float dx = dFdx( glTexCoord.x ) * sz.x;
-float dy = dFdy( glTexCoord.y ) * sz.y;
+		float dx = dFdx( glTexCoord.x ) * sz.x;
+		float dy = dFdy( glTexCoord.y ) * sz.y;
 
-float toPixels = 8 * inversesqrt( dx * dx + dy * dy );
+		float toPixels = 8 * inversesqrt( dx * dx + dy * dy );
 
-vec2 step = vec2(dFdx(glTexCoord.x) * 0.5, 0.);
+		vec2 step = vec2(dFdx(glTexCoord.x) * 0.5, 0.);
 
-float pix_l = texture(src, glTexCoord.xy - step).r - 0.5;
-float pix_r = texture(src, glTexCoord.xy + step).r - 0.5;
-float pix_n = texture(src, glTexCoord.xy + step * 2.).r - 0.5;
+		float pix_l = texture(src, glTexCoord.xy - step).r - 0.5;
+		float pix_r = texture(src, glTexCoord.xy + step).r - 0.5;
+		float pix_n = texture(src, glTexCoord.xy + step * 2.).r - 0.5;
 
-float pix = clamp((texture(src, glTexCoord.xy).r - 0.5) * 8 * toPixels + 0.5 , 0., 1.);
+		float pix = clamp((texture(src, glTexCoord.xy).r - 0.5) * 8 * toPixels + 0.5 , 0., 1.);
 
-pix_l = clamp(pix_l * toPixels + 1, 0., 1.);
-pix_r = clamp(pix_r * toPixels + 1, 0., 1.);
-pix_n = clamp(pix_n * toPixels + 1, 0., 1.);
+		pix_l = clamp(pix_l * toPixels + 1, 0., 1.);
+		pix_r = clamp(pix_r * toPixels + 1, 0., 1.);
+		pix_n = clamp(pix_n * toPixels + 1, 0., 1.);
 
-pix = ( pix_l + pix_r + pix ) / 3.;
+		pix = ( pix_l + pix_r + pix ) / 3.;
 
-vec4 correction = vec4(vec3(pix_l, pix_r, pix_n), pix);
+		vec4 correction = vec4(vec3(pix_l, pix_r, pix_n), pix);
 
-/*// Antialias
-float center = texture(src, glTexCoord.xy).r;
-float dscale = 0.354; // half of 1/sqrt2
-float friends = 0.5;  // scale value to apply to neighbours
+		/*// Antialias
+		float center = texture(src, glTexCoord.xy).r;
+		float dscale = 0.354; // half of 1/sqrt2
+		float friends = 0.5; // scale value to apply to neighbours
 
-vec2 duv = dscale * (dFdx(v_uv) + dFdy(v_uv));
-vec4 box = vec4(v_uv-duv, v_uv+duv);
+		vec2 duv = dscale * (dFdx(v_uv) + dFdy(v_uv));
+		vec4 box = vec4(v_uv-duv, v_uv+duv);
 
-vec4 c = samp( box.xy ) + samp( box.zw ) + samp( box.xw ) + samp( box.zy );
-float sum = 4.; // 4 neighbouring samples
+		vec4 c = samp( box.xy ) + samp( box.zw ) + samp( box.xw ) + samp( box.zy );
+		float sum = 4.; // 4 neighbouring samples
 
-rgbaOut = fontColor * (center + friends * c) / (1. + sum*friends);
-*/
+		rgbaOut = fontColor * (center + friends * c) / (1. + sum*friends);
+		*/
 
-glFragColor = glColor * correction;
-}"
+		glFragColor = glColor * correction;
+	}"
 );

@@ -67,24 +67,24 @@ impl Object for RectImpl {
 SHADER!(
 	gui__pos_col_vs,
 	r"#version 330 core
-layout(location = 0)in vec4 Position;
-layout(location = 1)in vec4 Color;
-out vec4 glColor;
+	layout(location = 0)in vec4 Position;
+	layout(location = 1)in vec4 Color;
+	out vec4 glColor;
 
-void main()
-{
-gl_Position = vec4(Position.xyz, 1.);
-glColor = Color;
-}"
+	void main()
+	{
+		gl_Position = vec4(Position.xyz, 1.);
+		glColor = Color;
+	}"
 );
 SHADER!(
 	gui__col_ps,
 	r"#version 330 core
-in vec4 glColor;
-layout(location = 0)out vec4 glFragColor;
+	in vec4 glColor;
+	layout(location = 0)out vec4 glFragColor;
 
-void main()
-{
-glFragColor = glColor;
-}"
+	void main()
+	{
+		glFragColor = glColor;
+	}"
 );

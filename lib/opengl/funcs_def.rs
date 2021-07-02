@@ -33,9 +33,9 @@ SWITCH!(TEXTURE_CUBE_MAP_SEAMLESS);
 
 #[macro_export]
 macro_rules! GLEnable {
-($f: ty) => {{ use opengl::*; <$f>::Enable(); }};
+($f: ty) => {{ use crate::uses::GL::states::*; <$f>::Enable(); }};
 ($f: ty, $($n: ty),+) => {{
-	use opengl::*;
+	use crate::uses::GL::states::*;
 	<$f>::Enable();
 	GLEnable!($($n),+);
 }};
@@ -43,9 +43,9 @@ macro_rules! GLEnable {
 
 #[macro_export]
 macro_rules! GLDisable {
-($f: ty) => {{ use opengl::*; <$f>::Disable(); }};
+($f: ty) => {{ use crate::uses::GL::states::*; <$f>::Disable(); }};
 ($f: ty, $($n: ty),+) => {{
-	use opengl::*;
+	use crate::uses::GL::states::*;
 	<$f>::Disable();
 	GLDisable!($($n),+);
 }};
@@ -53,9 +53,9 @@ macro_rules! GLDisable {
 
 #[macro_export]
 macro_rules! GLSave {
-($f: ty) => {{ use opengl::*; <$f>::Save(); }};
+($f: ty) => {{ use crate::uses::GL::states::*; <$f>::Save(); }};
 ($f: ty, $($n: ty),+) => {{
-	use opengl::*;
+	use crate::uses::GL::states::*;
 	<$f>::Save();
 	GLSave!($($n),+);
 }};
@@ -63,9 +63,9 @@ macro_rules! GLSave {
 
 #[macro_export]
 macro_rules! GLRestore {
-($f: ty) => {{ use opengl::*; <$f>::Restore(); }};
+($f: ty) => {{ use crate::uses::GL::states::*; <$f>::Restore(); }};
 ($f: ty, $($n: ty),+) => {{
-	use opengl::*;
+	use crate::uses::GL::states::*;
 	<$f>::Restore();
 	GLRestore!($($n),+);
 }};

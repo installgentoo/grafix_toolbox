@@ -16,7 +16,7 @@ macro_rules! CONCAT {
 macro_rules! EXPECT {
 	($e: expr) => {{
 		use logging::UniformUnwrap;
-		$e.uni_or_else(|_e| ASSERT!(false, "{:?}", _e))
+		$e.uni_or_else(|_e| ASSERT!(false, "{}", _e))
 	}};
 	($e: expr, $($t: tt)+) => {{
 		use logging::UniformUnwrap;
@@ -34,9 +34,10 @@ macro_rules! PASS {
 	};
 }
 
+#[macro_export]
 macro_rules! OR_DEF {
 	($e: expr) => {{
-		EXPECT_OR_DEF_IMPL!($e, "{:?}")
+		EXPECT_OR_DEF_IMPL!($e, "{}")
 	}};
 	($e: expr, $($t: tt)+) => {{
 		EXPECT_OR_DEF_IMPL!($e, $($t)+)

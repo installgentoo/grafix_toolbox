@@ -1,4 +1,4 @@
-use super::{bindless::*, object::*, policy::*, texture::*, types::*};
+use super::{object::*, policy::*, texture::*, types::*, universion::*};
 use crate::uses::*;
 
 pub type Framebuffer = Object<Framebuff>;

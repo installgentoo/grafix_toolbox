@@ -23,7 +23,7 @@ pub struct Font {
 }
 impl Font {
 	pub fn tex(&self) -> &Tex2d<RED, u8> {
-		self.tex.as_ref().unwrap_or_else(|| UnsafeOnce!(Tex2d<RED, u8>, { Tex2d::default() }))
+		self.tex.as_ref().unwrap_or_else(|| UnsafeOnce!(Tex2d<RED, u8>, { Def() }))
 	}
 	pub fn char(&self, c: char) -> &Glyph {
 		let g = &self.glyphs;
@@ -158,7 +158,7 @@ impl PartialEq for ImgBox {
 		if self.w != r.w && self.h != r.h {
 			return false;
 		}
-		let diff = self.data.iter().zip(r.data.iter()).map(|(l, r)| (*l as i32 - *r as i32).abs()).max().unwrap_or(0);
+		let diff = self.data.iter().zip(&r.data).map(|(l, r)| (*l as i32 - *r as i32).abs()).max().unwrap_or(0);
 		diff < 5
 	}
 }

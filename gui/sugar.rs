@@ -1,5 +1,5 @@
 use super::{parts::*, *};
-use crate::uses::{math::*, GL::window::*, GL::Font, *};
+use crate::uses::{math::*, GL::font::Font, GL::window::*, *};
 
 #[derive(Default)]
 pub struct Theme {
@@ -137,7 +137,7 @@ fn clip_store() -> &'static mut (String, bool) {
 }
 
 fn theme() -> &'static mut Theme {
-	UnsafeOnce!(Theme, { Theme::default() })
+	UnsafeOnce!(Theme, { Def() })
 }
 fn t() -> &'static Theme {
 	let t = theme();

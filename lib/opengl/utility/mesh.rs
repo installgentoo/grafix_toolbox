@@ -1,4 +1,4 @@
-use crate::uses::*;
+use crate::uses::{mem::ManuallyDrop, *};
 use crate::GL::{buffer::*, spec::*};
 
 pub mod Screen {
@@ -8,12 +8,12 @@ pub mod Screen {
 		_xyuv: AttrArr<i8>,
 	}
 	pub fn Draw() {
-		UnsafeOnce!(Model, {
+		UnsafeLocal!(ManuallyDrop<Model>, {
 			#[rustfmt::skip]
 			let _xyuv = AttrArr::new([ -1, -1, 0, 0,  3, -1, 2, 0,  -1, 3, 0, 2 ]);
 			let mut vao = Vao::new();
 			vao.AttribFmt(&_xyuv, (0, 4));
-			Model { vao, _xyuv }
+			ManuallyDrop::new(Model { vao, _xyuv })
 		})
 		.vao
 		.Bind()
@@ -34,7 +34,7 @@ pub mod Skybox {
 		_xyz: AttrArr<i8>,
 	}
 	pub fn Draw() {
-		UnsafeOnce!(Model, {
+		UnsafeLocal!(ManuallyDrop<Model>, {
 			#[rustfmt::skip]
 			let _idx = IdxArr::new([ 0, 1, 3,  3, 1, 2,
 									 4, 5, 7,  7, 5, 6,
@@ -48,7 +48,7 @@ pub mod Skybox {
 			let mut vao = Vao::new();
 			vao.BindIdxs(&_idx);
 			vao.AttribFmt(&_xyz, (0, 3));
-			Model { vao, _idx, _xyz }
+			ManuallyDrop::new(Model { vao, _idx, _xyz })
 		})
 		.vao
 		.Bind()

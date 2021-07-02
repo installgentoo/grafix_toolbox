@@ -1,6 +1,6 @@
 use crate::glsl::*;
 use crate::uses::*;
-use crate::GL::{opengl, sampler::*, shader::*, tex::*, Fbo, Screen};
+use crate::GL::{mesh::Screen, shader::*, tex::*, Fbo, *};
 
 pub struct SdfGenerator {
 	dst_t: Shader,
@@ -62,55 +62,55 @@ impl SdfGenerator {
 SHADER!(
 	sdf__distance_transform_v_ps,
 	r"#version 330 core
-in vec2 glTexCoord;
-layout(location = 0)out vec4 glFragColor;
-uniform sampler2D tex;
-uniform int r;
-uniform vec2 step;
-uniform float side;
+	in vec2 glTexCoord;
+	layout(location = 0)out vec4 glFragColor;
+	uniform sampler2D tex;
+	uniform int r;
+	uniform vec2 step;
+	uniform float side;
 
-void main()
-{
-for(int i=0; i<r; ++i)
-{
-vec2 o = step * float(i);
-float t = side * 0.5;
-if((side * texture(tex, glTexCoord + o).r > t) || (side * texture(tex, glTexCoord - o).r > t))
-{
-glFragColor = vec4(vec3(float(i) / r), 1.);
-return;
-}
-}
+	void main()
+	{
+		for(int i=0; i<r; ++i)
+		{
+			vec2 o = step * float(i);
+			float t = side * 0.5;
+			if((side * texture(tex, glTexCoord + o).r > t) || (side * texture(tex, glTexCoord - o).r > t))
+			{
+				glFragColor = vec4(vec3(float(i) / r), 1.);
+				return;
+			}
+		}
 
-glFragColor = vec4(1);
-}"
+		glFragColor = vec4(1);
+	}"
 );
 
 SHADER!(
 	sdf__distance_transform_ps,
 	r"#version 330 core
-in vec2 glTexCoord;
-layout(location = 0)out vec4 glFragColor;
-uniform sampler2D tex_i, tex_o;
-uniform int r;
-uniform vec2 step;
+	in vec2 glTexCoord;
+	layout(location = 0)out vec4 glFragColor;
+	uniform sampler2D tex_i, tex_o;
+	uniform int r;
+	uniform vec2 step;
 
-void main()
-{
-float d_i = texture(tex_i, glTexCoord).r;
-float d_o = texture(tex_o, glTexCoord).r;
+	void main()
+	{
+		float d_i = texture(tex_i, glTexCoord).r;
+		float d_o = texture(tex_o, glTexCoord).r;
 
-for(int i=1; i<r; ++i)
-{
-float v = float(i) / r;
-vec2 o = step * float(i);
-d_o = min(d_o, min(length(vec2(v, texture(tex_o, glTexCoord + o).r)), length(vec2(v, texture(tex_o, glTexCoord - o).r))));
-d_i = min(d_i, min(length(vec2(v, texture(tex_i, glTexCoord + o).r)), length(vec2(v, texture(tex_i, glTexCoord - o).r))));
-}
+		for(int i=1; i<r; ++i)
+		{
+			float v = float(i) / r;
+			vec2 o = step * float(i);
+			d_o = min(d_o, min(length(vec2(v, texture(tex_o, glTexCoord + o).r)), length(vec2(v, texture(tex_o, glTexCoord - o).r))));
+			d_i = min(d_i, min(length(vec2(v, texture(tex_i, glTexCoord + o).r)), length(vec2(v, texture(tex_i, glTexCoord - o).r))));
+		}
 
-d_o = 0.5 - d_o * 0.5;
-d_i = 0.5 + d_i * 0.5;
+		d_o = 0.5 - d_o * 0.5;
+		d_i = 0.5 + d_i * 0.5;
 
-glFragColor = vec4(vec3(mix(d_o, d_i, float(d_i > 0.5))), 1.);
-}"
+		glFragColor = vec4(vec3(mix(d_o, d_i, float(d_i > 0.5))), 1.);
+	}"
 );

@@ -1,6 +1,6 @@
 use crate::events::*;
-use crate::uses::{adapters::*, math::*, Sync::chan::Receiver, *};
-use std::ffi::CStr;
+use crate::uses::{adapters::*, math::*, sync::sync::*, threads::*, *};
+use std::{ffi::CStr, sync::mpsc::Receiver, sync::Barrier};
 
 pub trait WindowPolicy {
 	fn size() -> uVec2;
@@ -11,7 +11,7 @@ pub trait WindowPolicy {
 	fn set_clipboard(&mut self, str: &str);
 	fn resize(&mut self, size: uVec2);
 
-	fn draw_to_misc(&mut self);
+	fn spawn_offhand_gl<F: 'static + Send + FnOnce()>(&mut self, f: F) -> JoinHandle<Res<()>>;
 	fn draw_to_screen(&mut self);
 	fn poll_events(&mut self) -> Vec<Event>;
 	fn swap(&mut self);
@@ -21,7 +21,6 @@ pub type Window = GlfwWindow;
 
 pub struct GlfwWindow {
 	window: glfw::Window,
-	offhand_ctx: glfw::Window,
 	events: Receiver<(f64, glfw::WindowEvent)>,
 	resized_hint: bool,
 }
@@ -33,7 +32,7 @@ impl GlfwWindow {
 			let mut ctx = PASS!(glfw::init(FAIL_ON_ERRORS), |e| CONCAT!("GLFW initialization failed, ", &e));
 
 			ctx.window_hint(ClientApi(ClientApiHint::OpenGl));
-			ctx.window_hint(ContextVersion(GL::GL_VERSION.0, GL::GL_VERSION.1));
+			ctx.window_hint(ContextVersion(GL::unigl::GL_VERSION.0, GL::unigl::GL_VERSION.1));
 			ctx.window_hint(OpenGlForwardCompat(true));
 			ctx.window_hint(OpenGlDebugContext(false));
 			ctx.window_hint(OpenGlProfile(OpenGlProfileHint::Core));
@@ -45,12 +44,6 @@ impl GlfwWindow {
 
 		let (x, y, w, h) = args.get();
 		let (mut window, events) = PASS!(init_ctx()?.create_window(w, h, title, WindowMode::Windowed), |_| "Failed to create GLFW window.");
-
-		window.glfw.window_hint(Visible(false));
-		let offhand_ctx = match window.create_shared(1, 1, "offhand_dummy", WindowMode::Windowed) {
-			None => return Err("Failed to create offhand context.".into()),
-			Some((w, _)) => w,
-		};
 
 		window.set_pos(x, y);
 		window.make_current();
@@ -66,11 +59,11 @@ impl GlfwWindow {
 
 		let version = PASS!(unsafe { CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8) }.to_str());
 		PRINT!("Initialized OpenGL, {}", version);
+		GL::macro_uses::gl_was_initialized(true);
 
 		Self::set_size((w, h));
 		Ok(GlfwWindow {
 			window,
-			offhand_ctx,
 			events,
 			resized_hint: true,
 		})
@@ -118,10 +111,37 @@ impl WindowPolicy for GlfwWindow {
 		self.window.set_size(w, h);
 		self.resized_hint = true;
 	}
-	fn draw_to_misc(&mut self) {
-		use glfw::Context;
-		ASSERT!(!self.window.is_current(), "Tried making offhand context current on main thread");
-		self.offhand_ctx.make_current();
+	fn spawn_offhand_gl<F: 'static + Send + FnOnce()>(&mut self, f: F) -> JoinHandle<Res<()>> {
+		use glfw::{WindowHint::*, *};
+		let ctx = &mut self.window as *mut _ as usize;
+		let ctx_lock = Arc::new(Barrier::new(2));
+		let ret = {
+			let ctx_lock = ctx_lock.clone();
+			thread::Builder::new()
+				.name("gl_offhand".into())
+				.spawn(move || {
+					let mut ctx = {
+						let ctx = unsafe { &mut *(ctx as *mut glfw::Window) };
+						ctx.make_current();
+						ctx.glfw.window_hint(Visible(false));
+						match ctx.create_shared(1, 1, "offhand_dummy", WindowMode::Windowed) {
+							None => {
+								ctx_lock.wait();
+								return Err("Failed to create offhand context.".into());
+							}
+							Some((w, _)) => w,
+						}
+					};
+					ctx.make_current();
+					ctx_lock.wait();
+					GL::macro_uses::gl_was_initialized(true);
+					Ok(f())
+				})
+				.unwrap()
+		};
+		ctx_lock.wait();
+		self.window.make_current();
+		ret
 	}
 	fn draw_to_screen(&mut self) {
 		let (w, h) = *Self::_size();

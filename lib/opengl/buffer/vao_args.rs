@@ -54,10 +54,6 @@ where
 	}
 }
 
-pub fn idxcheck_map() -> &'static mut HashSet<u32> {
-	UnsafeOnce!(HashSet<u32>, { HashSet::new() })
-}
-
 pub fn to_glbool(b: bool) -> GLbool {
 	if b {
 		gl::TRUE

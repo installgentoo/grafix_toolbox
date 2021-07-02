@@ -32,7 +32,7 @@ impl TupleAllAny for (bool, bool, bool, bool) {
 pub trait TupleVecIdentity: Default {
 	fn one() -> Self;
 	fn zero() -> Self {
-		Self::default()
+		Def()
 	}
 }
 impl<T: Cast<u32> + Default> TupleVecIdentity for vec2<T> {

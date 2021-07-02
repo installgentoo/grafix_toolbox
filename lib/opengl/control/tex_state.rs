@@ -1,4 +1,4 @@
-use super::policy::*;
+use super::{policy::*, universion::*};
 use crate::uses::*;
 
 struct Units {
@@ -86,7 +86,7 @@ pub mod TexState {
 		*unit = obj;
 		let u = u32::to(empty);
 		DEBUG!("Binding GL {} {} to unit {}", type_name!(Texture<T>), obj, u);
-		GLCheck!(GL::glBindTextureUnit(T::TYPE, u, obj));
+		GLCheck!(glBindTextureUnit(T::TYPE, u, obj));
 		if *samp != s {
 			*samp = s;
 			DEBUG!("Binding GL {} {} to unit {}", type_name!(SamplObj), s, u);
@@ -131,7 +131,7 @@ pub mod TexState {
 		*unit = obj;
 		let u = u32::to(empty);
 		DEBUG!("Binding GL {} {} to unit {}", type_name!(Texture<T>), obj, u);
-		GLCheck!(GL::glBindTextureUnit(T::TYPE, u, obj));
+		GLCheck!(glBindTextureUnit(T::TYPE, u, obj));
 		DEBUG!("GL texture units: {:?}", units);
 		u
 	}

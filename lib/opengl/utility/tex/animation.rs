@@ -30,7 +30,7 @@ impl<'a, S: TexSize> Animation<'a, S> {
 		ASSERT!(!frames.is_empty(), "Empty animation file {}", anim_desc);
 		let frames: Vec<_> = frames
 			.into_iter()
-			.zip(starts.iter().zip(starts.iter().chain([time].iter()).skip(1)))
+			.zip(starts.iter().zip(starts.iter().chain(&[time]).skip(1)))
 			.map(|(f, (&s, &e))| ((s, e).div(time), f))
 			.collect();
 

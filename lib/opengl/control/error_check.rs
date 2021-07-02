@@ -6,12 +6,17 @@ macro_rules! GLCheck {
 	}};
 }
 
+pub fn gl_was_initialized(set: bool) -> bool {
+	*UnsafeLocal!(bool, { set })
+}
+
 #[cfg(debug_assertions)]
 #[macro_export]
 macro_rules! GLCheck {
 	($fun: expr) => {{
-		pub type CowStr = std::borrow::Cow<'static, str>;
-		fn code_to_error(code: gl::types::GLenum) -> CowStr {
+		ASSERT!(crate::uses::GL::macro_uses::gl_was_initialized(false), "Opengl wasn't initialized on this thread");
+
+		fn code_to_error(code: gl::types::GLenum) -> String {
 			match code {
 				gl::INVALID_ENUM => "GL_INVALID_ENUM".into(),
 				gl::INVALID_VALUE => "GL_INVALID_VALUE".into(),

@@ -1,4 +1,4 @@
-use super::{bindless::*, format::*, object::*, policy::*, state::*, tex_state::*, tex_type::*};
+use super::{format::*, object::*, policy::*, state::*, tex_state::*, tex_type::*, universion::*};
 use crate::uses::*;
 
 pub struct TexBuffer<'a, S, F, B: State> {

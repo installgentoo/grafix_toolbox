@@ -11,38 +11,43 @@ pub struct Model {
 impl Model {
 	pub fn load_models(file: &str, scale: f32) -> Res<Vec<Model>> {
 		let file = &CONCAT!["res/", file, ".obj"];
-		let (models, _) = tobj::load_obj(file, true).map_err(|e| format!("Can't load models in {}, {:?}", file, e))?;
+		let (models, _) = tobj::load_obj(
+			file,
+			&tobj::LoadOptions {
+				single_index: true,
+				triangulate: true,
+				ignore_points: true,
+				ignore_lines: true,
+				..Def()
+			},
+		)
+		.map_err(|e| format!("Can't load models in {}, {:?}", file, e))?;
 		let models = models
 			.into_iter()
 			.map(|m| {
-				let mesh = m.mesh;
-				ASSERT!(!mesh.num_face_indices.iter().any(|n| *n != 3), "Model was not triangulated!");
-				let idxs = (0..mesh.num_face_indices.len()).flat_map(|f| mesh.indices[f * 3..f * 3 + 3].to_vec()).collect::<Vec<_>>();
-				let (mut xyz, mut uv, mut norm) = (vec![], vec![], vec![]);
+				let m = m.mesh;
+				let (idxs, xyz, uv, mut norm) = (
+					m.indices,
+					m.positions,
+					m.texcoords.iter().map(|v| f16::to(*v)).collect(),
+					m.normals.iter().map(|v| f16::to(*v)).collect::<Vec<_>>(),
+				);
 				let (mut min, mut max) = ((0., 0., 0.), (0., 0., 0.));
-				for i in 0..mesh.positions.len() / 3 {
-					let i = (i * 3) as usize;
-					xyz.extend(&mesh.positions[i..i + 3]);
-					let v = Vec3::to(&mesh.positions[i..]);
+				for i in (0..xyz.len()).step_by(3) {
+					let v = Vec3::to(&xyz[i..]);
 					min = min.fmin(v);
 					max = max.fmax(v);
-					if !mesh.texcoords.is_empty() {
-						uv.extend(mesh.texcoords[i..i + 3].iter().map(|v| f16::to(*v)));
-					}
-					if !mesh.normals.is_empty() {
-						norm.extend(mesh.normals[i..i + 3].iter().map(|v| f16::to(*v)));
-					} else if i % 9 == 0 && i + 8 < mesh.positions.len() {
-						let xyz = &mesh.positions[i..];
-						let (v1, v2, v3) = (Vec3::to(&xyz[..]), Vec3::to(&xyz[3..]), Vec3::to(&xyz[6..]));
-						use glm::Vec3 as V3;
+					if m.normals.is_empty() && i % 9 == 0 && i + 8 < xyz.len() {
+						let xyz = &xyz[i..];
+						let (v1, v2, v3) = vec3::<Vec3>::to((xyz, &xyz[3..], &xyz[6..]));
 						let ndir = v1.sum(v2).sum(v3).div(3).sgn();
-						let n = <[_; 3]>::to(vec3::<f16>::to(Vec3::to(glm::triangle_normal(&V3::to(v1), &V3::to(v2), &V3::to(v3))).mul(ndir)));
+						let (v1, v2, v3) = vec3::<glm::Vec3>::to((v1, v2, v3));
+						let n = <[_; 3]>::to(vec3::<f16>::to(Vec3::to(glm::triangle_normal(&v1, &v2, &v3)).mul(ndir)));
 						(0..9).for_each(|i| norm.push(n[i % 3]));
 					}
 				}
 				let d: Vec3 = max.sub(min);
-				let scale = (1., 1., 1.).div(d.x().max(d.y()).max(d.z())).mul(scale);
-				let center = max.sum(min).div(2);
+				let (center, scale) = (max.sum(min).div(2), (1., 1., 1.).div(d.x().max(d.y()).max(d.z())).mul(scale));
 				let xyz = xyz.chunks(3).flat_map(|s| <[_; 3]>::to((Vec3::to(s)).sub(center).mul(scale)).to_vec()).collect::<Vec<_>>();
 				Model { idxs, xyz, uv, norm }
 			})
@@ -112,14 +117,13 @@ impl Mesh<u16, f32, f16, f32> {
 		let idx = IdxArr::new(idx);
 		let xyz = AttrArr::new(xyz);
 		let uv = AttrArr::new(uv);
-		let norm = AttrArr::default();
 
 		let mut vao = Vao::new();
 		vao.BindIdxs(&idx);
 		vao.AttribFmt(&xyz, (0, 3));
 		vao.AttribFmt(&uv, (1, 2));
 		vao.AttribFmt(&xyz, (2, 3));
-		let buff = (idx, xyz, Some(uv), norm);
+		let buff = (idx, xyz, Some(uv), Def());
 
 		Self { vao, buff, draw }
 	}
@@ -159,7 +163,7 @@ impl Model {
 		let (_, c, _) = unsafe { xyz.align_to() };
 		let (_, t, _) = unsafe { uv.align_to() };
 		let (_, n, _) = unsafe { norm.align_to() };
-		v.extend(il.iter().chain(cl.iter()).chain(tl.iter()).chain(i).chain(c).chain(t).chain(n));
+		v.extend(il.iter().chain(&cl).chain(&tl).chain(i).chain(c).chain(t).chain(n));
 		v
 	}
 	pub fn from_bytes(v: &[u8]) -> Self {

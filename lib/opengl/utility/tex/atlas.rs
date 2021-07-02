@@ -40,10 +40,8 @@ pub fn pack_into_atlas<K: Eq + hash::Hash + Clone + Debug, T: Tile<F>, S: TexSiz
 					let x = usize::to(i) * w;
 					atlas[b..b + w].copy_from_slice(&d[x..x + w])
 				}
-			} else {
-				if let Some((id, img)) = tiles[i].take() {
-					tail.push((id, img));
-				}
+			} else if let Some((id, img)) = tiles[i].take() {
+				tail.push((id, img));
 			};
 		}
 	}

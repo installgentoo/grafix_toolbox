@@ -1,4 +1,4 @@
-use crate::uses::Sync::sync::{Mutex, Once};
+use crate::uses::sync::sync::{Mutex, Once};
 use crate::uses::{time::*, *};
 use crate::GL;
 

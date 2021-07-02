@@ -1,31 +1,20 @@
-use super::{bindless::*, buffer::*, format::*, object::*, policy::*, types::*, vao_args::*};
+use super::{buffer::*, format::*, object::*, policy::*, types::*, universion::*, vao_args::*};
 use crate::uses::*;
 
 #[derive(Default)]
-pub struct Vao<D> {
+pub struct Vao<I> {
 	o: Object<VertArrObj>,
-	d: Dummy<D>,
+	d: Dummy<I>,
 }
-impl<D: IdxType> Vao<D> {
+impl<I: IdxType> Vao<I> {
 	pub fn new() -> Self {
 		Self { o: Object::new(), d: Dummy }
 	}
 	pub fn obj(&self) -> u32 {
 		self.o.obj
 	}
-	pub fn Bind(&mut self) -> VaoBinding<D> {
+	pub fn Bind(&mut self) -> VaoBinding<I> {
 		VaoBinding::new(self)
-	}
-}
-
-pub struct VaoBinding<'l, D> {
-	_b: Binding<'l, VertArrObj>,
-	d: Dummy<D>,
-}
-impl<'l, D: IdxType> VaoBinding<'l, D> {
-	pub fn new(o: &'l mut Vao<D>) -> Self {
-		let _b = Binding::new(&mut o.o);
-		Self { _b, d: Dummy }
 	}
 }
 impl<I: IdxType> Vao<I> {
@@ -40,9 +29,16 @@ impl<I: IdxType> Vao<I> {
 		GLCheck!(glVertexAttribFormat(self.obj(), o.obj, idx, size, A::TYPE, to_glbool(norm), stride, offset, t_size));
 	}
 }
-#[allow(unused_imports)]
-use super::state::*;
+
+pub struct VaoBinding<'l, I> {
+	_b: Binding<'l, VertArrObj>,
+	d: Dummy<I>,
+}
 impl<'l, I: IdxType> VaoBinding<'l, I> {
+	pub fn new(o: &'l mut Vao<I>) -> Self {
+		let _b = Binding::new(&mut o.o);
+		Self { _b, d: Dummy }
+	}
 	pub fn Draw(&self, args: impl DrawArgs) {
 		ASSERT!(
 			idxcheck_map().get(VertArrObj::bound_obj()).is_some(),
@@ -72,3 +68,10 @@ impl<'l, I: IdxType> VaoBinding<'l, I> {
 		GLCheck!(gl::DrawElementsInstanced(mode, num, I::TYPE, offset, i32::to(n)));
 	}
 }
+
+pub fn idxcheck_map() -> &'static mut HashSet<u32> {
+	UnsafeOnce!(HashSet<u32>, { HashSet::new() })
+}
+
+#[allow(unused_imports)]
+use super::state::*;

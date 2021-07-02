@@ -49,7 +49,7 @@ impl $n {
 		if *last_s != state {
 			*last_s = state;
 			state.apply($m::$n);
-			DEBUG!("Set {}::{}({:?})", stringify!($m), stringify!($n), state);
+			DEBUG!("Set GL::{}({:?})", stringify!($n), state);
 		}
 	}
 
@@ -78,7 +78,7 @@ impl $n {
 		if *state != *prev_s {
 			*state = *prev_s;
 			state.apply($m::$n);
-			DEBUG!("Restored {}::{}({:?})", stringify!($m), stringify!($n), state);
+			DEBUG!("Restored GL::{}({:?})", stringify!($n), state);
 		}
 	}
 }
@@ -141,7 +141,7 @@ macro_rules! SWITCH_IMPL {
 				let state = Self::state();
 				if (*state & 1u64) != 1u64 {
 					Self::gl_enable(gl::$n);
-					DEBUG!("Enabled {}::{}", stringify!($m), stringify!($n));
+					DEBUG!("Enabled GL::{}", stringify!($n));
 					*state |= 1u64;
 				}
 			}
@@ -150,7 +150,7 @@ macro_rules! SWITCH_IMPL {
 				let state = Self::state();
 				if (*state & 1u64) != 0u64 {
 					Self::gl_disable(gl::$n);
-					DEBUG!("Disabled {}::{}", stringify!($m), stringify!($n));
+					DEBUG!("Disabled GL::{}", stringify!($n));
 					*state &= !1u64;
 				}
 			}
@@ -181,7 +181,7 @@ macro_rules! SWITCH_IMPL {
 				let s = *state & 1u64;
 				*state >>= 1;
 				if s != (*state & 1u64) {
-					DEBUG!("Restored {}::{}({})", stringify!($m), stringify!($n), s);
+					DEBUG!("Restored GL::{}({})", stringify!($n), s);
 					if *state == 0u64 {
 						Self::gl_disable(gl::$n);
 					} else {

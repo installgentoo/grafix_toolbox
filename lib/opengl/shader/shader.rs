@@ -1,5 +1,5 @@
 use super::{args::*, object::*, parsing::*, policy::*, state::*, types::*, uniforms::*};
-use crate::uses::Async::{pre::*, task::*};
+use crate::uses::asyn::{pre::*, task::*};
 use crate::uses::*;
 use std::ffi::CString;
 
@@ -7,7 +7,7 @@ use std::ffi::CString;
 macro_rules! SHADER {
 	($n: ident, $($body: expr),+) => {
 		#[allow(non_upper_case_globals)]
-		pub const $n: shader_use::InlineShader = shader_use::InlineShader(stringify!($n), const_format::concatcp!($($body,)+));
+		pub const $n: crate::uses::GL::macro_uses::InlineShader = crate::uses::GL::macro_uses::InlineShader(stringify!($n), const_format::concatcp!($($body,)+));
 	};
 }
 
@@ -43,9 +43,10 @@ impl<'l> ShaderBinding<'l> {
 	}
 	//TODO uniform blocks
 	pub fn Uniform(&mut self, (id, name): (u32, Str), args: impl UniformArgs) {
-		ASSERT!(uniforms_use::id(name).0 == id, "Use Uniforms!() macro to set uniforms");
+		ASSERT!(crate::uses::GL::macro_uses::uniforms_use::id(name).0 == id, "Use Uniforms!() macro to set uniforms");
 		let addr = if let Some(found) = self.shd.uniforms.get(&id) {
-			ASSERT!(_collision_map().entry(id).or_insert(name.into()) == name, "Unifrom collision at entry {}", name);
+			let _collision_map = UnsafeOnce!(HashMap<u32, String>, { HashMap::new() });
+			ASSERT!(_collision_map.entry(id).or_insert(name.into()) == name, "Unifrom collision at entry {}", name);
 			*found
 		} else {
 			let c_name = match CString::new(name) {
@@ -189,33 +190,26 @@ impl ShaderManager {
 	}
 
 	fn get() -> &'static mut Self {
-		UnsafeOnce!(ShaderManager, { Self::default() })
+		UnsafeOnce!(ShaderManager, { Def() })
 	}
 }
 
-pub mod inline_shd_use {
-	use super::*;
-	pub struct InlineShader(pub Str, pub Str);
-	impl ShdTypeArgs for (InlineShader, InlineShader) {
-		fn get(self) -> CompileArgs {
-			let (InlineShader(v, v_t), InlineShader(p, p_t)) = self;
-			ShaderManager::inline_source(v, v_t);
-			ShaderManager::inline_source(p, p_t);
-			(v.into(), None, p.into())
-		}
-	}
-	impl ShdTypeArgs for (InlineShader, InlineShader, InlineShader) {
-		fn get(self) -> CompileArgs {
-			let (InlineShader(v, v_t), InlineShader(g, g_t), InlineShader(p, p_t)) = self;
-			ShaderManager::inline_source(v, v_t);
-			ShaderManager::inline_source(g, g_t);
-			ShaderManager::inline_source(p, p_t);
-
-			(v.into(), Some(g.into()), p.into())
-		}
+pub struct InlineShader(pub Str, pub Str);
+impl ShdTypeArgs for (InlineShader, InlineShader) {
+	fn get(self) -> CompileArgs {
+		let (InlineShader(v, v_t), InlineShader(p, p_t)) = self;
+		ShaderManager::inline_source(v, v_t);
+		ShaderManager::inline_source(p, p_t);
+		(v.into(), None, p.into())
 	}
 }
+impl ShdTypeArgs for (InlineShader, InlineShader, InlineShader) {
+	fn get(self) -> CompileArgs {
+		let (InlineShader(v, v_t), InlineShader(g, g_t), InlineShader(p, p_t)) = self;
+		ShaderManager::inline_source(v, v_t);
+		ShaderManager::inline_source(g, g_t);
+		ShaderManager::inline_source(p, p_t);
 
-fn _collision_map() -> &'static mut HashMap<u32, String> {
-	UnsafeOnce!(HashMap<u32, String>, { HashMap::new() })
+		(v.into(), Some(g.into()), p.into())
+	}
 }
