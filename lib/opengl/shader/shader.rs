@@ -1,6 +1,5 @@
 use super::{args::*, object::*, parsing::*, policy::*, state::*, types::*, uniforms::*};
-use crate::uses::asyn::{pre::*, task::*};
-use crate::uses::*;
+use crate::uses::{asyn::*, *};
 use std::ffi::CString;
 
 #[macro_export]
@@ -92,7 +91,7 @@ impl ShaderManager {
 		let name = filename.into();
 		m.loading.push(task::spawn(async move {
 			let data = OR_DEF!(Res::to(FS::read_text(name.as_ref()).await));
-			unblock(move || parse_shader_sources(&name, &data)).await
+			parse_shader_sources(&name, &data)
 		}));
 	}
 	pub fn ForceSource(name: impl Into<CowStr>, source: String) {

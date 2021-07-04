@@ -23,11 +23,9 @@ impl Selector {
 
 		if !*open {
 			choices.clear();
-			let pressed = &mut button.pressed as *mut bool;
+			let mut pressed = StaticPtr!(&button.pressed);
 			if button.draw(r, t, pos, size, text) {
-				unsafe {
-					*pressed = false;
-				}
+				*pressed.get_mut() = false;
 				*open = true;
 				line_edit.text = text.into();
 			}

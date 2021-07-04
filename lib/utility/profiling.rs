@@ -1,6 +1,4 @@
-use crate::uses::sync::sync::{Mutex, Once};
-use crate::uses::{time::*, *};
-use crate::GL;
+use crate::uses::{sync::*, time::*, GL, *};
 
 #[cfg(not(feature = "profiling"))]
 #[macro_export]

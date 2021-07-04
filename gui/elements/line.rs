@@ -44,14 +44,14 @@ impl LineEdit {
 		r.logic(
 			(pos, pos.sum(size)),
 			move |e, focused, mouse_pos| {
-				let _text = text as *mut CachedStr;
+				let mut _text = StaticPtr!(text);
 				let clamp = |c, o| util::move_caret(&[(text as &str)], (c, 0), (o, 0), true).0;
 				let click = || util::caret_to_cursor(&[(text as &str)], (0., 0.), t, *scale, (pos.x() + offset.x(), 0.), mouse_pos).0;
 				let idx = |o| {
 					let (pos, o) = vec2::<isize>::to((*caret, o));
 					(text as &str).len_at_char(usize::to((pos + o).max(0)))
 				};
-				let text = unsafe { &mut *_text };
+				let text = _text.get_mut();
 
 				match e {
 					OfferFocus => return Accept,

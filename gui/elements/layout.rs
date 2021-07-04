@@ -29,7 +29,7 @@ impl Layout {
 		r.unclip();
 		r.clip(pos.sub((0, CRN_PAD)), size.sum(CRN_PAD));
 
-		let _pos = pos as *mut _;
+		let mut _pos = StaticPtr!(pos);
 		r.draw_with_logic(
 			Rect {
 				pos: pos.sum((0, size.y() - TOP_PAD)),
@@ -37,7 +37,7 @@ impl Layout {
 				color: t.highlight,
 			},
 			move |e, focused, mouse_pos| {
-				let p = unsafe { &mut *_pos };
+				let p = _pos.get_mut();
 				match e {
 					OfferFocus => return Accept,
 					MouseButton { state, .. } if focused && state.released() => return DropFocus,

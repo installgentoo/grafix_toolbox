@@ -1,6 +1,6 @@
 pub use crate::lib::policies::casts::result::{UniformUnwrap, UniformUnwrapOrDefault};
-use crate::uses::asyn::{chan::*, fs::File, pre::*, sync::Once, task::*};
-use crate::uses::{sync::sync::Mutex, *};
+use crate::uses::asyn::{fs::File, pre::*, *};
+use crate::uses::{sync::io, *};
 
 pub async fn Term() -> Unblock<io::Stdout> {
 	Unblock::new(io::stdout())
@@ -39,8 +39,12 @@ impl Logger {
 	}
 	pub fn Log(msg: String) {
 		Self::setup_impl(EnsureOrder, Level::INFO);
-		let sender = &unsafe { &LOGGER }.as_ref().expect("E| Logger not initialized").sender;
-		sender.try_send(Message::M(msg)).expect("E| failed to send into log channel");
+		unsafe { &LOGGER }
+			.as_ref()
+			.expect("E| Logger not initialized")
+			.sender
+			.send(Message::M(msg))
+			.expect("E| failed to send into log channel");
 	}
 	pub fn AddPostmortem(f: impl FnOnce() + 'static) {
 		Self::setup_impl(EnsureOrder, Level::INFO);
@@ -68,7 +72,7 @@ impl Logger {
 			let (sender, reciever): (Sender<Message>, Receiver<Message>) = chan::unbounded();
 			let handle = task::spawn(async move {
 				let mut out = out().await;
-				while let Ok(msg) = reciever.recv().await {
+				while let Ok(msg) = reciever.recv_async().await {
 					if let Message::M(msg) = msg {
 						out.write_all(msg.as_bytes()).await.expect("E| Failed log write");
 					} else {
@@ -99,10 +103,8 @@ impl Drop for Logger {
 			.for_each(|f| f());
 
 		let LoggerState { handle, sender, .. } = unsafe { LOGGER.take() }.expect("E| You should only have one Logger");
-		task::block_on(async {
-			sender.send(Message::Close).await.expect("E| failed to send close into log channel");
-			handle.await
-		})
+		sender.send(Message::Close).expect("E| failed to send close into log channel");
+		task::block_on(async move { handle.await })
 	}
 }
 

@@ -1,5 +1,5 @@
 use super::atlas::Tile;
-use crate::uses::{GL::tex::*, *};
+use crate::uses::{GL::tex::*, sync::io, *};
 
 pub type uImage<S> = Image<S, u8>;
 pub type fImage<S> = Image<S, f16>;

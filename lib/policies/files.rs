@@ -1,4 +1,4 @@
-use crate::uses::asyn::{chan::*, fs, pre::*, sync::Once, task::*};
+use crate::uses::asyn::{pre::*, *};
 use crate::uses::*;
 use path::PathBuf;
 
@@ -7,16 +7,16 @@ pub mod Save {
 
 	pub fn Write<P: Into<PathBuf>>(p: P, data: impl Into<Vec<u8>>) {
 		let sender = setup_impl();
-		EXPECT!(sender.try_send((p.into(), MessageType::Write, data.into())));
+		EXPECT!(sender.send((p.into(), MessageType::Write, data.into())));
 	}
 	pub fn Append<P: Into<PathBuf>>(p: P, data: impl Into<Vec<u8>>) {
 		let sender = setup_impl();
-		EXPECT!(sender.try_send((p.into(), MessageType::Append, data.into())));
+		EXPECT!(sender.send((p.into(), MessageType::Append, data.into())));
 	}
 	pub fn Archive(args: impl CompressArgs) {
 		let (p, data, level) = args.get();
 		let sender = setup_impl();
-		EXPECT!(sender.try_send((p, MessageType::ComprW(level), data)));
+		EXPECT!(sender.send((p, MessageType::ComprW(level), data)));
 	}
 
 	type Args = (PathBuf, Vec<u8>, i32);
@@ -50,35 +50,40 @@ pub mod Save {
 		INIT.call_once(move || {
 			let (sender, reciever): (Sender<Message>, Receiver<Message>) = chan::unbounded();
 			let handle = task::spawn(async move {
-				while let Ok(msg) = reciever.recv().await {
-					use MessageType::*;
-					let (name, operation, data) = msg;
-					let file = match operation {
-						Write | ComprW(_) => fs::File::create(&name).await,
-						Append => fs::OpenOptions::new().append(true).create(true).open(&name).await,
-						Close => return,
-					};
-
-					if let Ok(mut file) = file {
-						let data = if let ComprW(l) = operation {
-							OR_DEF!(Res::to(unblock(move || zstd::stream::encode_all(&data[..], l)).await))
-						} else {
-							data
+				while let Ok(msg) = reciever.recv_async().await {
+					if !task::spawn(async move {
+						use MessageType::*;
+						let (name, operation, data) = msg;
+						let file = match operation {
+							Write | ComprW(_) => fs::File::create(&name).await,
+							Append => fs::OpenOptions::new().append(true).create(true).open(&name).await,
+							Close => return false,
 						};
 
-						let _ = OR_DEF!(file.write_all(&data).await);
-						EXPECT!(file.sync_all().await);
-					} else {
-						FAILED!(map_err(file, &name));
+						if let Ok(mut file) = file {
+							let data = if let ComprW(l) = operation {
+								OR_DEF!(Res::to(zstd::stream::encode_all(&data[..], l)))
+							} else {
+								data
+							};
+
+							let _ = OR_DEF!(file.write_all(&data).await);
+							EXPECT!(file.sync_all().await);
+						} else {
+							FAILED!(map_err(file, &name));
+						}
+						true
+					})
+					.await
+					{
+						break;
 					}
 				}
 			});
 
 			logging::Logger::AddPostmortem(move || {
-				task::block_on(async move {
-					EXPECT!(setup_impl().try_send((PathBuf::new(), MessageType::Close, vec![])));
-					handle.await
-				});
+				EXPECT!(setup_impl().send((PathBuf::new(), MessageType::Close, vec![])));
+				task::block_on(async move { handle.await });
 			});
 
 			unsafe { SENDER = Some(sender) };
@@ -176,7 +181,7 @@ LOADER!(File, Vec<u8>, s, { read_file(&s).await });
 LOADER!(Text, String, s, { read_text(&s).await });
 LOADER!(Archive, Vec<u8>, s, {
 	let data = PASS!(read_file(&s).await);
-	unblock(move || zstd::stream::decode_all(&data[..])).await
+	zstd::stream::decode_all(&data[..])
 });
 
 pub async fn read_file<P: AsRef<Path>>(p: P) -> Res<Vec<u8>> {

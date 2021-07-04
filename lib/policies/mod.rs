@@ -1,5 +1,5 @@
 #[macro_use]
-pub mod unsafe_once;
+pub mod unsafe_static;
 #[macro_use]
 pub mod type_tools;
 #[macro_use]

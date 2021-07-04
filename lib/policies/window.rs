@@ -1,6 +1,6 @@
 use crate::events::*;
-use crate::uses::{adapters::*, math::*, sync::sync::*, threads::*, *};
-use std::{ffi::CStr, sync::mpsc::Receiver, sync::Barrier};
+use crate::uses::{adapters::*, math::*, sync::*, *};
+use std::{ffi::CStr, sync::mpsc::Receiver};
 
 pub trait WindowPolicy {
 	fn size() -> uVec2;
