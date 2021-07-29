@@ -40,7 +40,7 @@ impl Selector {
 				}
 			}
 
-			let text = &mut options[*choice as usize];
+			let text = &mut options[usize(*choice)];
 
 			if *editing {
 				if !r.focused(LUID(line_edit)) {

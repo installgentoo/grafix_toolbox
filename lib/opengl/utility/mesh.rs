@@ -60,7 +60,7 @@ pub trait AnyMesh {
 	fn Draw(&mut self);
 	fn to_trait(self) -> Box<dyn AnyMesh>;
 }
-impl<I: 'static + IdxType, C: 'static + AttrType, T: 'static + AttrType, N: 'static + AttrType> AnyMesh for Mesh<I, C, T, N> {
+impl<I: IdxType, C: AttrType, T: AttrType, N: AttrType> AnyMesh for Mesh<I, C, T, N> {
 	fn Draw(&mut self) {
 		self.vao.Bind().Draw(self.draw);
 	}
@@ -77,7 +77,7 @@ impl<I: IdxType, C: AttrType, T: AttrType, N: AttrType> Mesh<I, C, T, N> {
 	pub fn new(args: impl MeshArgs<I, C, T, N>) -> Self {
 		let (idx, xyz, uv, norm, mode) = args.get();
 
-		let draw = (u32::to(idx.len()), mode);
+		let draw = (u32(idx.len()), mode);
 
 		let idx = IdxArr::new(idx);
 		let xyz = AttrArr::new(xyz);

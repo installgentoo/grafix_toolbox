@@ -1,13 +1,13 @@
 use super::img::*;
 use crate::uses::{serde_impl::*, GL::tex::*, *};
 
-impl<S: TexSize, F: TexFmt> Serialize for Tex<GL_TEXTURE_2D, S, F> {
+impl<S: TexSize, F: TexFmt> Serialize for Tex2d<S, F> {
 	fn serialize<SE: Serializer>(&self, serializer: SE) -> Result<SE::Ok, SE::Error> {
 		ASSERT!(self.param.l == 1, "Not impl mips");
 		Image::<S, F>::from(self).serialize(serializer)
 	}
 }
-impl<'de, S: TexSize, F: TexFmt> Deserialize<'de> for Tex<GL_TEXTURE_2D, S, F> {
+impl<'de, S: TexSize, F: TexFmt> Deserialize<'de> for Tex2d<S, F> {
 	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
 		Ok(Image::<S, F>::deserialize(deserializer)?.into())
 	}
@@ -21,7 +21,7 @@ impl<S: TexSize, F: TexFmt> Serialize for Image<S, F> {
 impl<'de, S: TexSize, F: TexFmt> Deserialize<'de> for Image<S, F> {
 	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
 		struct V<S, F>(Dummy<S>, Dummy<F>);
-		impl<'de, S: TexSize, F: TexFmt> Visitor<'de> for V<S, F> {
+		impl<S: TexSize, F: TexFmt> Visitor<'_> for V<S, F> {
 			type Value = Image<S, F>;
 
 			fn expecting(&self, formatter: &mut Formatter) -> FmtRes {

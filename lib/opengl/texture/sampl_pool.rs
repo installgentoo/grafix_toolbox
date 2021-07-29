@@ -11,7 +11,7 @@ macro_rules! Sampler {
 }
 
 impl Sampler {
-	pub fn pooled(id: u32, args: &[(GLenum, GLenum)]) -> Rc<Sampler> {
+	pub fn pooled(id: u32, args: &[(GLenum, GLenum)]) -> Rc<Self> {
 		let p = UnsafeOnce!(HashMap<u32, Weak<Sampler>>, { HashMap::new() });
 
 		if let Some(w) = p.get(&id) {
@@ -22,13 +22,13 @@ impl Sampler {
 			}
 		}
 
-		let mut s = Sampler::new();
+		let mut s = Self::new();
 		args.iter().for_each(|&(p, v)| s.Parameter(p, v));
 		let s = Rc::new(s);
 		p.insert(id, Rc::downgrade(&s));
 		return s;
 	}
-	pub fn linear() -> Rc<Sampler> {
+	pub fn linear() -> Rc<Self> {
 		Sampler!(
 			(TEXTURE_MIN_FILTER, LINEAR),
 			(TEXTURE_WRAP_R, CLAMP_TO_EDGE),

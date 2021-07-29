@@ -1,8 +1,10 @@
 use super::{atlas_pack::*, vtex::*};
 use crate::uses::{math::*, GL::tex::*, *};
 
-//TODO Trait aliases
-pub fn pack_into_atlas<K: Eq + hash::Hash + Clone + Debug, T: Tile<F>, S: TexSize, F: TexFmt>(mut tiles: Vec<(K, T)>, max_w: i32, max_h: i32) -> (Atlas<K, S, F>, Vec<(K, T)>) {
+pub fn pack_into_atlas<K, T: Tile<F>, S: TexSize, F: TexFmt>(mut tiles: Vec<(K, T)>, max_w: i32, max_h: i32) -> (Atlas<K, S, F>, Vec<(K, T)>)
+where
+	K: Debug + Clone + Eq + hash::Hash,
+{
 	tiles.sort_by(|(_, l), (_, r)| if l.h() != r.h() { r.h().cmp(&l.h()) } else { r.w().cmp(&l.w()) });
 	ASSERT!(
 		tiles.iter().map(|(l, _)| l).collect::<HashSet<_>>().len() == tiles.len(),
@@ -10,8 +12,8 @@ pub fn pack_into_atlas<K: Eq + hash::Hash + Clone + Debug, T: Tile<F>, S: TexSiz
 	);
 
 	let max_w = {
-		let area = tiles.iter().fold(0, |v, (_, t)| v + usize::to(t.w()) * usize::to(t.h()));
-		max_w.min(i32::to(2_u32.pow(u32::to(f64::to(area).sqrt().log2().ceil()))))
+		let area = tiles.iter().fold(0, |v, (_, t)| v + usize(t.w()) * usize(t.h()));
+		max_w.min(i32(2_u32.pow(u32(f64(area).sqrt().log2().ceil()))))
 	};
 	let (min_w, min_h) = (tiles.iter().map(|(_, e)| e.w()).min().unwrap(), tiles.iter().rev().take(1).next().unwrap().1.h());
 
@@ -28,16 +30,16 @@ pub fn pack_into_atlas<K: Eq + hash::Hash + Clone + Debug, T: Tile<F>, S: TexSiz
 				continue;
 			}
 
-			if let Ok(b) = pack(img.w(), img.h(), empty, filled, min_w, min_h) {
+			if let Ok(b) = pack(img.w(), img.h(), empty, filled, (min_w, min_h)) {
 				let (x, y, w, h) = (b.x, b.y, b.w, b.h);
 				packed.insert(id.clone(), (x, y + h, x + w, y));
-				atlas.resize(atlas.len().max(usize::to(b.y2() * max_w * c)), F::ZERO);
+				atlas.resize(atlas.len().max(usize(b.y2() * max_w * c)), F::ZERO);
 
 				for i in 0..h {
 					let d = img.data();
-					let b = usize::to(((y + i) * max_w + x) * c);
-					let w = usize::to(w * c);
-					let x = usize::to(i) * w;
+					let b = usize(((y + i) * max_w + x) * c);
+					let w = usize(w * c);
+					let x = usize(i) * w;
 					atlas[b..b + w].copy_from_slice(&d[x..x + w])
 				}
 			} else if let Some((id, img)) = tiles[i].take() {
@@ -46,7 +48,7 @@ pub fn pack_into_atlas<K: Eq + hash::Hash + Clone + Debug, T: Tile<F>, S: TexSiz
 		}
 	}
 
-	let max_h = atlas.len() / usize::to(max_w * c);
+	let max_h = atlas.len() / usize(max_w * c);
 
 	let tex = Rc::new(Tex2d::<S, F>::new((max_w, max_h), &atlas));
 	let packed = packed

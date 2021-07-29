@@ -1,6 +1,6 @@
-use crate::GL::types::*;
+use crate::uses::*;
 
-pub trait IdxType {
+pub trait IdxType: TrivialBound {
 	const TYPE: GLenum;
 }
 impl IdxType for u8 {
@@ -13,7 +13,7 @@ impl IdxType for u32 {
 	const TYPE: GLenum = gl::UNSIGNED_INT;
 }
 
-pub trait AttrType {
+pub trait AttrType: TrivialBound {
 	const TYPE: GLenum;
 }
 impl AttrType for i8 {

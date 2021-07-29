@@ -80,7 +80,7 @@ impl<'l> RenderLock<'l> {
 		check_borrow(id);
 		Label::storage(id).draw(self, t(), pos, size, text)
 	}
-	pub fn Layout<F: FnOnce(&mut RenderLock<'l>, Crop)>(&mut self, id: u32, content: F) {
+	pub fn Layout(&mut self, id: u32, content: impl FnOnce(&mut RenderLock<'l>, Crop)) {
 		check_borrow(id);
 		Layout::storage(id).draw(self, t(), content)
 	}

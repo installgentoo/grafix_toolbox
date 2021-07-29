@@ -1,13 +1,13 @@
-use crate::uses::*;
+use crate::uses::{math::*, *};
 
-pub fn pack(w: i32, h: i32, empty: &mut Vec<Rect>, filled: &mut Vec<Rect>, min_w: i32, min_h: i32) -> Res<Rect> {
+pub fn pack(w: i32, h: i32, empty: &mut Vec<Rect>, filled: &mut Vec<Rect>, min: iVec2) -> Res<Rect> {
 	let (b, min_y) = PASS!(empty
 		.iter()
 		.filter(|e| e.w >= w && e.h >= h)
 		.map(|e| {
 			let sum = filled
 				.iter()
-				.fold(0, |sum, f| sum + (e.x == f.x2() && ((f.y - e.y) * 2 + f.h - e.h).abs() < f.h.max(e.h)) as i32);
+				.fold(0, |sum, f| sum + i32(e.x == f.x2() && ((f.y - e.y) * 2 + f.h - e.h).abs() < f.h.max(e.h)));
 			(e, e.y - 2 * sum)
 		})
 		.min_by(|(_, l_sum), (_, r_sum)| l_sum.cmp(r_sum)));
@@ -21,7 +21,7 @@ pub fn pack(w: i32, h: i32, empty: &mut Vec<Rect>, filled: &mut Vec<Rect>, min_w
 		let e = empty[i];
 		if b.intersects(&e) {
 			#[cfg_attr(rustfmt, rustfmt::skip)] {
-			let mut push = |cond, x, y, w, h| { if cond && w >= min_w && h >= min_h { empty.push(Rect { x, y, w, h }) } };
+			let mut push = |cond, x, y, w, h| { if cond && (w, h).ge(min).all() { empty.push(Rect { x, y, w, h }) } };
 
 			push(b.x2() < e.x2(), b.x2(), e.y,    e.x2() - b.x2(), e.h);
 			push(b.y2() < e.y2(), e.x,    b.y2(), e.w,             e.y2() - b.y2());
@@ -65,15 +65,18 @@ impl Rect {
 	pub fn y2(&self) -> i32 {
 		self.y + self.h
 	}
-	fn unpack(&self) -> iVec4 {
-		(self.x, self.y, self.w, self.h)
+	fn bb(&self) -> (iVec2, iVec2) {
+		let b1 = (self.x, self.y);
+		(b1, b1.sum((self.w, self.h)))
 	}
 	fn intersects(&self, r: &Rect) -> bool {
-		let (x, y, w, h) = self.unpack();
-		!((x + w <= r.x) || (x >= r.x + r.w) || (y + h <= r.y) || (y >= r.y + r.h))
+		let (b1, b2) = self.bb();
+		let (r_b1, r_b2) = r.bb();
+		!(b2.le(r_b1).any() || b1.ge(r_b2).any())
 	}
 	fn contains(&self, r: &Rect) -> bool {
-		let (x, y, w, h) = self.unpack();
-		!((r.x < x) || (r.x + r.w > x + w) || (r.y < y) || (r.y + r.h > y + h))
+		let (b1, b2) = self.bb();
+		let (r_b1, r_b2) = r.bb();
+		!(r_b1.ls(b1).any() || r_b2.gt(b2).any())
 	}
 }

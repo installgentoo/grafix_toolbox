@@ -1,4 +1,4 @@
-use crate::uses::Cast;
+use crate::uses::*;
 
 pub trait TupleArg2<A> {
 	fn get2(self) -> (A, A);
@@ -11,7 +11,7 @@ where
 		<(A, A)>::to(self)
 	}
 }
-impl<A, T: Cast<u32> + Copy> TupleArg2<A> for T
+impl<A, T: ToU32> TupleArg2<A> for T
 where
 	(A, A): Cast<(T, T)>,
 {
@@ -31,7 +31,7 @@ where
 		<(A, A, A)>::to(self)
 	}
 }
-impl<A, T: Cast<u32> + Copy> TupleArg3<A> for T
+impl<A, T: ToU32> TupleArg3<A> for T
 where
 	(A, A, A): Cast<(T, T, T)>,
 {
@@ -51,7 +51,7 @@ where
 		<(A, A, A, A)>::to(self)
 	}
 }
-impl<A, T: Cast<u32> + Copy> TupleArg4<A> for T
+impl<A, T: ToU32> TupleArg4<A> for T
 where
 	(A, A, A, A): Cast<(T, T, T, T)>,
 {
@@ -59,3 +59,5 @@ where
 		<(A, A, A, A)>::to((self, self, self, self))
 	}
 }
+
+trait_set! { pub trait ToU32 = Cast<u32> + Copy }

@@ -58,13 +58,13 @@ impl Font {
 		})();
 		OR_DEF!(font)
 	}
-	pub fn new<D: Borrow<Vec<u8>>>(font_data: D, alphabet: &str) -> Self {
+	pub fn new(font_data: impl Borrow<Vec<u8>>, alphabet: &str) -> Self {
 		use rusttype as ttf;
 		let (glyph_size, border, supersample) = (28, 2, 16);
 		let alphabet = || alphabet.chars();
-		let glyph_divisor = 2. / f32::to(glyph_size + border * 2);
-		let divisor = glyph_divisor / f32::to(supersample);
-		let scale = ttf::Scale::uniform(f32::to(glyph_size * supersample));
+		let glyph_divisor = 2. / f32(glyph_size + border * 2);
+		let divisor = glyph_divisor / f32(supersample);
+		let scale = ttf::Scale::uniform(f32(glyph_size * supersample));
 
 		let font = ttf::Font::try_from_bytes(font_data.borrow()).unwrap();
 
@@ -98,20 +98,20 @@ impl Font {
 						let (w, h) = (bb.max.x, bb.max.y).sub((bb.min.x, bb.min.y));
 						ASSERT!(w != 0 && h != 0, "Corrupt font data");
 						let b = border * supersample;
-						ulVec3::to((w + b * 2, h + b * 2, b))
+						ulVec3((w + b * 2, h + b * 2, b))
 					};
 					let (w, h, data) = {
 						let mut data = vec![0; w * h];
-						g.draw(|x, y, v| data[w * (b + usize::to(y)) + b + usize::to(x)] = u8::to(v * 255.));
+						g.draw(|x, y, v| data[w * (b + usize(y)) + b + usize(x)] = u8(v * 255.));
 						let sdf = sdf.generate(Tex2d::<RED, u8>::new((w, h), &data), supersample, border * 2);
 						let p = sdf.param;
 						(p.w, p.h, sdf.Save::<RED, u8>(0))
 					};
 					let (x, y) = {
-						let (x, y, b) = Vec3::to((bb.min.x, -bb.max.y, b));
+						let (x, y, b) = Vec3((bb.min.x, -bb.max.y, b));
 						(x - lsb, y).sub(b).mul(divisor)
 					};
-					let (x1, y1, x2, y2) = (x, y, x, y).sum((0., 0., f32::to(w), f32::to(h)).mul(glyph_divisor));
+					let (x1, y1, x2, y2) = (x, y, x, y).sum((0., 0., f32(w), f32(h)).mul(glyph_divisor));
 					glyphs.push((c, ImgBox { w, h, data }));
 					topline = y2.max(topline);
 					bottomline = y1.min(bottomline);
@@ -158,7 +158,7 @@ impl PartialEq for ImgBox {
 		if self.w != r.w && self.h != r.h {
 			return false;
 		}
-		let diff = self.data.iter().zip(&r.data).map(|(l, r)| (*l as i32 - *r as i32).abs()).max().unwrap_or(0);
+		let diff = self.data.iter().zip(&r.data).map(|(l, r)| (i32(*l) - i32(*r)).abs()).max().unwrap_or(0);
 		diff < 5
 	}
 }

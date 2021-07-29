@@ -37,7 +37,7 @@ macro_rules! UnsafeLocal {
 
 #[macro_export]
 macro_rules! FnStatic {
-	($n: ident, $t: ty, $b: block) => {
+	($n: ident: $t: ty, $b: block) => {
 		fn $n() -> &'static mut $t {
 			UnsafeOnce!($t, { Def() })
 		}
@@ -47,7 +47,7 @@ macro_rules! FnStatic {
 
 #[macro_export]
 macro_rules! FnLocal {
-	($n: ident, $t: ty, $b: block) => {
+	($n: ident: $t: ty, $b: block) => {
 		fn $n() -> &'static mut $t {
 			UnsafeLocal!($t, { Def() })
 		}

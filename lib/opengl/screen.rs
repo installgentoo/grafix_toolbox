@@ -3,7 +3,7 @@ use crate::uses::{adapters::*, *};
 
 pub fn Viewport(args: impl WINSize) {
 	let (x, y, w, h) = args.get();
-	GL::Viewport::Set((x, y, i32::to(w), i32::to(h)));
+	GL::Viewport::Set((x, y, i32(w), i32(h)));
 }
 
 pub fn BindScreenFbo() {
@@ -35,8 +35,8 @@ where
 	Vec4: Cast<(R, G, B, A)>,
 {
 	fn get(self) -> Args {
-		let (r, g, b, a) = Vec4::to(self.0);
-		([r, g, b, a], f32::to(self.1))
+		let (r, g, b, a) = Vec4(self.0);
+		([r, g, b, a], f32(self.1))
 	}
 }
 impl<R, G, B, A> ColorDepthArg for (R, G, B, A)

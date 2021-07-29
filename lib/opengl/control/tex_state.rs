@@ -12,7 +12,7 @@ pub mod TexState {
 
 	fn bound_units() -> &'static mut Units {
 		UnsafeOnce!(Units, {
-			let len = usize::to(GL::MAX_TEXTURE_IMAGE_UNITS().min(GL::MAX_COMBINED_TEXTURE_IMAGE_UNITS()));
+			let len = usize(GL::MAX_TEXTURE_IMAGE_UNITS().min(GL::MAX_COMBINED_TEXTURE_IMAGE_UNITS()));
 			Units {
 				at: 0,
 				len,
@@ -47,13 +47,13 @@ pub mod TexState {
 		empty
 	}
 	pub fn Unbind(u: u32) {
-		let (_, _, counter) = unsafe { bound_units().units.get_unchecked_mut(u as usize) };
+		let (_, _, counter) = unsafe { bound_units().units.get_unchecked_mut(usize(u)) };
 		*counter -= 1;
 	}
 	pub fn Bind<T: TexType>(obj: u32, s: u32, hint: u32) -> u32 {
 		let Units { at, len, units } = bound_units();
 
-		let (h_obj, samp, counter) = unsafe { units.get_unchecked_mut(hint as usize) };
+		let (h_obj, samp, counter) = unsafe { units.get_unchecked_mut(usize(hint)) };
 		if *h_obj == obj && *samp == s {
 			*counter += 1;
 			return hint;
@@ -65,7 +65,7 @@ pub mod TexState {
 			let (unit, samp, counter) = unsafe { units.get_unchecked_mut(i) };
 			if *unit == obj && *samp == s {
 				*counter += 1;
-				return u32::to(i);
+				return u32(i);
 			}
 			if empty == npos && *unit == 0 {
 				empty = i;
@@ -84,7 +84,7 @@ pub mod TexState {
 		let (unit, samp, counter) = unsafe { units.get_unchecked_mut(empty) };
 		*counter += 1;
 		*unit = obj;
-		let u = u32::to(empty);
+		let u = u32(empty);
 		DEBUG!("Binding GL {} {} to unit {}", type_name!(Texture<T>), obj, u);
 		GLCheck!(glBindTextureUnit(T::TYPE, u, obj));
 		if *samp != s {
@@ -98,7 +98,7 @@ pub mod TexState {
 	pub fn BindAny<T: TexType>(obj: u32, hint: u32) -> u32 {
 		let Units { at, len, units } = bound_units();
 
-		let (h_obj, _, counter) = unsafe { units.get_unchecked_mut(hint as usize) };
+		let (h_obj, _, counter) = unsafe { units.get_unchecked_mut(usize(hint)) };
 		if *h_obj == obj {
 			*counter += 1;
 			return hint;
@@ -110,7 +110,7 @@ pub mod TexState {
 			let (unit, _, counter) = unsafe { units.get_unchecked_mut(i) };
 			if *unit == obj {
 				*counter += 1;
-				return u32::to(i);
+				return u32(i);
 			}
 			if empty == npos && *unit == 0 {
 				empty = i;
@@ -129,7 +129,7 @@ pub mod TexState {
 		let (unit, _, counter) = unsafe { units.get_unchecked_mut(empty) };
 		*counter += 1;
 		*unit = obj;
-		let u = u32::to(empty);
+		let u = u32(empty);
 		DEBUG!("Binding GL {} {} to unit {}", type_name!(Texture<T>), obj, u);
 		GLCheck!(glBindTextureUnit(T::TYPE, u, obj));
 		DEBUG!("GL texture units: {:?}", units);

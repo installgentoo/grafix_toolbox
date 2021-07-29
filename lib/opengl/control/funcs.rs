@@ -6,7 +6,7 @@ macro_rules! APPLICATOR {
 			fn apply(&self, _: unsafe fn($($t),+));
 		}
 		#[allow(unused_parens)]
-		impl<$($t: Copy + GLPrimitive),+> $n<$($t),+> for ($($t),+) {
+		impl<$($t: GLPrimitive),+> $n<$($t),+> for ($($t),+) {
 			fn apply(&self, func: unsafe fn($($t),+)) {
 				let ($($t),+) = self;
 				GLCheck!(func($(*$t),+));
@@ -193,5 +193,5 @@ macro_rules! SWITCH_IMPL {
 	};
 }
 
-pub trait GLPrimitive {}
-impl_trait_for!(GLPrimitive, u8, i8, u16, i16, u32, i32, u64, i64, f32, f64, usize, isize);
+pub trait GLPrimitive: Copy {}
+impl_trait_for!(GLPrimitive = u8, i8, u16, i16, u32, i32, u64, i64, f32, f64, usize, isize);

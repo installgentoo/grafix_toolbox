@@ -5,10 +5,10 @@ use crate::GL::{spec, window::*, Vao, RGB, RGBA};
 
 macro_rules! Draw {
 	($t: ty, $draw_spec: tt) => {
-		impl<'l, 'a> DrawablePrimitive<'l, 'a> for $t {
+		impl<'l> DrawablePrimitive<'l> for $t {
 			fn draw(self, obj_n: u32, clip: &Crop, r: &mut Renderer) {
 				use ObjStore::$draw_spec as object;
-				if obj_n < u32::to(r.objs.objs.len()) {
+				if obj_n < u32(r.objs.objs.len()) {
 					let Primitive { state, o, .. } = r.objs.get(obj_n);
 					if let object(l) = o {
 						*state = self.compare(clip, l) | r.status;
@@ -33,7 +33,7 @@ macro_rules! Draw {
 		}
 	};
 }
-pub trait DrawablePrimitive<'l, 'a> {
+pub trait DrawablePrimitive<'l> {
 	fn draw(self, _: u32, _: &Crop, _: &mut Renderer);
 }
 Draw!(Rect, DrawRect);
@@ -42,7 +42,7 @@ Draw!(Sprite<'l, RGBA>, DrawImgRGBA);
 Draw!(Sprite9<'l, RGB>, DrawImg9RGB);
 Draw!(Sprite9<'l, RGBA>, DrawImg9RGBA);
 Draw!(Frame9<'l>, DrawFrame9);
-Draw!(Text<'l, 'a>, DrawText);
+Draw!(Text<'l, '_>, DrawText);
 
 #[derive(Default)]
 pub struct RenderLock<'l> {
@@ -64,16 +64,16 @@ impl<'l> RenderLock<'l> {
 			clip.pop();
 		}
 	}
-	pub fn draw<'a, T: DrawablePrimitive<'l, 'a>>(&mut self, prim: T) {
+	pub fn draw(&mut self, prim: impl DrawablePrimitive<'l>) {
 		let Self { r, n, clip, .. } = self;
 		prim.draw(*n, EXPECT!(clip.iter().last()), r);
 		*n += 1;
 	}
-	pub fn logic<F: 'l + FnMut(&Event, bool, Vec2) -> EventReply>(&mut self, b_box: Crop, func: F, id: LogicId) {
+	pub fn logic(&mut self, b_box: Crop, func: impl 'l + FnMut(&Event, bool, Vec2) -> EventReply, id: LogicId) {
 		let (id, bound, func) = (id, LogicBound::Crop(b_box), Box::new(func));
 		self.logics.push(LogicStorage { id, bound, func });
 	}
-	pub fn draw_with_logic<'a, T: DrawablePrimitive<'l, 'a>, F: 'l + FnMut(&Event, bool, Vec2) -> EventReply>(&mut self, prim: T, func: F, id: LogicId) {
+	pub fn draw_with_logic(&mut self, prim: impl DrawablePrimitive<'l>, func: impl 'l + FnMut(&Event, bool, Vec2) -> EventReply, id: LogicId) {
 		let Self { r, n, clip, logics, .. } = self;
 		prim.draw(*n, EXPECT!(clip.iter().last()), r);
 		let (id, bound, func) = (id, LogicBound::Obj(*n), Box::new(func));
@@ -103,7 +103,7 @@ impl<'l> RenderLock<'l> {
 			true
 		});
 		let Self { mut r, logics, n, .. } = self;
-		if n < u32::to(r.objs.objs.len()) {
+		if n < u32(r.objs.objs.len()) {
 			r.objs.shrink(n);
 		}
 		r.consume_events(logics, events);
@@ -149,10 +149,7 @@ impl Renderer {
 		events.retain(|e| {
 			use {Event::*, EventReply::*};
 
-			if let MouseMove { at, .. } = e {
-				*mouse_pos = *at
-			};
-
+			map_enum!(MouseMove { at, .. } = e => *mouse_pos = *at);
 			let refocus = if let MouseButton { state, .. } = e { state.contains(Mod::PRESS) } else { false };
 
 			if !refocus && *focus != 0 {
@@ -279,12 +276,12 @@ impl Renderer {
 }
 
 #[derive(Default)]
-struct Storage<T: spec::State, D> {
+struct Storage<T: spec::Buffer, D> {
 	pub obj: spec::ArrObject<T, D>,
 	pub buff: Vec<D>,
 	size: usize,
 }
-impl<T: spec::State + spec::Buffer, D: Copy> Storage<T, D> {
+impl<T: spec::Buffer, D: Copy> Storage<T, D> {
 	fn flush(&mut self, from: Option<usize>, mut rebind: impl FnMut(&spec::ArrObject<T, D>)) {
 		if let Some(from) = from {
 			let Self { obj, buff, size } = self;
@@ -306,6 +303,7 @@ type ArrStorage<T> = Storage<spec::Attribute, T>;
 struct LogicStorage<'l> {
 	id: LogicId,
 	bound: LogicBound,
+	// TODO trait alias all
 	func: Box<dyn 'l + FnMut(&Event, bool, Vec2) -> EventReply>,
 }
 enum LogicBound {
@@ -317,6 +315,6 @@ pub fn LUID<T>(v: &T) -> usize {
 }
 type LogicId = usize;
 
-fn contains((b1, b2): Crop, (x, y): Vec2) -> bool {
-	!(x < b1.x() || x > b2.x() || y < b1.y() || y > b2.y())
+fn contains((b1, b2): Crop, p: Vec2) -> bool {
+	!(p.ls(b1).any() || p.gt(b2).any())
 }

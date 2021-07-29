@@ -9,7 +9,7 @@ where
 	u32: Cast<P> + Cast<O>,
 {
 	fn get(self) -> Args {
-		(self.0, self.1, self.2, u32::to(self.3), u32::to(self.4))
+		(self.0, self.1, self.2, u32(self.3), u32(self.4))
 	}
 }
 
@@ -34,7 +34,7 @@ where
 	usize: Cast<O>,
 {
 	fn get(self) -> DArgs {
-		(i32::to(self.0), usize::to(self.1), self.2)
+		(i32(self.0), usize(self.1), self.2)
 	}
 }
 impl<N> DrawArgs for (N, GLenum)

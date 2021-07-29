@@ -130,19 +130,19 @@ impl UniformImpl for [Mat4x3] {
 }
 
 fn uni<T, S>(f: unsafe fn(i32, i32, *const T), name: i32, slice: &[S]) {
-	GLCheck!(f(name, i32::to(slice.len()), slice.as_ptr() as *const T));
+	GLCheck!(f(name, i32(slice.len()), slice.as_ptr() as *const T));
 }
 
 fn uni_mat<S>(f: unsafe fn(i32, i32, GLbool, *const f32), name: i32, slice: &[S]) {
-	GLCheck!(f(name, i32::to(slice.len()), gl::FALSE, slice.as_ptr() as *const f32));
+	GLCheck!(f(name, i32(slice.len()), gl::FALSE, slice.as_ptr() as *const f32));
 }
 
 pub trait UniformArgs {
 	fn get(self, _: i32, _: &mut HashMap<i32, i32>);
 }
-impl<'l, T: TexType> UniformArgs for &TextureBinding<'l, T> {
+impl<T: TexType> UniformArgs for &TextureBinding<'_, T> {
 	fn get(self, name: i32, tex_cache: &mut HashMap<i32, i32>) {
-		let u = i32::to(self.u);
+		let u = i32(self.u);
 		let ent = tex_cache.entry(name).or_insert(-1);
 		if *ent != u {
 			DEBUG!("Updating GL tex {} to {} in shader {}", *ent, u, {

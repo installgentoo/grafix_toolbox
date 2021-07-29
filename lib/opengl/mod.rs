@@ -57,8 +57,8 @@ pub mod opengl {
 		pub use super::super::{consts_def::*, funcs_def::*};
 	}
 	pub mod tex {
-		pub type Tex2d<S, F> = Tex<GL_TEXTURE_2D, S, F>;
-		pub type CubeTex<S, F> = Tex<GL_TEXTURE_CUBE_MAP, S, F>;
+		pub type Tex2d<S, F> = Tex<S, F, GL_TEXTURE_2D>;
+		pub type CubeTex<S, F> = Tex<S, F, GL_TEXTURE_CUBE_MAP>;
 		use super::super::*;
 		pub use texture::{chans::*, spec::*, Sampler, Tex, TexBuffer, TexParam};
 		pub use utility::{fImage, uImage, Image};
@@ -70,7 +70,7 @@ pub mod opengl {
 	pub mod spec {
 		use super::super::*;
 		pub use buffer::{AttrType, IdxType};
-		pub use {object::*, policy::*, state::State};
+		pub use {object::*, policy::*};
 	}
 	pub mod atlas {
 		pub use super::super::utility::{pack_into_atlas, Animation, AtlasTex2d, TexAtlas, Tile, VTex2d};
@@ -83,6 +83,9 @@ pub mod opengl {
 	}
 	pub mod pingpong {
 		pub use super::super::utility::{PPDrawableArg, Slab};
+	}
+	pub mod laplacian {
+		pub use super::super::utility::{collapse, pyramid};
 	}
 	pub mod pbrt {
 		pub use super::super::utility::{EnvTex, Environment};

@@ -1,10 +1,10 @@
 use super::atlas::Tile;
-use crate::uses::{GL::tex::*, sync::io, *};
+use crate::uses::{sync::io, GL::tex::*, *};
 
 pub type uImage<S> = Image<S, u8>;
 pub type fImage<S> = Image<S, f16>;
 
-#[derive(Default, Debug)]
+#[derive(Debug, Default)]
 pub struct Image<S, F> {
 	pub w: u32,
 	pub h: u32,
@@ -20,10 +20,10 @@ impl<S: TexSize, F: TexFmt> PartialEq for Image<S, F> {
 }
 impl<S: TexSize, F: TexFmt> Tile<F> for Image<S, F> {
 	fn w(&self) -> i32 {
-		i32::to(self.w)
+		i32(self.w)
 	}
 	fn h(&self) -> i32 {
-		i32::to(self.h)
+		i32(self.h)
 	}
 	fn data(&self) -> &[F] {
 		self.data.as_slice()
@@ -31,13 +31,18 @@ impl<S: TexSize, F: TexFmt> Tile<F> for Image<S, F> {
 }
 
 impl<S: TexSize> uImage<S> {
-	pub fn new<T: AsRef<[u8]>>(data: T) -> Res<Self> {
-		let mut img = Reader::new(io::Cursor::new(data.as_ref()))
-			.with_guessed_format()
-			.map_err(|_| "Not an image fromat")?
-			.decode()
-			.map_err(|_| "Cannot decode image")?;
-		imageops::flip_horizontal_in_place(&mut img);
+	pub fn new(data: impl AsRef<[u8]>) -> Res<Self> {
+		let mut img = {
+			let img = Reader::new(io::Cursor::new(data.as_ref())).with_guessed_format().map_err(|_| "Not an image fromat")?;
+			let fmt = Res(img.format())?;
+			if let image::ImageFormat::WebP = fmt {
+				// TODO CARGO.toml throw away libwebp_image when image gets colour info in webp
+				Res(libwebp_image::webp_load(img.into_inner()))?
+			} else {
+				img.decode().map_err(|_| "Cannot decode image")?
+			}
+		};
+		imageops::flip_vertical_in_place(&mut img);
 		let ((w, h), data) = match S::TYPE {
 			gl::RED => {
 				let img = img.into_luma8();
@@ -58,7 +63,7 @@ impl<S: TexSize> uImage<S> {
 }
 
 impl Image<RGB, f32> {
-	pub fn new<T: AsRef<[u8]>>(data: T) -> Res<Self> {
+	pub fn new(data: impl AsRef<[u8]>) -> Res<Self> {
 		let img = io::BufReader::new(io::Cursor::new(data.as_ref()));
 		let img = hdr::HdrDecoder::new(img).map_err(|_| "Cannot decode hdr image")?;
 		let ((w, h), data) = {
@@ -67,7 +72,7 @@ impl Image<RGB, f32> {
 			let img = img.read_image_hdr().map_err(|_| "Cannot read hdr pixels")?;
 			(
 				(w, h),
-				img.chunks(w as usize).rev().flat_map(|l| l.iter().flat_map(|image::Rgb(p)| p)).cloned().collect::<Vec<_>>(),
+				img.chunks(usize(w)).rev().flat_map(|l| l.iter().flat_map(|image::Rgb(p)| p)).cloned().collect::<Vec<_>>(),
 			)
 		};
 		Ok(Self { w, h, data, s: Dummy })

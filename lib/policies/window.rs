@@ -11,11 +11,12 @@ pub trait WindowPolicy {
 	fn set_clipboard(&mut self, str: &str);
 	fn resize(&mut self, size: uVec2);
 
-	fn spawn_offhand_gl<F: 'static + Send + FnOnce()>(&mut self, f: F) -> JoinHandle<Res<()>>;
+	fn spawn_offhand_gl(&mut self, f: impl OffhandFunc) -> JoinHandle<Res<()>>;
 	fn draw_to_screen(&mut self);
 	fn poll_events(&mut self) -> Vec<Event>;
 	fn swap(&mut self);
 }
+trait_set! { pub trait OffhandFunc = 'static + Send + FnOnce() }
 
 pub type Window = GlfwWindow;
 
@@ -71,7 +72,7 @@ impl GlfwWindow {
 
 	fn set_size((w, h): uVec2) {
 		*Self::_size() = (w, h);
-		let (w, h, min) = Vec3::to((w, h, w.min(h)));
+		let (w, h, min) = Vec3((w, h, w.min(h)));
 		*Self::_aspect() = (min, min).div((w, h));
 		*Self::_pixel() = (1., 1.).div((w, h));
 	}
@@ -107,11 +108,11 @@ impl WindowPolicy for GlfwWindow {
 	}
 	fn resize(&mut self, size: uVec2) {
 		Self::set_size(size);
-		let (w, h) = iVec2::to(size);
+		let (w, h) = iVec2(size);
 		self.window.set_size(w, h);
 		self.resized_hint = true;
 	}
-	fn spawn_offhand_gl<F: 'static + Send + FnOnce()>(&mut self, f: F) -> JoinHandle<Res<()>> {
+	fn spawn_offhand_gl(&mut self, f: impl OffhandFunc) -> JoinHandle<Res<()>> {
 		use glfw::{WindowHint::*, *};
 		let ctx = &mut self.window as *mut _ as usize;
 		let ctx_lock = Arc::new(Barrier::new(2));
@@ -179,7 +180,7 @@ impl WindowPolicy for GlfwWindow {
 		let mut events: Vec<Event> = glfw::flush_messages(events)
 			.filter_map(|(_, event)| match event {
 				glfw::WindowEvent::CursorPos(x, y) => {
-					let ((x, y), (w, h)) = ((2., 2.).mul((x, y)), Vec2::to(Self::size()));
+					let ((x, y), (w, h)) = ((2., 2.).mul((x, y)), Vec2(Self::size()));
 					let at = (x - w, h - y).div(w.min(h));
 					let state = collect_mods();
 					Some(Event::MouseMove { at, state })
@@ -200,13 +201,13 @@ impl WindowPolicy for GlfwWindow {
 				}
 				glfw::WindowEvent::Key(key, _, a, m) => Some(Event::Keyboard { key, state: action(a) | mods(m) }),
 				glfw::WindowEvent::Scroll(x, y) => Some(Event::Scroll {
-					at: Vec2::to((x, y)),
+					at: Vec2((x, y)),
 					state: collect_mods(),
 				}),
 				glfw::WindowEvent::Char(ch) => Some(Event::Char { ch }),
 
 				glfw::WindowEvent::Size(w, h) => {
-					Self::set_size(uVec2::to((w, h)));
+					Self::set_size(uVec2((w, h)));
 					None
 				}
 				e => {
@@ -217,7 +218,7 @@ impl WindowPolicy for GlfwWindow {
 			.collect();
 		if *resized_hint {
 			*resized_hint = false;
-			let ((x, y), (w, h)) = ((2., 2.).mul(window.get_cursor_pos()), Vec2::to(Self::size()));
+			let ((x, y), (w, h)) = ((2., 2.).mul(window.get_cursor_pos()), Vec2(Self::size()));
 			let at = (x - w, h - y).div(w.min(h));
 			let state = collect_mods();
 			events.push(Event::MouseMove { at, state })

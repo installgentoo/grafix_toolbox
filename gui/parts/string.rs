@@ -3,18 +3,18 @@ use super::sprite::{gui__pos_col_tex_vs, sampler};
 use crate::uses::{math::*, *};
 use crate::GL::{font::*, shader::*, window::*, VaoBinding};
 
-pub struct Text<'a, 'b> {
+pub struct Text<'r, 'a> {
 	pub pos: Vec2,
 	pub scale: f32,
 	pub color: Color,
-	pub text: &'b str,
-	pub font: &'a Font,
+	pub text: &'a str,
+	pub font: &'r Font,
 }
-impl<'a, 'b> Text<'a, 'b> {
-	pub fn size(text: &'b str, font: &Font, scale: f32) -> Vec2 {
+impl<'a> Text<'_, 'a> {
+	pub fn size(text: &'a str, font: &Font, scale: f32) -> Vec2 {
 		Self::size_and_len(text, font, scale).0
 	}
-	pub fn substr(text: &'b str, font: &Font, scale: f32, max_width: f32) -> (Vec2, (&'b str, &'b str)) {
+	pub fn substr(text: &'a str, font: &Font, scale: f32, max_width: f32) -> (Vec2, (&'a str, &'a str)) {
 		let (size, i) = text
 			.char_indices()
 			.scan((-font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char), |(x, last_c), (i, c)| {
@@ -56,7 +56,7 @@ impl<'a, 'b> Text<'a, 'b> {
 			},
 		)
 	}
-	fn size_and_len(text: &'b str, font: &Font, scale: f32) -> (Vec2, u32) {
+	fn size_and_len(text: &'a str, font: &Font, scale: f32) -> (Vec2, u32) {
 		let mut len = 0;
 		let size = text
 			.chars()
@@ -109,7 +109,7 @@ impl TextImpl {
 		ptr::eq(self.font, r.font)
 	}
 }
-impl<'a> Object for TextImpl {
+impl Object for TextImpl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
@@ -133,7 +133,7 @@ impl<'a> Object for TextImpl {
 				let ch = font.char(c);
 
 				if !ch.is_empty() {
-					let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <(vec2<f16>, vec2<f16>, vec4<f16>)>::to({
+					let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <_>::to({
 						let &Glyph { coord: (x1, y1, x2, y2), uv, .. } = ch;
 
 						let xy1 = pos.sum((x + x1, y1).mul(s));

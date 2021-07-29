@@ -4,14 +4,14 @@ use super::sprite9::{sprite9_idxs, write_sprite9};
 use crate::uses::{math::*, *};
 use crate::GL::{atlas::VTex2d, shader::*, window::*, VaoBinding, RGBA};
 
-pub struct Frame9<'a> {
+pub struct Frame9<'r> {
 	pub pos: Vec2,
 	pub size: Vec2,
 	pub corner: f32,
 	pub color: Color,
-	pub theme: &'a VTex2d<RGBA, u8>,
+	pub theme: &'r VTex2d<RGBA, u8>,
 }
-impl<'a> Frame9<'a> {
+impl Frame9<'_> {
 	#[inline(always)]
 	pub fn compare(&self, crop: &Crop, r: &Frame9Impl) -> State {
 		let &Self { pos, size, corner, color, theme } = self;

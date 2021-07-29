@@ -1,6 +1,13 @@
+mod apply;
 mod args;
-pub mod math;
-pub mod swizzle;
+mod math;
+mod ops;
+mod swizzle;
 mod traits;
 
-pub use {math::*, swizzle::swizzle::*};
+pub use {
+	apply::*,
+	math::{TupleComparison, TupleMath, TupleSelf, TupleSigned},
+	ops::{Tuple2Geometry, TupleAllAny, TupleVecIdentity},
+	swizzle::swizzle::*,
+};

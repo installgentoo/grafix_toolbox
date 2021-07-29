@@ -9,12 +9,12 @@ pub struct Objects {
 }
 impl Objects {
 	pub fn get(&mut self, at: u32) -> &mut Primitive {
-		unsafe { self.objs.get_unchecked_mut(at as usize) }
+		unsafe { self.objs.get_unchecked_mut(usize(at)) }
 	}
 	pub fn shrink(&mut self, to: u32) {
 		let Self { batches, objs, .. } = self;
 		batches.retain_mut(|b| !b.shrink_and_empty(objs, to));
-		objs.truncate(to as usize);
+		objs.truncate(usize(to));
 	}
 	pub fn batch(&mut self) {
 		let Self { batches, objs, first_transparent } = self;
@@ -31,15 +31,15 @@ impl Objects {
 			.iter()
 			.enumerate()
 			.find(|(n, Primitive { state, o, .. })| {
-				let overlapping = || state.contains(State::XYZW) && o.obj().ordered() && overlaps(o, u32::to(*n));
+				let overlapping = || state.contains(State::XYZW) && o.obj().ordered() && overlaps(o, u32(*n));
 				state.contains(State::TYPE) || overlapping()
 			})
 			.map(|(n, _)| n)
 		{
-			batches.retain_mut(|b| !b.shrink_and_empty(objs, u32::to(first_invalid)));
+			batches.retain_mut(|b| !b.shrink_and_empty(objs, u32(first_invalid)));
 
 			objs.iter().enumerate().skip(first_invalid).for_each(|(z, o)| {
-				let (z, o) = (u32::to(z), &o.o);
+				let (z, o) = (u32(z), &o.o);
 				for b in batches.iter_mut().rev() {
 					if b.try_add(objs, (o, z)) {
 						return;
@@ -70,10 +70,10 @@ impl Objects {
 				state |= s;
 
 				if state.contains(State::RESIZED) {
-					flush.0.get_or_insert(idx_start as usize);
-					let mut indices = b.typ(objs).obj().gen_idxs(vec2::to((batch_start, batch_size)));
-					b.idx_range = (idx_start, u32::to(indices.len()));
-					idxs.truncate(idx_start as usize);
+					flush.0.get_or_insert(usize(idx_start));
+					let mut indices = b.typ(objs).obj().gen_idxs(usVec2((batch_start, batch_size)));
+					b.idx_range = (idx_start, u32(indices.len()));
+					idxs.truncate(usize(idx_start));
 					idxs.append(&mut indices);
 				}
 
@@ -94,23 +94,17 @@ impl Objects {
 				update(state.contains(State::RGBA), ordered, 4, rgba, batch_start, &b.rgba, &mut flush.2);
 				update(state.contains(State::UV), ordered, 2, uv, batch_start, &b.uv, &mut flush.3);
 
-				(flush, state, b.idx_range.0 + b.idx_range.1, batch_start + batch_size as usize)
+				(flush, state, b.idx_range.0 + b.idx_range.1, batch_start + usize(batch_size))
 			})
 			.0
 	}
 	pub fn draw_opaque_batches(&self, v: &VaoBinding<u16>) {
 		let Self { batches, objs, first_transparent } = self;
-		batches
-			.iter()
-			.take(*first_transparent)
-			.for_each(|b| b.typ(&objs).obj().batch_draw(&v, vec2::to(b.idx_range)));
+		batches.iter().take(*first_transparent).for_each(|b| b.typ(&objs).obj().batch_draw(&v, usVec2(b.idx_range)));
 	}
 	pub fn draw_transparent_batches(&self, v: &VaoBinding<u16>) {
 		let Self { batches, objs, first_transparent } = self;
-		batches
-			.iter()
-			.skip(*first_transparent)
-			.for_each(|b| b.typ(&objs).obj().batch_draw(&v, vec2::to(b.idx_range)));
+		batches.iter().skip(*first_transparent).for_each(|b| b.typ(&objs).obj().batch_draw(&v, usVec2(b.idx_range)));
 	}
 }
 

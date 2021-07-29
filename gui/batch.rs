@@ -57,8 +57,8 @@ impl Batch {
 		let idxs = &mut self.idxs;
 		let l = idxs.iter().rposition(|i| i.idx < z).map(|i| i + 1).unwrap_or(0);
 		if !idxs[l..].is_empty() {
-			idxs.drain(l..).for_each(|o| unsafe { objs.get_unchecked_mut(o.idx as usize) }.state = State::MISMATCH);
-			idxs.iter().for_each(|o| unsafe { objs.get_unchecked_mut(o.idx as usize) }.state |= State::RESIZED);
+			idxs.drain(l..).for_each(|o| unsafe { objs.get_unchecked_mut(usize(o.idx)) }.state = State::MISMATCH);
+			idxs.iter().for_each(|o| unsafe { objs.get_unchecked_mut(usize(o.idx)) }.state |= State::RESIZED);
 		}
 		idxs.is_empty()
 	}
@@ -85,20 +85,20 @@ impl Batch {
 		let Self { xyzw, rgba, uv, idxs, .. } = self;
 
 		let (len, mut state) = idxs.iter_mut().fold((0, State::empty()), |(start, flush), Obj { idx, size }| {
-			let Primitive { state, o } = unsafe { objs.get_unchecked_mut(*idx as usize) };
+			let Primitive { state, o } = unsafe { objs.get_unchecked_mut(usize(*idx)) };
 
 			if !state.is_empty() && *state != State::RESIZED {
 				let new_size = o.obj().vert_count();
 
 				if state.contains(State::TYPE) {
-					let to = (start + new_size) as usize;
+					let to = usize(start + new_size);
 					xyzw.resize_def(to * 4);
 					rgba.resize_def(to * 4);
 					uv.resize_def(to * 2);
 				} else {
 					if new_size > *size {
 						const O: f16 = f16::ZERO;
-						let (at, s) = ulVec2::to((start, new_size - *size));
+						let (at, s) = ulVec2((start, new_size - *size));
 						xyzw.splice(at * 4..at * 4, vec![O; s * 4]);
 						rgba.splice(at * 4..at * 4, vec![0; s * 4]);
 						uv.splice(at * 2..at * 2, vec![O; s * 2]);
@@ -106,7 +106,7 @@ impl Batch {
 					}
 
 					if new_size < *size {
-						let (from, to) = ulVec2::to((start + new_size, start + *size));
+						let (from, to) = ulVec2((start + new_size, start + *size));
 						xyzw.drain(from * 4..to * 4);
 						rgba.drain(from * 4..to * 4);
 						uv.drain(from * 2..to * 2);
@@ -117,13 +117,12 @@ impl Batch {
 				*size = new_size;
 
 				let (z, s) = <(f32, usize)>::to((*idx, start));
-				o.obj()
-					.write_mesh((f16::to(1. - z / 1000.), *state, &mut xyzw[s * 4..], &mut rgba[s * 4..], &mut uv[s * 2..]));
+				o.obj().write_mesh((f16(1. - z / 1000.), *state, &mut xyzw[s * 4..], &mut rgba[s * 4..], &mut uv[s * 2..]));
 			}
 			(start + *size, flush | *state)
 		});
 		if state.contains(State::RESIZED) {
-			let to = len as usize;
+			let to = usize(len);
 			xyzw.truncate(to * 4);
 			rgba.truncate(to * 4);
 			uv.truncate(to * 2);
@@ -133,5 +132,5 @@ impl Batch {
 	}
 }
 fn get<'a>(objs: &'a [Primitive], o: &Obj) -> &'a ObjStore {
-	&unsafe { objs.get_unchecked(o.idx as usize) }.o
+	&unsafe { objs.get_unchecked(usize(o.idx)) }.o
 }

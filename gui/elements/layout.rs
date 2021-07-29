@@ -7,7 +7,7 @@ pub struct Layout {
 	pub size: Vec2,
 }
 impl Layout {
-	pub fn draw<'s, F: FnOnce(&mut RenderLock<'s>, Crop)>(&'s mut self, r: &mut RenderLock<'s>, t: &Theme, content: F) {
+	pub fn draw<'s>(&'s mut self, r: &mut RenderLock<'s>, t: &Theme, content: impl FnOnce(&mut RenderLock<'s>, Crop)) {
 		const TOP_PAD: f32 = 0.05;
 		const CRN_PAD: f32 = 0.04;
 

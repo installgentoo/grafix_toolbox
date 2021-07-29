@@ -1,6 +1,6 @@
 use crate::uses::*;
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub enum Event {
 	MouseMove { at: Vec2, state: Mod },
 	MouseButton { button: Button, state: Mod },
@@ -11,7 +11,7 @@ pub enum Event {
 	Defocus,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub enum EventReply {
 	Accept,
 	Reject,
@@ -64,7 +64,7 @@ impl Mod {
 	}
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub enum Button {
 	Left,
 	Right,

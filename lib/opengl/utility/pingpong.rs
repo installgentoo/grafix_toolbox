@@ -34,7 +34,7 @@ impl<T: UniformArgs> UniformArgs for (T, &Sampler) {
 		self.0.get(name, tex_cache);
 	}
 }
-impl<S, F> UniformArgs for (&Tex<GL_TEXTURE_2D, S, F>, &Sampler) {
+impl<S, F> UniformArgs for (&Tex<S, F, GL_TEXTURE_2D>, &Sampler) {
 	fn get(self, name: i32, tex_cache: &mut HashMap<i32, i32>) {
 		self.0.Bind(self.1).get(name, tex_cache);
 	}

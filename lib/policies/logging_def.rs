@@ -27,10 +27,10 @@ macro_rules! EXPECT {
 #[macro_export]
 macro_rules! PASS {
 	($e: expr) => {
-		Res::to($e)?
+		Res($e)?
 	};
 	($e: expr, $w: expr) => {
-		Res::to($e).map_err($w)?
+		Res($e).map_err($w)?
 	};
 }
 

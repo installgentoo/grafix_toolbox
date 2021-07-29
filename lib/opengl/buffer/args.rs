@@ -38,7 +38,7 @@ where
 {
 	fn getu(&self) -> UArgs {
 		let slice = self.0.as_ref();
-		(slice.as_ptr() as *const GLvoid, slice.len(), usize::to(self.1))
+		(slice.as_ptr() as *const GLvoid, slice.len(), usize(self.1))
 	}
 }
 impl<T> UpdateArgs<T> for &[T] {
@@ -57,7 +57,7 @@ where
 	isize: Cast<O> + Cast<L>,
 {
 	fn get(self) -> RArgs {
-		(isize::to(self.0), isize::to(self.1), self.2)
+		(isize(self.0), isize(self.1), self.2)
 	}
 }
 impl MappingArgs for GLenum {
@@ -68,8 +68,8 @@ impl MappingArgs for GLenum {
 
 pub fn get_mapping_args<T: State, D>(o: &ArrObject<T, D>, args: impl MappingArgs) -> (isize, usize, GLenum) {
 	let (offset, len, access) = args.get();
-	let len = len.or_val(len >= 1, isize::to(o.len) - offset);
-	ASSERT!(isize::to(o.len) >= offset + len && len > 0, "Buffer {}({}) mapped out of bounds", o.obj, type_name!(T));
-	let tsize = isize::to(type_size!(D));
-	(offset * tsize, usize::to(len * tsize), access)
+	let len = len.or_val(len >= 1, isize(o.len) - offset);
+	ASSERT!(isize(o.len) >= offset + len && len > 0, "Buffer {}({}) mapped out of bounds", o.obj, type_name!(T));
+	let tsize = isize(type_size!(D));
+	(offset * tsize, usize(len * tsize), access)
 }

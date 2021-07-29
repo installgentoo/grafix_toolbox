@@ -48,8 +48,8 @@ impl LineEdit {
 				let clamp = |c, o| util::move_caret(&[(text as &str)], (c, 0), (o, 0), true).0;
 				let click = || util::caret_to_cursor(&[(text as &str)], (0., 0.), t, *scale, (pos.x() + offset.x(), 0.), mouse_pos).0;
 				let idx = |o| {
-					let (pos, o) = vec2::<isize>::to((*caret, o));
-					(text as &str).len_at_char(usize::to((pos + o).max(0)))
+					let (pos, o) = ilVec2((*caret, o));
+					(text as &str).len_at_char(usize((pos + o).max(0)))
 				};
 				let text = _text.get_mut();
 

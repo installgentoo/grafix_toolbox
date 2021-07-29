@@ -44,6 +44,6 @@ where
 	i32: Cast<W> + Cast<H>,
 {
 	fn get(self) -> iVec2 {
-		iVec2::to(self)
+		iVec2(self)
 	}
 }

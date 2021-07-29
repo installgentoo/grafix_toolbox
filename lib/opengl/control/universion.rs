@@ -97,13 +97,13 @@ pub unsafe fn glVertexAttribFormat(vao: u32, buf: u32, idx: u32, size: u32, typ:
 			gl::BindVertexArray(vao);
 			gl::BindBuffer(gl::ARRAY_BUFFER, buf);
 			gl::EnableVertexAttribArray(idx);
-			gl::VertexAttribPointer(idx, i32::to(size), typ, normalized, i32::to(stride), (offset * t_size) as *const GLvoid);
+			gl::VertexAttribPointer(idx, i32(size), typ, normalized, i32(stride), (offset * t_size) as *const GLvoid);
 			gl::BindVertexArray(0);
 		},
 		{
 			gl::EnableVertexArrayAttrib(vao, idx);
-			gl::VertexArrayVertexBuffer(vao, idx, buf, 0, i32::to((size + stride) * t_size));
-			gl::VertexArrayAttribFormat(vao, idx, i32::to(size), typ, normalized, offset * t_size);
+			gl::VertexArrayVertexBuffer(vao, idx, buf, 0, i32((size + stride) * t_size));
+			gl::VertexArrayAttribFormat(vao, idx, i32(size), typ, normalized, offset * t_size);
 			gl::VertexArrayAttribBinding(vao, idx, idx);
 		}
 	);
@@ -195,7 +195,7 @@ pub unsafe fn glTextureSubImage3D(_typ: GLenum, tex: u32, lvl: i32, x: i32, y: i
 		{
 			gl::BindTexture(_typ, tex);
 			if _typ == gl::TEXTURE_CUBE_MAP {
-				gl::TexSubImage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + u32::to(z), lvl, x, y, w, h, fmt, t, data);
+				gl::TexSubImage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + u32(z), lvl, x, y, w, h, fmt, t, data);
 			} else {
 				gl::TexSubImage3D(_typ, lvl, x, y, z, w, h, d, fmt, t, data);
 			}
@@ -284,7 +284,7 @@ pub unsafe fn glRenderbuffStorage(fb: u32, sampl: i32, fmt: GLenum, w: i32, h: i
 }
 
 fn formatDepth45to33(fmt: GLenum) -> i32 {
-	i32::to(if fmt == gl::DEPTH_COMPONENT32F || fmt == gl::DEPTH_COMPONENT24 || fmt == gl::DEPTH_COMPONENT16 {
+	i32(if fmt == gl::DEPTH_COMPONENT32F || fmt == gl::DEPTH_COMPONENT24 || fmt == gl::DEPTH_COMPONENT16 {
 		WARN!("Using unspecified GL_DEPTH_COMPONENT size");
 		gl::DEPTH_COMPONENT
 	} else {

@@ -22,9 +22,9 @@ pub fn caret_x(text: &str, t: &Theme, scale: f32, at: usize, pad: f32) -> f32 {
 }
 
 pub fn move_caret(lines: &[&str], (x, y): Caret, (ox, oy): iVec2, clamp_x: bool) -> Caret {
-	let (x, ox, y, oy) = vec4::<isize>::to((x, ox, y, oy));
+	let (x, ox, y, oy) = ilVec4((x, ox, y, oy));
 	let last_idx = lines.last_idx();
-	let y = usize::to((y + oy).clamp(0, isize::to(last_idx)));
+	let y = usize((y + oy).clamp(0, isize(last_idx)));
 	let text = lines[y];
 	let x = {
 		let x = x + ox;
@@ -32,14 +32,14 @@ pub fn move_caret(lines: &[&str], (x, y): Caret, (ox, oy): iVec2, clamp_x: bool)
 			if y == 0 {
 				return (1, 0);
 			};
-			let skip = isize::to(lines[y - 1].utf8_len() + 1);
-			return move_caret(lines, (0, y - 1), iVec2::to((x + skip, 0)), true);
+			let skip = isize(lines[y - 1].utf8_len() + 1);
+			return move_caret(lines, (0, y - 1), iVec2((x + skip, 0)), true);
 		}
-		if clamp_x && x > isize::to(text.utf8_len() + 1) {
+		if clamp_x && x > isize(text.utf8_len() + 1) {
 			if y == last_idx {
 				return (lines[last_idx].utf8_len() + 1, last_idx);
 			};
-			return move_caret(lines, Caret::to((x - isize::to(text.utf8_len() + 1), y + 1)), (0, 0), true);
+			return move_caret(lines, Caret::to((x - isize(text.utf8_len() + 1), y + 1)), (0, 0), true);
 		}
 		x
 	};
@@ -47,12 +47,12 @@ pub fn move_caret(lines: &[&str], (x, y): Caret, (ox, oy): iVec2, clamp_x: bool)
 }
 
 pub fn caret_to_cursor(lines: &[&str], (start, len): Vec2, t: &Theme, scale: f32, pos: Vec2, (x, y): Vec2) -> Caret {
-	let (b, e) = vec2::<isize>::to((start, start + len));
-	let y = isize::to(start + (pos.y() - y) / scale).clamp(b - 1, e);
+	let (b, e) = ilVec2((start, start + len));
+	let y = isize(start + (pos.y() - y) / scale).clamp(b - 1, e);
 	let text = line(lines, (0, y));
 	let ((caret_x, _), (str, _)) = Text::substr(text, &t.font, scale, x - pos.x());
 	let past_end = x > pos.x() + caret_x;
-	let c = (str.utf8_len(), usize::to(y));
+	let c = (str.utf8_len(), usize(y));
 	let o = (1.or_def(past_end), 0);
 	move_caret(lines, c, o, true)
 }
@@ -65,8 +65,8 @@ pub fn line<'a, X, Y>(lines: &'a [&str], caret: (X, Y)) -> &'a str
 where
 	vec2<isize>: Cast<(X, Y)>,
 {
-	let (_, y) = vec2::<isize>::to(caret);
-	let y = usize::to(y.clamp(0, isize::to(lines.last_idx())));
+	let (_, y) = ilVec2(caret);
+	let y = usize(y.clamp(0, isize(lines.last_idx())));
 	if lines.len() > 0 {
 		unsafe { lines.get_unchecked(y) }
 	} else {

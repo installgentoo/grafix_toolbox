@@ -13,33 +13,33 @@ impl TexParam {
 	where
 		u32: Cast<T>,
 	{
-		let (w, h, d) = ulVec3::to(self.dim(lvl));
+		let (w, h, d) = ulVec3(self.dim(lvl));
 		w * h * d
 	}
 	pub fn dim<T>(self, lvl: T) -> iVec3
 	where
 		u32: Cast<T>,
 	{
-		let lvl = u32::to(lvl);
-		ASSERT!(i32::to(lvl) < self.l, "GL Texture level {} out of bounds, only has {} levels", lvl, self.l);
+		let lvl = u32(lvl);
+		ASSERT!(i32(lvl) < self.l, "GL Texture level {} out of bounds, only has {} levels", lvl, self.l);
 		self.dim_unchecked(lvl)
 	}
 	pub fn dim_unchecked(self, lvl: u32) -> iVec3 {
-		let (lvl, Self { w, h, d, .. }) = (u32::to(lvl), self);
+		let (lvl, Self { w, h, d, .. }) = (u32(lvl), self);
 		if lvl == 0 {
 			return (w, h, d);
 		}
-		let div = |v| 1.max(i32::to((f64::to(v) / f64::to(2_u32.pow(lvl))).floor()));
+		let div = |v| 1.max(i32((f64(v) / f64(2_u32.pow(lvl))).floor()));
 		(div(w), div(h), div(d))
 	}
 	pub fn mip_levels(w: impl MipsArgs) -> i32 {
 		let w = w.getm();
-		1 + i32::to(f64::to(w).log2())
+		1 + i32(f64(w).log2())
 	}
 }
 
 #[derive(Debug, Default)]
-pub struct Tex<T: TexType, S, F> {
+pub struct Tex<S, F, T: TexType> {
 	pub param: TexParam,
 	tex: Object<Texture<T>>,
 	unit: Cell<u32>,
@@ -49,7 +49,7 @@ pub struct Tex<T: TexType, S, F> {
 
 macro_rules! tex_decl {
 	($t: ty, $arg_n: tt, $arg_u: tt) => {
-		impl<S: TexSize, F: TexFmt> Tex<$t, S, F> {
+		impl<S: TexSize, F: TexFmt> Tex<S, F, $t> {
 			pub fn new(args_n: impl $arg_n, args_u: impl $arg_u<F>) -> Self {
 				let mut tex = Self::new_empty(args_n);
 				tex.Update(args_u);
@@ -87,16 +87,16 @@ macro_rules! tex_decl {
 				Self { param, tex, unit, s, f }
 			}
 			pub fn Update(&mut self, args: impl $arg_u<F>) {
-				self.UpdateCustom::<_, S, F>(args);
+				self.UpdateCustom::<S, F, _>(args);
 			}
 			#[allow(unused_variables)]
-			pub fn UpdateCustom<T: $arg_u<RF>, RS: TexSize, RF: TexFmt>(&mut self, args: T) {
+			pub fn UpdateCustom<RS: TexSize, RF: TexFmt, T: $arg_u<RF>>(&mut self, args: T) {
 				let mip_size = |lvl, len| {
 					ASSERT!(
-						len <= self.param.size(u32::to(lvl)) * usize::to(S::SIZE),
+						len <= self.param.size(u32(lvl)) * usize(S::SIZE),
 						"GL Texture data out of bounds at level {}, size should be {}, given {}",
 						lvl,
-						self.param.size(u32::to(lvl)) * usize::to(S::SIZE),
+						self.param.size(u32(lvl)) * usize(S::SIZE),
 						len
 					);
 					self.param.dim(lvl)
@@ -124,7 +124,7 @@ macro_rules! tex_decl {
 		}
 	};
 }
-impl<T: TexType, S, F> Tex<T, S, F> {
+impl<S, F, T: TexType> Tex<S, F, T> {
 	pub fn obj(&self) -> u32 {
 		self.tex.obj
 	}
@@ -135,14 +135,14 @@ impl<T: TexType, S, F> Tex<T, S, F> {
 	}
 	pub fn Save<RS: TexSize, RF: TexFmt>(&self, lvl: u32) -> Vec<RF> {
 		ASSERT!(T::TYPE != gl::TEXTURE_CUBE_MAP && T::TYPE != gl::TEXTURE_CUBE_MAP_ARRAY, "unimpl");
-		let size = self.param.size(lvl) * usize::to(RS::SIZE);
+		let size = self.param.size(lvl) * usize(RS::SIZE);
 		let v = vec![RF::ZERO; size];
-		let size = i32::to(size * type_size!(RF));
+		let size = i32(size * type_size!(RF));
 		GL::PixelStorePack::Set(1);
-		GLCheck!(glGetTexture(T::TYPE, self.tex.obj, i32::to(lvl), RS::TYPE, RF::TYPE, size, v.as_ptr() as *mut GLvoid));
+		GLCheck!(glGetTexture(T::TYPE, self.tex.obj, i32(lvl), RS::TYPE, RF::TYPE, size, v.as_ptr() as *mut GLvoid));
 		v
 	}
-	pub fn Bind<'l>(&'l self, samp: &'l Sampler) -> TextureBinding<'l, T> {
+	pub fn Bind<'l>(&'l self, samp: &'l Sampler) -> TextureBinding<T> {
 		let unit = self.unit.take();
 		let (b, u) = TextureBinding::new(&self.tex, samp, unit);
 		self.unit.set(u);
@@ -167,7 +167,7 @@ impl<'l, T: TexType> TextureBinding<'l, T> {
 		(Self { t: Dummy, u }, u)
 	}
 }
-impl<'l, T> Drop for TextureBinding<'l, T> {
+impl<T> Drop for TextureBinding<'_, T> {
 	fn drop(&mut self) {
 		TexState::Unbind(self.u);
 	}

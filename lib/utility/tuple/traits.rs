@@ -1,70 +1,24 @@
-use crate::{impl_trait_for, uses::*};
+use crate::uses::*;
 
-pub trait TupleAllAny {
-	fn all(self) -> bool;
-	fn any(self) -> bool;
-}
-impl TupleAllAny for (bool, bool) {
-	fn all(self) -> bool {
-		self.0 && self.1
+pub trait EpsilonEq: Copy + cmp::PartialOrd {
+	fn eps_eq(self, r: Self) -> bool {
+		self == r
 	}
-	fn any(self) -> bool {
-		self.0 || self.1
+	fn eps_eq_c(self, r: Self, _: &Self) -> bool {
+		self == r
 	}
 }
-impl TupleAllAny for (bool, bool, bool) {
-	fn all(self) -> bool {
-		self.0 && self.1 && self.2
-	}
-	fn any(self) -> bool {
-		self.0 || self.1 || self.2
-	}
-}
-impl TupleAllAny for (bool, bool, bool, bool) {
-	fn all(self) -> bool {
-		self.0 && self.1 && self.2 && self.3
-	}
-	fn any(self) -> bool {
-		self.0 || self.1 || self.2 || self.3
-	}
-}
-
-pub trait TupleVecIdentity: Default {
-	fn one() -> Self;
-	fn zero() -> Self {
-		Def()
-	}
-}
-impl<T: Cast<u32> + Default> TupleVecIdentity for vec2<T> {
-	fn one() -> Self {
-		Self::to((1, 1))
-	}
-}
-impl<T: Cast<u32> + Default> TupleVecIdentity for vec3<T> {
-	fn one() -> Self {
-		Self::to((1, 1, 1))
-	}
-}
-impl<T: Cast<u32> + Default> TupleVecIdentity for vec4<T> {
-	fn one() -> Self {
-		Self::to((1, 1, 1, 1))
-	}
-}
-
-pub trait EpsilonEqual {
-	fn eps_eq(self, r: Self) -> bool;
-	fn eps_eq_c(self, r: Self, e: &Self) -> bool;
-}
-impl EpsilonEqual for f16 {
+impl_trait_for!(EpsilonEq = bool, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+impl EpsilonEq for f16 {
 	fn eps_eq(self, r: Self) -> bool {
 		self.eps_eq_c(r, &f16::EPSILON)
 	}
 	fn eps_eq_c(self, r: Self, e: &Self) -> bool {
-		let (l, r) = vec2::<f32>::to((self, r));
-		(l - r).abs() <= f32::to(*e)
+		let (l, r) = Vec2((self, r));
+		(l - r).abs() <= f32(*e)
 	}
 }
-impl EpsilonEqual for f32 {
+impl EpsilonEq for f32 {
 	fn eps_eq(self, r: Self) -> bool {
 		self.eps_eq_c(r, &f32::EPSILON)
 	}
@@ -72,7 +26,7 @@ impl EpsilonEqual for f32 {
 		(self - r).abs() <= *e
 	}
 }
-impl EpsilonEqual for f64 {
+impl EpsilonEq for f64 {
 	fn eps_eq(self, r: Self) -> bool {
 		self.eps_eq_c(r, &f64::EPSILON)
 	}
@@ -81,7 +35,7 @@ impl EpsilonEqual for f64 {
 	}
 }
 
-pub trait Round: Sized {
+pub trait Round: Copy + cmp::PartialOrd {
 	fn round(self) -> Self {
 		self
 	}
@@ -89,7 +43,7 @@ pub trait Round: Sized {
 		self
 	}
 }
-impl_trait_for!(Round, u8, u16, u32, u64, u128, usize);
+impl_trait_for!(Round = u8, u16, u32, u64, u128, usize);
 macro_rules! rounding {
 	($t: ty) => {
 		impl Round for $t {
@@ -107,10 +61,10 @@ rounding!(i128);
 rounding!(isize);
 impl Round for f16 {
 	fn round(self) -> Self {
-		f16::to(f32::to(self).round())
+		f16(f32(self).round())
 	}
 	fn abs(self) -> Self {
-		f16::to(f32::to(self).abs())
+		f16(f32(self).abs())
 	}
 }
 macro_rules! rounding_f {
@@ -138,7 +92,7 @@ macro_rules! pow {
 			u32: Cast<T>,
 		{
 			fn power(self, r: T) -> Self {
-				self.pow(u32::to(r))
+				self.pow(u32(r))
 			}
 		}
 	};
@@ -160,7 +114,7 @@ where
 	i32: Cast<T>,
 {
 	fn power(self, r: T) -> Self {
-		f16::to(f32::to(self).powi(i32::to(r)))
+		f16(f32(self).powi(i32(r)))
 	}
 }
 macro_rules! powi {
@@ -170,7 +124,7 @@ macro_rules! powi {
 			i32: Cast<T>,
 		{
 			fn power(self, r: T) -> Self {
-				self.powi(i32::to(r))
+				self.powi(i32(r))
 			}
 		}
 	};
@@ -210,7 +164,7 @@ where
 	f32: Cast<T>,
 {
 	fn euc_mod(self, r: T) -> Self {
-		f16::to(self.to_f32().rem_euclid(f32::to(r)))
+		f16(self.to_f32().rem_euclid(f32(r)))
 	}
 }
 euc_mod!(f32);
@@ -225,13 +179,13 @@ macro_rules! sqrt {
 	($t: ty) => {
 		impl Precise for $t {
 			fn mix(self, a: f32, r: Self) -> Self {
-				Self::to(f32::to(self) * (1. - a) + f32::to(r) * a)
+				Self::to(f32(self) * (1. - a) + f32(r) * a)
 			}
 			fn root(self) -> Self {
-				Self::to(f32::to(self).sqrt())
+				Self::to(f32(self).sqrt())
 			}
 			fn is_zero(self) -> bool {
-				f32::to(self) == 0.
+				f32(self) == 0.
 			}
 		}
 	};
@@ -252,7 +206,7 @@ sqrt!(f16);
 sqrt!(f32);
 impl Precise for f64 {
 	fn mix(self, a: f32, r: Self) -> Self {
-		let a = f64::to(a);
+		let a = f64(a);
 		self * (1. - a) + r * a
 	}
 	fn root(self) -> Self {

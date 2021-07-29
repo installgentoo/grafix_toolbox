@@ -23,22 +23,22 @@ impl Camera {
 		self.view_proj = self.proj * v;
 	}
 	pub fn V(&self) -> Mat4 {
-		Mat4::to(self.view)
+		Mat4(self.view)
 	}
 	pub fn VP(&self) -> Mat4 {
-		Mat4::to(self.view_proj)
+		Mat4(self.view_proj)
 	}
 	pub fn MV(&self, model: &M4) -> Mat4 {
-		Mat4::to(self.view * model)
+		Mat4(self.view * model)
 	}
 	pub fn MVP(&self, model: &M4) -> Mat4 {
-		Mat4::to(self.view_proj * model)
+		Mat4(self.view_proj * model)
 	}
 	pub fn N(&self, model: &M4) -> Mat3 {
-		Mat3::to(glm::inverse_transpose(model.fixed_resize(0.)))
+		Mat3(glm::inverse_transpose(model.fixed_resize(0.)))
 	}
 	pub fn NV(&self, model: &M4) -> Mat3 {
-		Mat3::to(glm::inverse_transpose((self.view * model).fixed_resize(0.)))
+		Mat3(glm::inverse_transpose((self.view * model).fixed_resize(0.)))
 	}
 }
 type M4 = glm::Mat4;

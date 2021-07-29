@@ -38,7 +38,7 @@ impl Slider {
 		);
 
 		r.draw(Rect {
-			pos: pos.sum(Vec2::to((!vert, vert)).mul(size).mul(p)),
+			pos: pos.sum(Vec2((!vert, vert)).mul(size).mul(p)),
 			size: size.mul((if !vert { pip_size } else { 1. }, if vert { pip_size } else { 1. })),
 			color: t.highlight,
 		});

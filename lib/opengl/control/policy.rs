@@ -14,11 +14,11 @@ macro_rules! m_state {
 	};
 }
 
-pub trait Buffer {
+pub trait Buffer: TrivialBound + State {
 	const TYPE: GLenum;
 }
 
-#[derive(Default)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Attribute;
 impl State for Attribute {
 	m_state!();
@@ -27,7 +27,7 @@ impl Buffer for Attribute {
 	const TYPE: GLenum = gl::ARRAY_BUFFER;
 }
 
-#[derive(Default)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Index;
 impl State for Index {
 	m_state!();
@@ -133,6 +133,6 @@ impl<T: TexType> State for Texture<T> {
 	}
 }
 
-pub trait TexType: Default {
+pub trait TexType: TrivialBound {
 	const TYPE: GLenum;
 }

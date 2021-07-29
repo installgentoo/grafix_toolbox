@@ -2,14 +2,22 @@
 mod policies;
 #[macro_use]
 mod opengl;
+#[macro_use]
 mod utility;
 
 pub mod uses {
 	pub use hashbrown::{HashMap, HashSet};
 	pub use std::borrow::{self, Borrow, ToOwned};
+	pub use std::cell::{Cell, RefCell, UnsafeCell};
 	pub use std::collections::{BTreeMap, BTreeSet, VecDeque};
 	pub use std::marker::PhantomData as Dummy;
-	pub use std::{cell::Cell, cell::UnsafeCell, char, cmp, convert::TryInto, fmt, fmt::Debug, hash, iter, mem, ops, path, path::Path, ptr, rc::Rc, rc::Weak, slice, time};
+	pub use std::{char, cmp, convert::TryInto, fmt, fmt::Debug, hash, mem, ops, path, path::Path, ptr, rc::Rc, rc::Weak, slice, time};
+	pub mod iter {
+		pub use std::iter::*;
+		pub fn counter() -> impl Iterator<Item = usize> {
+			successors(Some(0), |n| Some(n + 1))
+		}
+	}
 	pub mod ord {
 		pub use std::cmp::Ordering::*;
 	}
@@ -51,11 +59,14 @@ pub mod uses {
 	pub mod math {
 		pub use super::super::utility::tuple::*;
 	}
-	pub use super::policies::{casts::cast::Cast, math::*, rand, type_tools, unsafe_static::*};
+	pub use super::policies::{casts::*, math::*, rand, type_tools, unsafe_static::*};
 	pub use super::utility::{cached_str::CachedStr, ext::*, prefetch, slicing};
 	pub use super::{GL, GL::types::*};
 	pub use {bitflags::bitflags, const_format, num_cpus};
 	pub use {nalgebra as na, nalgebra_glm as glm};
+	//TODO replace with trait aliases
+	pub use trait_set::trait_set;
+	trait_set! { pub trait TrivialBound = 'static + Debug + Default + Copy + PartialEq + Serialize + DeserializeOwned }
 }
 
 pub mod events {

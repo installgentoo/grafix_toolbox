@@ -26,14 +26,14 @@ impl<T: State> Default for Object<T> {
 pub struct Binding<'l, T: State> {
 	t: Dummy<&'l T>,
 }
-impl<'l, T: State> Binding<'l, T> {
-	pub fn new(o: &'l mut Object<T>) -> Self {
+impl<T: State> Binding<'_, T> {
+	pub fn new(o: &mut Object<T>) -> Self {
 		T::Lock(o.obj);
 		T::Bind(o.obj);
 		Self { t: Dummy }
 	}
 }
-impl<'l, T: State> Drop for Binding<'l, T> {
+impl<T: State> Drop for Binding<'_, T> {
 	fn drop(&mut self) {
 		T::Unlock();
 	}

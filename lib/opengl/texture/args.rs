@@ -9,7 +9,7 @@ where
 	i32: Cast<W> + Cast<H> + Cast<D>,
 {
 	fn getm(self) -> i32 {
-		let (w, h, d) = iVec3::to(self);
+		let (w, h, d) = iVec3(self);
 		w.max(h).max(d)
 	}
 }
@@ -38,7 +38,7 @@ where
 	i32: Cast<L> + Cast<W>,
 {
 	fn get1(self) -> iVec2 {
-		iVec2::to(self)
+		iVec2(self)
 	}
 }
 impl<W> NewArgs1 for W
@@ -58,7 +58,7 @@ where
 	i32: Cast<L> + Cast<W> + Cast<H>,
 {
 	fn get2(self) -> iVec3 {
-		iVec3::to(self)
+		iVec3(self)
 	}
 }
 impl<W, H> NewArgs2 for (W, H)
@@ -78,7 +78,7 @@ where
 	i32: Cast<L> + Cast<W> + Cast<H> + Cast<D>,
 {
 	fn get3(self) -> iVec4 {
-		iVec4::to(self)
+		iVec4(self)
 	}
 }
 impl<W, H, D> NewArgs3 for (W, H, D)
@@ -105,7 +105,7 @@ where
 {
 	fn geta1(&self) -> UArgs1 {
 		let slice = self.0.as_ref();
-		let (l, x) = iVec2::to((self.1, self.2));
+		let (l, x) = iVec2((self.1, self.2));
 		(slice.as_ptr() as *const GLvoid, l, x, slice.len())
 	}
 }
@@ -139,7 +139,7 @@ where
 {
 	fn geta2(&self) -> UArgs2 {
 		let slice = self.0.as_ref();
-		let (l, x, y) = iVec3::to((self.1, self.2, self.3));
+		let (l, x, y) = iVec3((self.1, self.2, self.3));
 		(slice.as_ptr() as *const GLvoid, l, x, y, slice.len())
 	}
 }
@@ -181,7 +181,7 @@ where
 {
 	fn geta3(&self) -> UArgs3 {
 		let slice = self.0.as_ref();
-		let (l, x, y, z) = iVec4::to((self.1, self.2, self.3, self.4));
+		let (l, x, y, z) = iVec4((self.1, self.2, self.3, self.4));
 		(slice.as_ptr() as *const GLvoid, l, x, y, z, slice.len())
 	}
 }

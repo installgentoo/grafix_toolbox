@@ -9,7 +9,7 @@ impl Framebuffer {
 		args.apply(self.obj);
 		self
 	}
-	pub fn Bind<T: TexType, S, F>(&mut self, tex: &Tex<T, S, F>) -> Binding<Framebuff> {
+	pub fn Bind<S, F>(&mut self, tex: &Tex<S, F, impl TexType>) -> Binding<Framebuff> {
 		let TexParam { w, h, .. } = tex.param;
 		GL::Viewport::Set((0, 0, w, h));
 		Binding::new(self)
@@ -22,14 +22,14 @@ impl Framebuffer {
 	where
 		f32: Cast<T>,
 	{
-		GLCheck!(glClearFramebuff(self.obj, gl::DEPTH, 0, &f32::to(d) as *const f32));
+		GLCheck!(glClearFramebuff(self.obj, gl::DEPTH, 0, &f32(d) as *const f32));
 	}
 }
 
 pub trait FramebuffArg {
 	fn apply(self, _: u32);
 }
-impl<T: TexType, S, F> FramebuffArg for (&Tex<T, S, F>, GLenum) {
+impl<S, F, T: TexType> FramebuffArg for (&Tex<S, F, T>, GLenum) {
 	fn apply(self, obj: u32) {
 		GLCheck!(glFramebuffTex(obj, self.0.obj(), self.1));
 	}
@@ -49,8 +49,8 @@ where
 	Vec4: Cast<(R, G, B, A)>,
 {
 	fn get(self) -> Args {
-		let (r, g, b, a) = Vec4::to(self.1);
-		(i32::to(self.0), [r, g, b, a])
+		let (r, g, b, a) = Vec4(self.1);
+		(i32(self.0), [r, g, b, a])
 	}
 }
 impl<R, G, B, A> ClearArgs for (R, G, B, A)

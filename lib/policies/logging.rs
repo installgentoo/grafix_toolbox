@@ -18,7 +18,7 @@ pub async fn Null() -> Unblock<io::Sink> {
 	Unblock::new(io::sink())
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 pub enum Level {
 	ERROR = 0,
 	WARNING = 1,

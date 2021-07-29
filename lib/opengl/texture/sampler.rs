@@ -14,7 +14,7 @@ pub trait SamplerArg {
 }
 impl SamplerArg for GLenum {
 	fn apply(&self, obj: u32, name: GLenum) {
-		GLCheck!(gl::SamplerParameteri(obj, name, i32::to(*self)));
+		GLCheck!(gl::SamplerParameteri(obj, name, i32(*self)));
 	}
 }
 impl SamplerArg for f32 {

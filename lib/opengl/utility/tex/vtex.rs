@@ -34,13 +34,13 @@ impl<S: TexSize> TexAtlas<S> {
 	pub fn load(&self, name: &str) -> AtlasTex2d<S> {
 		let (reqs, _textures) = unsafe { &mut *self.t.get() };
 		ASSERT!(_textures.is_empty(), "Loading into atlas after batching");
-		let k = u32::to(reqs.len());
+		let k = u32(reqs.len());
 		reqs.push(FS::Preload::File(CONCAT!("res/", name)));
 		Prefetched::new(k, self)
 	}
 	fn initialize(&self) {
 		let (reqs, textures) = unsafe { &mut *self.t.get() };
-		let reqs: Vec<(u32, _)> = reqs.into_iter().enumerate().map(|(n, r)| (u32::to(n), EXPECT!(uImage::<S>::new(r.get())))).collect();
+		let reqs: Vec<(u32, _)> = reqs.into_iter().enumerate().map(|(n, r)| (u32(n), EXPECT!(uImage::<S>::new(r.get())))).collect();
 		let max_side = GL::MAX_TEXTURE_SIZE();
 		let (mut atlas, mut tail) = atlas::pack_into_atlas::<_, _, S, _>(reqs, max_side, max_side);
 		if tail.is_empty() {

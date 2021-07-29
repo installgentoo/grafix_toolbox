@@ -1,6 +1,6 @@
 use crate::uses::*;
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct CachedStr {
 	str: String,
 	old_str: String,
@@ -12,7 +12,7 @@ impl CachedStr {
 		*accessed = true;
 		str
 	}
-	pub fn new<S: Into<String>>(s: S) -> Self {
+	pub fn new(s: impl Into<String>) -> Self {
 		let (str, old_str) = (s.into(), "".into());
 		Self { str, old_str, accessed: true }
 	}

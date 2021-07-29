@@ -12,7 +12,7 @@ impl<T: Borrow<Environment>> From<T> for EnvTex {
 		let e = e.borrow();
 		let specular = CubeTex::from(&e.specular);
 		let irradiance = (&e.diffuse).into();
-		let mip_levels = f32::to(specular.param.l);
+		let mip_levels = f32(specular.param.l);
 		Self { mip_levels, specular, irradiance }
 	}
 }
@@ -124,8 +124,8 @@ impl Environment {
 			.chain(
 				(1..mips)
 					.map(|l| {
-						let r = f32::to(l) / f32::to(mips - 1);
-						let wh = cubemap.param.dim_unchecked(u32::to(l)).xy();
+						let r = f32(l) / f32(mips - 1);
+						let wh = cubemap.param.dim_unchecked(u32(l)).xy();
 						let mip: [_; 6] = VP_mats
 							.iter()
 							.map(|cam| {

@@ -27,7 +27,7 @@ impl SdfGenerator {
 			let mut surf_in = Fbo::<RGBA, f32>::new((w, h));
 			{
 				let t = tex.Bind(sampl);
-				let s = Uniforms!(dst_t, ("tex", &t), ("r", border), ("step", (0., 1. / f32::to(h))));
+				let s = Uniforms!(dst_t, ("tex", &t), ("r", border), ("step", (0., 1. / f32(h))));
 
 				let s = Uniform!(s, ("side", 1.));
 				surf_out.bind();
@@ -41,7 +41,7 @@ impl SdfGenerator {
 			{
 				let to = surf_out.tex.Bind(sampl);
 				let ti = surf_in.tex.Bind(sampl);
-				let _ = Uniforms!(dt_h, ("tex_o", &to), ("tex_i", &ti), ("r", border), ("step", (1. / f32::to(w), 0.)));
+				let _ = Uniforms!(dt_h, ("tex_o", &to), ("tex_i", &ti), ("r", border), ("step", (1. / f32(w), 0.)));
 				out.bind();
 				Screen::Draw();
 			}

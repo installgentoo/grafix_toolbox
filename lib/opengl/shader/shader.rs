@@ -66,7 +66,7 @@ impl<'l> ShaderBinding<'l> {
 		args.get(addr, &mut self.shd.tex_cache);
 	}
 }
-impl<'l> Drop for ShaderBinding<'l> {
+impl Drop for ShaderBinding<'_> {
 	fn drop(&mut self) {
 		ShdProg::Unlock();
 	}
@@ -90,7 +90,7 @@ impl ShaderManager {
 		let m = Self::get();
 		let name = filename.into();
 		m.loading.push(task::spawn(async move {
-			let data = OR_DEF!(Res::to(FS::read_text(name.as_ref()).await));
+			let data = OR_DEF!(Res(FS::read_text(name.as_ref()).await));
 			parse_shader_sources(&name, &data)
 		}));
 	}

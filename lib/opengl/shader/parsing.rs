@@ -60,7 +60,7 @@ pub fn print_shader_log(obj: u32) -> String {
 	let mut max_len: i32 = 0;
 	GLCheck!(f_shader(obj, gl::INFO_LOG_LENGTH, &mut max_len));
 	let log = {
-		let mut log: Vec<u8> = vec![0; usize::to(max_len)];
+		let mut log: Vec<u8> = vec![0; usize(max_len)];
 		GLCheck!(f_prog(obj, max_len, ptr::null_mut(), log.as_mut_ptr() as *mut i8));
 		let l = log.pop();
 		if l.is_none() || l.unwrap() != 0 {

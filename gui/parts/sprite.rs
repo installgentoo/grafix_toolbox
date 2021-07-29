@@ -2,13 +2,13 @@ use super::obj::*;
 use crate::uses::{math::*, *};
 use crate::GL::{atlas::VTex2d, shader::*, tex::*, window::*, VaoBinding};
 
-pub struct Sprite<'a, S> {
+pub struct Sprite<'r, S> {
 	pub pos: Vec2,
 	pub size: Vec2,
 	pub color: Color,
-	pub tex: &'a VTex2d<S, u8>,
+	pub tex: &'r VTex2d<S, u8>,
 }
-impl<'a, S: TexSize> Sprite<'a, S> {
+impl<S: TexSize> Sprite<'_, S> {
 	#[inline(always)]
 	pub fn compare(&self, crop: &Crop, r: &SpriteImpl<S>) -> State {
 		let &Self { pos, size, color, tex } = self;
@@ -41,7 +41,7 @@ impl<S: TexSize> Object for SpriteImpl<S> {
 	}
 	fn write_mesh(&self, (z, state, xyzw, rgba, uv): BatchRange) {
 		if state.contains(State::XYZW | State::UV) {
-			let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <(vec2<f16>, vec2<f16>, vec4<f16>)>::to({
+			let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <_>::to({
 				let (aspect, (crop1, crop2), &Base { pos, size, .. }) = (Window::aspect(), self.base.bound_box(), self.base());
 				let (xy1, xy2, uv) = (pos, pos.sum(size), unsafe { &*self.tex }.region);
 				let uv = bound_uv((crop1, crop2), (xy1, xy2), uv);

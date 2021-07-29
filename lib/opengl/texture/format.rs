@@ -1,35 +1,35 @@
 use crate::uses::*;
 
-pub trait TexSize: Default + Debug + Serialize + DeserializeOwned {
+pub trait TexSize: TrivialBound {
 	const TYPE: GLenum;
 	const SIZE: i32;
 }
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct RED;
 impl TexSize for RED {
 	const TYPE: GLenum = gl::RED;
 	const SIZE: i32 = 1;
 }
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct RG;
 impl TexSize for RG {
 	const TYPE: GLenum = gl::RG;
 	const SIZE: i32 = 2;
 }
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct RGB;
 impl TexSize for RGB {
 	const TYPE: GLenum = gl::RGB;
 	const SIZE: i32 = 3;
 }
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct RGBA;
 impl TexSize for RGBA {
 	const TYPE: GLenum = gl::RGBA;
 	const SIZE: i32 = 4;
 }
 
-pub trait TexFmt: Copy + Default + PartialEq + Serialize + DeserializeOwned {
+pub trait TexFmt: TrivialBound {
 	const TYPE: GLenum;
 	const ZERO: Self;
 }

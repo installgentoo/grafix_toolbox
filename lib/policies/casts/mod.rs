@@ -1,10 +1,11 @@
 #[macro_use]
-pub mod cast;
+mod cast;
 
 mod bool;
 mod f16;
 mod f32;
 mod f64;
+mod func;
 mod i128;
 mod i16;
 mod i32;
@@ -22,3 +23,5 @@ mod usize;
 mod vector;
 
 pub mod result;
+
+pub use {cast::Cast, func::*};

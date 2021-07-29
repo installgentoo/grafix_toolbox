@@ -25,7 +25,7 @@ impl<I: IdxType> Vao<I> {
 	pub fn AttribFmt<A: AttrType>(&mut self, o: &AttrArr<A>, args: impl AttrFmtArgs) {
 		let (idx, size, norm, stride, offset) = args.get();
 		ASSERT!((size > 0 && size < 5), "Attribute size {} isn't valid", size);
-		let t_size = u32::to(type_size!(A));
+		let t_size = u32(type_size!(A));
 		GLCheck!(glVertexAttribFormat(self.obj(), o.obj, idx, size, A::TYPE, to_glbool(norm), stride, offset, t_size));
 	}
 }
@@ -34,8 +34,8 @@ pub struct VaoBinding<'l, I> {
 	_b: Binding<'l, VertArrObj>,
 	d: Dummy<I>,
 }
-impl<'l, I: IdxType> VaoBinding<'l, I> {
-	pub fn new(o: &'l mut Vao<I>) -> Self {
+impl<I: IdxType> VaoBinding<'_, I> {
+	pub fn new(o: &mut Vao<I>) -> Self {
 		let _b = Binding::new(&mut o.o);
 		Self { _b, d: Dummy }
 	}
@@ -51,7 +51,7 @@ impl<'l, I: IdxType> VaoBinding<'l, I> {
 	}
 	pub fn DrawUnindexed(&self, args: impl DrawArgs) {
 		let (num, offset, mode) = args.get();
-		GLCheck!(gl::DrawArrays(mode, i32::to(offset), num));
+		GLCheck!(gl::DrawArrays(mode, i32(offset), num));
 	}
 	pub fn DrawInstanced<T>(&self, n: T, args: impl DrawArgs)
 	where
@@ -65,7 +65,7 @@ impl<'l, I: IdxType> VaoBinding<'l, I> {
 
 		let (num, offset, mode) = args.get();
 		let offset = (offset * type_size!(I)) as *const GLvoid;
-		GLCheck!(gl::DrawElementsInstanced(mode, num, I::TYPE, offset, i32::to(n)));
+		GLCheck!(gl::DrawElementsInstanced(mode, num, I::TYPE, offset, i32(n)));
 	}
 }
 

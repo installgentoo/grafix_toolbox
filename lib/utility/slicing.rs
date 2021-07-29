@@ -1,4 +1,4 @@
-pub fn split<F: Fn(char) -> bool>(s: &str, f: F) -> (&str, &str) {
+pub fn split(s: &str, f: impl Fn(char) -> bool) -> (&str, &str) {
 	let at = find(s, f);
 	(&s[..at], &s[at..])
 }
@@ -84,6 +84,6 @@ impl<'a, F: Fn(char) -> bool> SliceArgs<'a> for (F, &'a String, F) {
 	}
 }
 
-fn find<F: Fn(char) -> bool>(s: &str, f: F) -> usize {
+fn find(s: &str, f: impl Fn(char) -> bool) -> usize {
 	s.find(f).unwrap_or_else(|| s.len())
 }

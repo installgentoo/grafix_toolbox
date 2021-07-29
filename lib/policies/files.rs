@@ -5,11 +5,11 @@ use path::PathBuf;
 pub mod Save {
 	use super::*;
 
-	pub fn Write<P: Into<PathBuf>>(p: P, data: impl Into<Vec<u8>>) {
+	pub fn Write(p: impl Into<PathBuf>, data: impl Into<Vec<u8>>) {
 		let sender = setup_impl();
 		EXPECT!(sender.send((p.into(), MessageType::Write, data.into())));
 	}
-	pub fn Append<P: Into<PathBuf>>(p: P, data: impl Into<Vec<u8>>) {
+	pub fn Append(p: impl Into<PathBuf>, data: impl Into<Vec<u8>>) {
 		let sender = setup_impl();
 		EXPECT!(sender.send((p.into(), MessageType::Append, data.into())));
 	}
@@ -28,7 +28,7 @@ pub mod Save {
 		i32: Cast<C>,
 	{
 		fn get(self) -> Args {
-			(self.0.into(), self.1.into(), i32::to(self.2))
+			(self.0.into(), self.1.into(), i32(self.2))
 		}
 	}
 	impl<T: Into<Vec<u8>>, F: Into<PathBuf>> CompressArgs for (F, T) {
@@ -62,7 +62,7 @@ pub mod Save {
 
 						if let Ok(mut file) = file {
 							let data = if let ComprW(l) = operation {
-								OR_DEF!(Res::to(zstd::stream::encode_all(&data[..], l)))
+								OR_DEF!(Res(zstd::stream::encode_all(&data[..], l)))
 							} else {
 								data
 							};
@@ -95,15 +95,15 @@ pub mod Save {
 
 pub mod Load {
 	use super::*;
-	pub fn File<P: AsRef<Path>>(p: P) -> Res<Vec<u8>> {
+	pub fn File(p: impl AsRef<Path>) -> Res<Vec<u8>> {
 		let p: &Path = p.as_ref();
 		map_err(std::fs::read(p), p)
 	}
-	pub fn Text<P: AsRef<Path>>(p: P) -> Res<String> {
+	pub fn Text(p: impl AsRef<Path>) -> Res<String> {
 		let p: &Path = p.as_ref();
 		map_err(std::fs::read_to_string(p), p)
 	}
-	pub fn Archive<P: AsRef<Path>>(p: P) -> Res<Vec<u8>> {
+	pub fn Archive(p: impl AsRef<Path>) -> Res<Vec<u8>> {
 		let decode = |p| -> Res<_> {
 			let f = PASS!(std::fs::File::open(p));
 			let b = PASS!(zstd::stream::decode_all(f));
@@ -170,9 +170,9 @@ macro_rules! LOADER {
 					}
 				}
 			}
-			pub fn load<P: Into<PathBuf>>(p: P) -> $type::Resource {
+			pub fn load(p: impl Into<PathBuf>) -> $type::Resource {
 				let $a = p.into();
-				Resource::Loading(task::spawn(async move { Res::to($b) }))
+				Resource::Loading(task::spawn(async move { Res($b) }))
 			}
 		}
 	};
@@ -184,7 +184,7 @@ LOADER!(Archive, Vec<u8>, s, {
 	zstd::stream::decode_all(&data[..])
 });
 
-pub async fn read_file<P: AsRef<Path>>(p: P) -> Res<Vec<u8>> {
+pub async fn read_file(p: impl AsRef<Path>) -> Res<Vec<u8>> {
 	async fn read(p: &Path) -> Res<Vec<u8>> {
 		let mut f = PASS!(fs::File::open(p).await);
 		let mut b = vec![];
@@ -194,7 +194,7 @@ pub async fn read_file<P: AsRef<Path>>(p: P) -> Res<Vec<u8>> {
 	let p = p.as_ref();
 	map_err(read(p).await, p)
 }
-pub async fn read_text<P: AsRef<Path>>(p: P) -> Res<String> {
+pub async fn read_text(p: impl AsRef<Path>) -> Res<String> {
 	async fn read(p: &Path) -> Res<String> {
 		let mut f = PASS!(fs::File::open(p).await);
 		let mut b = String::new();
@@ -205,6 +205,6 @@ pub async fn read_text<P: AsRef<Path>>(p: P) -> Res<String> {
 	map_err(read(p).await, p)
 }
 
-fn map_err<T, E: std::fmt::Display>(r: Result<T, E>, p: &Path) -> Res<T> {
+fn map_err<T>(r: Result<T, impl std::fmt::Display>, p: &Path) -> Res<T> {
 	r.map_err(|e| format!("Could not open file {:?}\n{}", p, e))
 }

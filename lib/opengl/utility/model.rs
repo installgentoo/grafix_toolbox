@@ -29,12 +29,12 @@ impl Model {
 				let (idxs, xyz, uv, mut norm) = (
 					m.indices,
 					m.positions,
-					m.texcoords.iter().map(|v| f16::to(*v)).collect(),
-					m.normals.iter().map(|v| f16::to(*v)).collect::<Vec<_>>(),
+					m.texcoords.iter().map(|v| f16(*v)).collect(),
+					m.normals.iter().map(|v| f16(*v)).collect::<Vec<_>>(),
 				);
 				let (mut min, mut max) = ((0., 0., 0.), (0., 0., 0.));
 				for i in (0..xyz.len()).step_by(3) {
-					let v = Vec3::to(&xyz[i..]);
+					let v = Vec3(&xyz[i..]);
 					min = min.fmin(v);
 					max = max.fmax(v);
 					if m.normals.is_empty() && i % 9 == 0 && i + 8 < xyz.len() {
@@ -42,13 +42,13 @@ impl Model {
 						let (v1, v2, v3) = vec3::<Vec3>::to((xyz, &xyz[3..], &xyz[6..]));
 						let ndir = v1.sum(v2).sum(v3).div(3).sgn();
 						let (v1, v2, v3) = vec3::<glm::Vec3>::to((v1, v2, v3));
-						let n = <[_; 3]>::to(vec3::<f16>::to(Vec3::to(glm::triangle_normal(&v1, &v2, &v3)).mul(ndir)));
+						let n = <[_; 3]>::to(hVec3(Vec3(glm::triangle_normal(&v1, &v2, &v3)).mul(ndir)));
 						(0..9).for_each(|i| norm.push(n[i % 3]));
 					}
 				}
 				let d: Vec3 = max.sub(min);
 				let (center, scale) = (max.sum(min).div(2), (1., 1., 1.).div(d.x().max(d.y()).max(d.z())).mul(scale));
-				let xyz = xyz.chunks(3).flat_map(|s| <[_; 3]>::to((Vec3::to(s)).sub(center).mul(scale)).to_vec()).collect::<Vec<_>>();
+				let xyz = xyz.chunks(3).flat_map(|s| <[_; 3]>::to((Vec3(s)).sub(center).mul(scale)).to_vec()).collect::<Vec<_>>();
 				Model { idxs, xyz, uv, norm }
 			})
 			.collect();
@@ -87,16 +87,14 @@ impl Mesh<u16, f32, f16, f32> {
 	pub fn make_sphere(scale: f32, segs: u32) -> Self {
 		let (xyz, uv) = {
 			let (mut xyz, mut uv) = (vec![], vec![]);
-			for y in 0..1 + segs {
-				for x in 0..1 + segs {
-					let (sx, sy) = Vec2::to((x, y)).div(segs);
-					let (rx, ry) = (sx.to_radians(), sy.to_radians());
-					let (x, y, z) = ((rx * 360.).cos() * (ry * 180.).sin(), (ry * 180.).cos(), (rx * 360.).sin() * (ry * 180.).sin()).mul(scale);
-					let (sx, sy) = vec2::<f16>::to((sx, sy).norm());
-					xyz.extend(&[x, y, z]);
-					uv.extend(&[sx, sy]);
-				}
-			}
+			iter2d(0..1 + segs).for_each(|(x, y)| {
+				let (sx, sy) = Vec2((x, y)).div(segs);
+				let (rx, ry) = (sx.to_radians(), sy.to_radians());
+				let (x, y, z) = ((rx * 360.).cos() * (ry * 180.).sin(), (ry * 180.).cos(), (rx * 360.).sin() * (ry * 180.).sin()).mul(scale);
+				let (sx, sy) = hVec2((sx, sy).norm());
+				xyz.extend(&[x, y, z]);
+				uv.extend(&[sx, sy]);
+			});
 			(xyz, uv)
 		};
 
@@ -110,10 +108,10 @@ impl Mesh<u16, f32, f16, f32> {
 					row.rev().collect::<Vec<_>>()
 				}
 			})
-			.map(|i| u16::to(i))
+			.map(|i| u16(i))
 			.collect::<Vec<_>>();
 
-		let draw = (u32::to(idx.len()), gl::TRIANGLE_STRIP);
+		let draw = (u32(idx.len()), gl::TRIANGLE_STRIP);
 		let idx = IdxArr::new(idx);
 		let xyz = AttrArr::new(xyz);
 		let uv = AttrArr::new(uv);
@@ -137,7 +135,7 @@ impl Serialize for Model {
 impl<'de> Deserialize<'de> for Model {
 	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
 		struct V;
-		impl<'de> Visitor<'de> for V {
+		impl Visitor<'_> for V {
 			type Value = Model;
 
 			fn expecting(&self, formatter: &mut Formatter) -> FmtRes {

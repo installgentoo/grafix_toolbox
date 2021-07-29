@@ -3,14 +3,14 @@ use super::sprite::{gui__col_tex_ps, gui__pos_col_tex_vs, sampler};
 use crate::uses::{math::*, *};
 use crate::GL::{atlas::VTex2d, shader::*, tex::*, window::*, VaoBinding};
 
-pub struct Sprite9<'a, S> {
+pub struct Sprite9<'r, S> {
 	pub pos: Vec2,
 	pub size: Vec2,
 	pub corner: f32,
 	pub color: Color,
-	pub tex: &'a VTex2d<S, u8>,
+	pub tex: &'r VTex2d<S, u8>,
 }
-impl<'a, S: TexSize> Sprite9<'a, S> {
+impl<S: TexSize> Sprite9<'_, S> {
 	#[inline(always)]
 	pub fn compare(&self, crop: &Crop, r: &Sprite9Impl<S>) -> State {
 		let &Self { pos, size, corner, color, tex } = self;
@@ -70,7 +70,7 @@ impl<S: TexSize> Object for Sprite9Impl<S> {
 type Sprite9Desc = (Vec2, Vec2, Vec2, Vec2, Crop, TexCoord, Color);
 pub fn write_sprite9((aspect, pos, size, corner, (crop1, crop2), (u1, v1, u2, v2), color): Sprite9Desc, (z, state, xyzw, rgba, uv): BatchRange) {
 	if state.contains(State::XYZW) {
-		let (((x1, y1), (x2, y2), (m1x, m1y), (m2x, m2y)), (u1, v1, u2, v2), (m1u, m1v, m2u, m2v)) = <(vec4<vec2<f16>>, vec4<f16>, vec4<f16>)>::to({
+		let (((x1, y1), (x2, y2), (m1x, m1y), (m2x, m2y)), (u1, v1, u2, v2), (m1u, m1v, m2u, m2v)) = <_>::to({
 			let (xy1, xy2) = (pos, pos.sum(size));
 			let (m1, m2, ms) = (xy1.sum(corner), xy2.sub(corner), corner);
 			let (uv, muv) = {
@@ -118,7 +118,7 @@ pub fn write_sprite9((aspect, pos, size, corner, (crop1, crop2), (u1, v1, u2, v2
 
 pub fn sprite9_idxs((start, size): (u16, u16)) -> Vec<u16> {
 	let mut v = vec![];
-	v.reserve(usize::to(size) * 8 / 27);
+	v.reserve(usize(size) * 8 / 27);
 	for i in (start..(start + size)).step_by(16) {
 		let s = |j| i + j;
 		#[rustfmt::skip]

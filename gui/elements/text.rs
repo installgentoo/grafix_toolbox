@@ -21,7 +21,7 @@ impl TextEdit {
 
 		let font = &t.font;
 		if self.text.changed() || scale != self.scale || size != self.size {
-			let linenum_bar_w = |l| (font.char('0').adv * scale * (f32::to(l).max(1.).log10() + 1.)).min(size.x());
+			let linenum_bar_w = |l| (font.char('0').adv * scale * (f32(l).max(1.).log10() + 1.)).min(size.x());
 			let offset = (linenum_bar_w(self.text.lines().count()), 0.);
 			let (lines, wraps) = parse_text(&self.text, font, scale, size.sub(offset).x() - SCR_PAD);
 			self.select = util::move_caret(&lines, self.select, (0, 0), true);
@@ -56,12 +56,12 @@ impl TextEdit {
 			color: t.bg,
 		});
 
-		let len = isize::to(lines.len());
-		let whole_text_h = scale * f32::to(len);
+		let len = isize(lines.len());
+		let whole_text_h = scale * f32(len);
 		let start = (1. - scrollbar.pip_pos) * (whole_text_h - size.y());
-		let line_pos = |n| start + size.y() - scale * f32::to(n + 1);
+		let line_pos = |n| start + size.y() - scale * f32(n + 1);
 		let vis_range = move || (start, size.y()).mul(len).div(whole_text_h).fmax(0).sum((0, 1)).fmin(len);
-		let (start, len) = ulVec2::to(vis_range());
+		let (start, len) = ulVec2(vis_range());
 		let p = |x, n| pos.sum((x, line_pos(n)));
 
 		if caret != select {
@@ -138,13 +138,13 @@ impl TextEdit {
 				let sety = |c, o| util::move_caret(lines, c, (0, o), false);
 				let click = |p| util::caret_to_cursor(lines, vis_range(), t, scale, pos.sum((offset.x(), size.y())), p);
 				let move_pip = |v: f32| (*pip + v).clamp(0., 1.);
-				let set_screen = |c: &Caret, at: f32| 1. - (f32::to(c.y()) / f32::to(lines.len() - len) - at).or_def(whole_text_h > size.y()).clamp(0., 1.);
-				let center_pip = |c: &Caret| set_screen(c, f32::to(len) * scale / whole_text_h * 0.5);
+				let set_screen = |c: &Caret, at: f32| 1. - (f32(c.y()) / f32(lines.len() - len) - at).or_def(whole_text_h > size.y()).clamp(0., 1.);
+				let center_pip = |c: &Caret| set_screen(c, f32(len) * scale / whole_text_h * 0.5);
 				let adj_edge = |c: &Caret| {
 					if c.y() <= start {
 						set_screen(c, 0.)
 					} else if c.y() + 1 >= start + len {
-						set_screen(c, f32::to(len) * scale / whole_text_h)
+						set_screen(c, f32(len) * scale / whole_text_h)
 					} else {
 						*pip
 					}
@@ -153,13 +153,13 @@ impl TextEdit {
 					let lw = lines[..beg.y()].iter().zip(&wraps[..beg.y()]);
 					let start_l = util::line(lines, beg);
 					let start_c = start_l.len_at_char(beg.x() - 1);
-					let start = lw.fold(0, |s, (l, w)| s + l.len() + (*w != 0) as usize);
+					let start = lw.fold(0, |s, (l, w)| s + l.len() + usize(*w != 0));
 					let lw = lines[beg.y()..end.y()].iter().zip(&wraps[beg.y()..end.y()]);
 					let end_l = util::line(lines, end);
 					let wrap = wraps[end.y().max(1) - 1] == 0 && end.x() == 1;
 					let end_c = end_l.len_at_char(end.x().max(1) - 1.or_def(!wrap));
 					let len = if end.y() > beg.y() {
-						lw.fold(0, |s, (l, w)| s + l.len() + (*w != 0) as usize) + end_c
+						lw.fold(0, |s, (l, w)| s + l.len() + usize(*w != 0)) + end_c
 					} else {
 						end_c
 					};
@@ -206,12 +206,12 @@ impl TextEdit {
 							*pip = adj_edge(caret);
 						}
 						Key::PageUp => {
-							*caret = sety(*caret, -i32::to(len));
+							*caret = sety(*caret, -i32(len));
 							*select = select.or_val(state.shift(), *caret);
 							*pip = center_pip(caret);
 						}
 						Key::PageDown => {
-							*caret = sety(*caret, i32::to(len));
+							*caret = sety(*caret, i32(len));
 							*select = select.or_val(state.shift(), *caret);
 							*pip = center_pip(caret);
 						}
@@ -353,7 +353,7 @@ struct History {
 	changes: Vec<Change>,
 	at: usize,
 }
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 enum Change {
 	Insert(String, usize, Caret),
 	Delete(String, usize, Caret),
@@ -428,7 +428,7 @@ fn parse_text(text: &str, font: &Font, scale: f32, max_w: f32) -> (Vec<Str>, Vec
 			let e = tail.is_empty();
 			lines.push(unsafe { mem::transmute(head) });
 			wraps.push(lnum.or_def(e));
-			lnum += e as u32;
+			lnum += u32(e);
 			l = tail;
 		}
 	}

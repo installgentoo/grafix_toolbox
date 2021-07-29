@@ -1,30 +1,4 @@
-use crate::uses::{ops::*, Cast};
-
-pub type CowStr = std::borrow::Cow<'static, str>;
-pub type Res<T> = Result<T, String>;
-pub type Str = &'static str;
-
-#[macro_export]
-macro_rules! map_enum {
-	($e: expr, $t: pat, $do: expr) => {
-		if let $t = $e {
-			Some($do)
-		} else {
-			None
-		}
-	};
-}
-
-#[macro_export]
-macro_rules! impl_trait_for {
-	($trait: ty, $($types: ty),+) => {
-		$(impl $trait for $types {})+
-	};
-}
-
-pub fn Def<T: Default>() -> T {
-	Default::default()
-}
+use crate::uses::*;
 
 pub trait Utf8Len {
 	fn utf8_len(&self) -> usize;
@@ -55,44 +29,6 @@ impl<T> LastIdx for &[T] {
 impl<T> LastIdx for Vec<T> {
 	fn last_idx(&self) -> usize {
 		self.as_slice().last_idx()
-	}
-}
-
-pub trait OrAssignment {
-	fn or_def(self, with: bool) -> Self;
-	fn or_val(self, with: bool, v: Self) -> Self;
-}
-impl<T: Default> OrAssignment for T {
-	#[inline(always)]
-	fn or_def(self, with: bool) -> Self {
-		if with {
-			self
-		} else {
-			Def()
-		}
-	}
-	#[inline(always)]
-	fn or_val(self, with: bool, v: Self) -> Self {
-		if with {
-			self
-		} else {
-			v
-		}
-	}
-}
-
-pub trait LerpMix: Cast<f32> {
-	fn mix<M>(self, a: M, r: Self) -> Self
-	where
-		f32: Cast<M>;
-}
-impl<T: Cast<f32> + Copy + Add<Output = T> + Mul<Output = T>> LerpMix for T {
-	fn mix<M>(self, a: M, r: Self) -> Self
-	where
-		f32: Cast<M>,
-	{
-		let a = f32::to(a);
-		self * Self::to(1. - a) + r * Self::to(a)
 	}
 }
 

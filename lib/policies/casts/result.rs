@@ -19,15 +19,15 @@ impl<T, E: std::fmt::Display> Cast<Result<T, E>> for Result<T, String> {
 }
 
 pub trait UniformUnwrap<T> {
-	fn uni_or_else<F: FnOnce(&str) -> T>(self, op: F) -> T;
+	fn uni_or_else(self, op: impl FnOnce(&str) -> T) -> T;
 }
 impl<T> UniformUnwrap<T> for Option<T> {
-	fn uni_or_else<F: FnOnce(&str) -> T>(self, op: F) -> T {
+	fn uni_or_else(self, op: impl FnOnce(&str) -> T) -> T {
 		self.unwrap_or_else(|| op("Is None"))
 	}
 }
 impl<T, R: std::fmt::Display> UniformUnwrap<T> for Result<T, R> {
-	fn uni_or_else<F: FnOnce(&str) -> T>(self, op: F) -> T {
+	fn uni_or_else(self, op: impl FnOnce(&str) -> T) -> T {
 		self.unwrap_or_else(|e| op(&e.to_string()))
 	}
 }

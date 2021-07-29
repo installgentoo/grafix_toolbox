@@ -37,7 +37,7 @@ impl Object for RectImpl {
 	}
 	fn write_mesh(&self, (z, state, xyzw, rgba, _): BatchRange) {
 		if state.contains(State::XYZW) {
-			let ((x1, y1), (x2, y2)) = vec2::<vec2<f16>>::to({
+			let ((x1, y1), (x2, y2)) = <_>::to({
 				let (aspect, (crop1, crop2)) = (Window::aspect(), self.base.bound_box());
 				(crop1.mul(aspect), crop2.mul(aspect))
 			});

@@ -64,10 +64,10 @@ macro_rules! Profiler {
 					for step in &[(1_000_000_000, " s"), (1_000_000, " ms"), (1_000, " us")] {
 						let frame = i * step.0;
 						if t >= frame {
-							return CONCAT!(&(f64::to(t) / f64::to(frame)).to_string(), step.1);
+							return CONCAT!(&(f64(t) / f64(frame)).to_string(), step.1);
 						}
 					}
-					return CONCAT!(&(f64::to(t) / f64::to(i)).to_string(), " ns");
+					return CONCAT!(&(f64(t) / f64(i)).to_string(), " ns");
 				};
 				PRINT!("Timer '{}': {} |{}", name, format(), i);
 			}
@@ -145,7 +145,7 @@ impl Start for GLTimer {
 	}
 	fn get_res(self: Box<Self>) -> (u128, u128) {
 		let _ = mem::ManuallyDrop::new(self.o);
-		(u128::to(self.total), self.iters)
+		(u128(self.total), self.iters)
 	}
 }
 impl Stop for GLTimer {
