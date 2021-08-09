@@ -33,7 +33,7 @@ impl Environment {
 
 		let env: Res<_> = (|| {
 			let file = FS::Load::File(CONCAT!["res/", name, ".hdr"])?;
-			let equirect = Tex2d::from(EXPECT!(Image::<RGB, f32>::new(file)));
+			let equirect = Tex2d::from(EXPECT!(Image::<RGB, f32>::load(file)));
 			let env = Self::new(equirect);
 			let v = EXPECT!(SERDE::ToVec(&env));
 			FS::Save::Archive((cache, v));

@@ -193,22 +193,11 @@ impl ShaderManager {
 	}
 }
 
+impl Into<CowStr> for InlineShader {
+	fn into(self) -> CowStr {
+		let InlineShader(v, v_t) = self;
+		ShaderManager::inline_source(v, v_t);
+		v.into()
+	}
+}
 pub struct InlineShader(pub Str, pub Str);
-impl ShdTypeArgs for (InlineShader, InlineShader) {
-	fn get(self) -> CompileArgs {
-		let (InlineShader(v, v_t), InlineShader(p, p_t)) = self;
-		ShaderManager::inline_source(v, v_t);
-		ShaderManager::inline_source(p, p_t);
-		(v.into(), None, p.into())
-	}
-}
-impl ShdTypeArgs for (InlineShader, InlineShader, InlineShader) {
-	fn get(self) -> CompileArgs {
-		let (InlineShader(v, v_t), InlineShader(g, g_t), InlineShader(p, p_t)) = self;
-		ShaderManager::inline_source(v, v_t);
-		ShaderManager::inline_source(g, g_t);
-		ShaderManager::inline_source(p, p_t);
-
-		(v.into(), Some(g.into()), p.into())
-	}
-}

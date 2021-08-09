@@ -30,8 +30,18 @@ impl<S: TexSize, F: TexFmt> Tile<F> for Image<S, F> {
 	}
 }
 
+impl<S: TexSize, F: TexFmt> Image<S, F> {
+	pub fn new<T>(size: T, data: Vec<F>) -> Self
+	where
+		uVec2: Cast<T>,
+	{
+		let (w, h) = uVec2(size);
+		Self { w, h, data, s: Dummy }
+	}
+}
+
 impl<S: TexSize> uImage<S> {
-	pub fn new(data: impl AsRef<[u8]>) -> Res<Self> {
+	pub fn load(data: impl AsRef<[u8]>) -> Res<Self> {
 		let mut img = {
 			let img = Reader::new(io::Cursor::new(data.as_ref())).with_guessed_format().map_err(|_| "Not an image fromat")?;
 			let fmt = Res(img.format())?;
@@ -60,10 +70,21 @@ impl<S: TexSize> uImage<S> {
 		};
 		Ok(Self { w, h, data, s: Dummy })
 	}
+	pub fn save(&self, name: impl AsRef<Path>) {
+		use image::ColorType::*;
+		let t = match S::SIZE {
+			1 => L8,
+			2 => La8,
+			3 => Rgb8,
+			4 => Rgba8,
+			_ => unreachable!(),
+		};
+		EXPECT!(image::save_buffer(name, &self.data, self.w, self.h, t));
+	}
 }
 
 impl Image<RGB, f32> {
-	pub fn new(data: impl AsRef<[u8]>) -> Res<Self> {
+	pub fn load(data: impl AsRef<[u8]>) -> Res<Self> {
 		let img = io::BufReader::new(io::Cursor::new(data.as_ref()));
 		let img = hdr::HdrDecoder::new(img).map_err(|_| "Cannot decode hdr image")?;
 		let ((w, h), data) = {

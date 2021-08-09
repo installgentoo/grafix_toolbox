@@ -40,7 +40,7 @@ impl<S: TexSize> TexAtlas<S> {
 	}
 	fn initialize(&self) {
 		let (reqs, textures) = unsafe { &mut *self.t.get() };
-		let reqs: Vec<(u32, _)> = reqs.into_iter().enumerate().map(|(n, r)| (u32(n), EXPECT!(uImage::<S>::new(r.get())))).collect();
+		let reqs: Vec<(u32, _)> = reqs.iter_mut().enumerate().map(|(n, r)| (u32(n), EXPECT!(uImage::<S>::load(r.get())))).collect();
 		let max_side = GL::MAX_TEXTURE_SIZE();
 		let (mut atlas, mut tail) = atlas::pack_into_atlas::<_, _, S, _>(reqs, max_side, max_side);
 		if tail.is_empty() {

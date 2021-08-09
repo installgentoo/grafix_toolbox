@@ -1,31 +1,47 @@
 use super::super::shader::uniforms::*;
 use crate::uses::HashMap;
-use crate::GL::{tex::*, window::*, Fbo, Sampler};
+use crate::GL::{tex::*, window::*, ClearScreen, Fbo, Sampler};
 
 #[macro_export]
 macro_rules! ComputeShader {
-	($shd: ident, $samp: ident, $fbo: ident, $(($n: expr, $v: expr)),+) => {{
+	($shd: ident, ($n0: literal, $samp: ident, $slab: ident)$(, $($args: tt),+)?) => {{
+		{
+			let mut fbo = &mut $slab.tgt;
+			let src = &$slab.src.tex;
+			ComputeShader!($shd, fbo, ($n0, $samp, src)$(, $($args),+)?);
+		}
+		$slab.swap();
+	}};
+	($shd: ident, $fbo: expr) => {{
 		(&mut $fbo).bind_appl();
-		let samp = &$samp;
-		let s = $shd.Bind();
-		$(let s = Uniform!(s, ($n, ($v, samp)));)+
+		let _ = $shd.Bind();
 		Screen::Draw();
 	}};
-	($shd: ident, $samp: ident, ($n0: expr, $slab: ident), $(($n: expr, $v: expr)),+) => {{
-		{
-			let mut fbo = &mut $slab.tgt;
-			let src = &$slab.src.tex.Bind(&$samp);
-			ComputeShader!($shd, $samp, fbo, ($n0, src), $(($n, $v)),+);
-		}
-		$slab.swap();
+	($shd: ident, $fbo: expr, ($n0: literal, $v0: expr)) => {{
+		(&mut $fbo).bind_appl();
+		let s = $shd.Bind();
+		let _ = Uniform!(s, ($n0, $v0));
+		let _ = ComputeShader!($shd, $fbo);
 	}};
-	($shd: ident, $samp: ident, ($n0: expr, $slab: ident)) => {{
-		{
-			let mut fbo = &mut $slab.tgt;
-			let src = &$slab.src.tex.Bind(&$samp);
-			ComputeShader!($shd, $samp, fbo, ($n0, src));
-		}
-		$slab.swap();
+	($shd: ident, $fbo: expr, ($n0: literal, $s0: ident, $t0: expr)) => {{
+		(&mut $fbo).bind_appl();
+		let s = $shd.Bind();
+		let b = $t0.Bind(&$s0);
+		let _ = Uniform!(s, ($n0, &b));
+		let _ = ComputeShader!($shd, $fbo);
+	}};
+	($shd: ident, $fbo: expr, ($n0: literal, $v0: expr), $($args: tt),+) => {{
+		(&mut $fbo).bind_appl();
+		let s = $shd.Bind();
+		let _ = Uniform!(s, ($n0, $v0));
+		let _ = ComputeShader!($shd, $fbo, $($args),+);
+	}};
+	($shd: ident, $fbo: expr, ($n0: literal, $s0: ident, $t0: expr), $($args: tt),+) => {{
+		(&mut $fbo).bind_appl();
+		let s = $shd.Bind();
+		let b = $t0.Bind(&$s0);
+		let _ = Uniform!(s, ($n0, &b));
+		let _ = ComputeShader!($shd, $fbo, $($args),+);
 	}};
 }
 
@@ -57,5 +73,6 @@ impl<S: TexSize, F: TexFmt> PPDrawableArg for &mut Fbo<S, F> {
 impl<T: WindowPolicy> PPDrawableArg for &mut T {
 	fn bind_appl(self) {
 		self.draw_to_screen();
+		ClearScreen((0., 1.));
 	}
 }

@@ -2,36 +2,36 @@ use crate::uses::*;
 
 impl Cast<glm::Vec2> for Vec2 {
 	fn to(v: glm::Vec2) -> Self {
-		Self::from(unsafe { mem::transmute::<[_; 2], _>(v.into()) })
+		unsafe { mem::transmute::<[_; 2], _>(v.into()) }
 	}
 }
 impl Cast<glm::Vec3> for Vec3 {
 	fn to(v: glm::Vec3) -> Self {
-		Self::from(unsafe { mem::transmute::<[_; 3], _>(v.into()) })
+		unsafe { mem::transmute::<[_; 3], _>(v.into()) }
 	}
 }
 impl Cast<glm::Vec4> for Vec4 {
 	fn to(v: glm::Vec4) -> Self {
-		Self::from(unsafe { mem::transmute::<[_; 4], _>(v.into()) })
+		unsafe { mem::transmute::<[_; 4], _>(v.into()) }
 	}
 }
 
 impl<T: Copy> Cast<&[T]> for vec2<T> {
 	fn to(v: &[T]) -> Self {
 		ASSERT!(v.len() > 1, "Slice is too short for Vec2");
-		unsafe { (*v.get_unchecked(0), *v.get_unchecked(1)) }
+		(*v.at(0), *v.at(1))
 	}
 }
 impl<T: Copy> Cast<&[T]> for vec3<T> {
 	fn to(v: &[T]) -> Self {
 		ASSERT!(v.len() > 2, "Slice is too short for Vec3");
-		unsafe { (*v.get_unchecked(0), *v.get_unchecked(1), *v.get_unchecked(2)) }
+		(*v.at(0), *v.at(1), *v.at(2))
 	}
 }
 impl<T: Copy> Cast<&[T]> for vec4<T> {
 	fn to(v: &[T]) -> Self {
 		ASSERT!(v.len() > 3, "Slice is too short for Vec4");
-		unsafe { (*v.get_unchecked(0), *v.get_unchecked(1), *v.get_unchecked(2), *v.get_unchecked(3)) }
+		(*v.at(0), *v.at(1), *v.at(2), *v.at(3))
 	}
 }
 

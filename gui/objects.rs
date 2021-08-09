@@ -9,7 +9,7 @@ pub struct Objects {
 }
 impl Objects {
 	pub fn get(&mut self, at: u32) -> &mut Primitive {
-		unsafe { self.objs.get_unchecked_mut(usize(at)) }
+		self.objs.at_mut(at)
 	}
 	pub fn shrink(&mut self, to: u32) {
 		let Self { batches, objs, .. } = self;
@@ -21,8 +21,8 @@ impl Objects {
 
 		let overlaps = |o, z| {
 			batches.iter().position(|b| b.contains(objs, (o, z))).map_or(false, |b| {
-				let covered = || batches[..b].iter().find(|b| b.covered(objs, (o, z))).is_some();
-				let covers = || batches[b + 1..].iter().find(|b| b.covers(objs, (o, z))).is_some();
+				let covered = || batches[..b].iter().any(|b| b.covered(objs, (o, z)));
+				let covers = || batches[b + 1..].iter().any(|b| b.covers(objs, (o, z)));
 				covered() || covers()
 			})
 		};
@@ -57,7 +57,7 @@ impl Objects {
 				}
 			});
 
-			*first_transparent = batches.iter().position(|b| b.typ(&objs).obj().ordered()).unwrap_or(batches.len());
+			*first_transparent = batches.iter().position(|b| b.typ(objs).obj().ordered()).unwrap_or(batches.len());
 		}
 	}
 	pub fn flush(&mut self, idxs: &mut Vec<u16>, xyzw: &mut Vec<f16>, rgba: &mut Vec<u8>, uv: &mut Vec<f16>) -> (Option<usize>, Option<usize>, Option<usize>, Option<usize>) {
@@ -100,11 +100,11 @@ impl Objects {
 	}
 	pub fn draw_opaque_batches(&self, v: &VaoBinding<u16>) {
 		let Self { batches, objs, first_transparent } = self;
-		batches.iter().take(*first_transparent).for_each(|b| b.typ(&objs).obj().batch_draw(&v, usVec2(b.idx_range)));
+		batches.iter().take(*first_transparent).for_each(|b| b.typ(objs).obj().batch_draw(v, usVec2(b.idx_range)));
 	}
 	pub fn draw_transparent_batches(&self, v: &VaoBinding<u16>) {
 		let Self { batches, objs, first_transparent } = self;
-		batches.iter().skip(*first_transparent).for_each(|b| b.typ(&objs).obj().batch_draw(&v, usVec2(b.idx_range)));
+		batches.iter().skip(*first_transparent).for_each(|b| b.typ(objs).obj().batch_draw(v, usVec2(b.idx_range)));
 	}
 }
 
@@ -113,37 +113,37 @@ pub struct Primitive {
 	pub o: ObjStore,
 }
 pub enum ObjStore {
-	DrawRect(RectImpl),
-	DrawImgRGB(SpriteImpl<RGB>),
-	DrawImgRGBA(SpriteImpl<RGBA>),
-	DrawImg9RGB(Sprite9Impl<RGB>),
-	DrawImg9RGBA(Sprite9Impl<RGBA>),
-	DrawFrame9(Frame9Impl),
-	DrawText(TextImpl),
+	Rect(RectImpl),
+	ImgRGB(SpriteImpl<RGB>),
+	ImgRGBA(SpriteImpl<RGBA>),
+	Img9RGB(Sprite9Impl<RGB>),
+	Img9RGBA(Sprite9Impl<RGBA>),
+	Frame9(Frame9Impl),
+	Text(TextImpl),
 }
 impl ObjStore {
 	#[inline(always)]
 	pub fn obj(&self) -> &dyn Object {
 		match self {
-			DrawRect(r) => r,
-			DrawImgRGB(r) => r,
-			DrawImgRGBA(r) => r,
-			DrawImg9RGB(r) => r,
-			DrawImg9RGBA(r) => r,
-			DrawFrame9(r) => r,
-			DrawText(r) => r,
+			Rect(r) => r,
+			ImgRGB(r) => r,
+			ImgRGBA(r) => r,
+			Img9RGB(r) => r,
+			Img9RGBA(r) => r,
+			Frame9(r) => r,
+			Text(r) => r,
 		}
 	}
 	pub fn batchable(&self, r: &ObjStore) -> bool {
 		match (self, r) {
-			(DrawRect(l), DrawRect(r)) => l.batchable(r),
-			(DrawImgRGB(l), DrawImgRGB(r)) => l.batchable(r),
-			(DrawImg9RGB(l), DrawImg9RGB(r)) => l.batchable(r),
-			(DrawImgRGBA(l), DrawImgRGBA(r)) => l.batchable(r),
-			(DrawImg9RGBA(l), DrawImg9RGBA(r)) => l.batchable(r),
-			(DrawFrame9(l), DrawFrame9(r)) => l.batchable(r),
-			(DrawText(l), DrawText(r)) => l.batchable(r),
-			_ => return false,
+			(Rect(l), Rect(r)) => l.batchable(r),
+			(ImgRGB(l), ImgRGB(r)) => l.batchable(r),
+			(Img9RGB(l), Img9RGB(r)) => l.batchable(r),
+			(ImgRGBA(l), ImgRGBA(r)) => l.batchable(r),
+			(Img9RGBA(l), Img9RGBA(r)) => l.batchable(r),
+			(Frame9(l), Frame9(r)) => l.batchable(r),
+			(Text(l), Text(r)) => l.batchable(r),
+			_ => false,
 		}
 	}
 }

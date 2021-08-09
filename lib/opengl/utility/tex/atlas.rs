@@ -20,7 +20,7 @@ where
 	let (c, empty, filled) = (S::SIZE, &mut vec![Rect { x: 0, y: 0, w: max_w, h: max_h }], &mut vec![]);
 	let (mut tail, mut atlas, mut packed) = (vec![], vec![], HashMap::new());
 
-	let mut tiles = tiles.into_iter().map(|i| Some(i)).collect::<Vec<_>>();
+	let mut tiles = tiles.into_iter().map(Some).collect::<Vec<_>>();
 	for i in 0..tiles.len() {
 		if let Some((id, img)) = &tiles[i] {
 			let duplicate = tiles[..i].iter().rev().flatten().take_while(|(_, e)| e.h() == img.h()).find(|(_, e)| *img == *e);

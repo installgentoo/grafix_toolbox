@@ -36,13 +36,13 @@ macro_rules! Draw {
 pub trait DrawablePrimitive<'l> {
 	fn draw(self, _: u32, _: &Crop, _: &mut Renderer);
 }
-Draw!(Rect, DrawRect);
-Draw!(Sprite<'l, RGB>, DrawImgRGB);
-Draw!(Sprite<'l, RGBA>, DrawImgRGBA);
-Draw!(Sprite9<'l, RGB>, DrawImg9RGB);
-Draw!(Sprite9<'l, RGBA>, DrawImg9RGBA);
-Draw!(Frame9<'l>, DrawFrame9);
-Draw!(Text<'l, '_>, DrawText);
+Draw!(Rect, Rect);
+Draw!(Sprite<'l, RGB>, ImgRGB);
+Draw!(Sprite<'l, RGBA>, ImgRGBA);
+Draw!(Sprite9<'l, RGB>, Img9RGB);
+Draw!(Sprite9<'l, RGBA>, Img9RGBA);
+Draw!(Frame9<'l>, Frame9);
+Draw!(Text<'l, '_>, Text);
 
 #[derive(Default)]
 pub struct RenderLock<'l> {
@@ -154,7 +154,7 @@ impl Renderer {
 
 			if !refocus && *focus != 0 {
 				if let Some(l) = logics().find(|l| *focus == l.id) {
-					match (l.func)(&e, true, *mouse_pos) {
+					match (l.func)(e, true, *mouse_pos) {
 						Accept => return false,
 						Reject => return true,
 						DropFocus => *focus = 0,
@@ -201,7 +201,7 @@ impl Renderer {
 						}
 					}
 					let focused = id_match(focus, l);
-					match (l.func)(&e, focused, *mouse_pos) {
+					match (l.func)(e, focused, *mouse_pos) {
 						Accept => return false,
 						Reject => return true,
 						DropFocus => *focus = 0,

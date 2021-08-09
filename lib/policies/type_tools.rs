@@ -36,8 +36,8 @@ macro_rules! type_size {
 
 pub fn short_type_name<T: ?Sized>() -> String {
 	let mut str = std::any::type_name::<T>()
-		.split("<")
-		.map(|s| [s.split("::").collect::<Vec<_>>().iter().rev().take(1).map(|&s| s).collect::<String>(), '<'.into()].concat())
+		.split('<')
+		.map(|s| [s.split("::").collect::<Vec<_>>().iter().rev().take(1).copied().collect::<String>(), '<'.into()].concat())
 		.collect::<String>();
 	str.pop();
 	str

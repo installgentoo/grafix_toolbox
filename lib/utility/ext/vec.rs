@@ -9,7 +9,46 @@ impl Utf8Len for &str {
 		self.chars().count()
 	}
 	fn len_at_char(&self, i: usize) -> usize {
-		self.char_indices().skip(i).next().map_or_else(|| self.len(), |(i, _)| i)
+		self.char_indices().nth(i).map_or_else(|| self.len(), |(i, _)| i)
+	}
+}
+
+pub trait CheckedAt<T> {
+	fn at<I>(&self, idx: I) -> &T
+	where
+		usize: Cast<I>;
+	fn at_mut<I>(&mut self, idx: I) -> &mut T
+	where
+		usize: Cast<I>;
+}
+impl<T> CheckedAt<T> for [T] {
+	fn at<I>(&self, idx: I) -> &T
+	where
+		usize: Cast<I>,
+	{
+		let i = usize(idx);
+		#[cfg(debug_assertions)]
+		{
+			&self[i]
+		}
+		#[cfg(not(debug_assertions))]
+		{
+			unsafe { self.get_unchecked(i) }
+		}
+	}
+	fn at_mut<I>(&mut self, idx: I) -> &mut T
+	where
+		usize: Cast<I>,
+	{
+		let i = usize(idx);
+		#[cfg(debug_assertions)]
+		{
+			&mut self[i]
+		}
+		#[cfg(not(debug_assertions))]
+		{
+			unsafe { self.get_unchecked_mut(i) }
+		}
 	}
 }
 

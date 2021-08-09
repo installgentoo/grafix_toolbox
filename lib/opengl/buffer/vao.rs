@@ -24,7 +24,7 @@ impl<I: IdxType> Vao<I> {
 	}
 	pub fn AttribFmt<A: AttrType>(&mut self, o: &AttrArr<A>, args: impl AttrFmtArgs) {
 		let (idx, size, norm, stride, offset) = args.get();
-		ASSERT!((size > 0 && size < 5), "Attribute size {} isn't valid", size);
+		ASSERT!(size > 0 && size < 5, "Attribute size {} isn't valid", size);
 		let t_size = u32(type_size!(A));
 		GLCheck!(glVertexAttribFormat(self.obj(), o.obj, idx, size, A::TYPE, to_glbool(norm), stride, offset, t_size));
 	}

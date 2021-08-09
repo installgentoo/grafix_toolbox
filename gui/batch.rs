@@ -21,7 +21,7 @@ impl Batch {
 		}
 	}
 	pub fn typ<'a>(&self, objs: &'a [Primitive]) -> &'a ObjStore {
-		&get(objs, self.idxs.iter().next().unwrap())
+		get(objs, self.idxs.get(0).unwrap())
 	}
 	pub fn contains(&self, objs: &[Primitive], (o, z): (&ObjStore, u32)) -> bool {
 		let (t, idxs) = (self.typ(objs), &self.idxs);
@@ -32,33 +32,26 @@ impl Batch {
 
 		!(t.batchable(o)
 			|| !t.obj().ordered()
-			|| idxs
-				.take_while(|i| i.idx <= z)
-				.find(|i| {
-					let l = get(objs, i).obj().base();
-					l.intersects(obj.base())
-				})
-				.is_none())
+			|| !idxs.take_while(|i| i.idx <= z).any(|i| {
+				let l = get(objs, i).obj().base();
+				l.intersects(obj.base())
+			}))
 	}
 	pub fn covered(&self, objs: &[Primitive], (o, z): (&ObjStore, u32)) -> bool {
 		let (t, idxs, obj) = (self.typ(objs), self.idxs.iter(), o.obj());
 		!(t.batchable(o)
 			|| !t.obj().ordered()
-			|| idxs
-				.rev()
-				.take_while(|i| i.idx >= z)
-				.find(|i| {
-					let l = get(objs, i).obj().base();
-					l.intersects(obj.base())
-				})
-				.is_none())
+			|| !idxs.rev().take_while(|i| i.idx >= z).any(|i| {
+				let l = get(objs, i).obj().base();
+				l.intersects(obj.base())
+			}))
 	}
 	pub fn shrink_and_empty(&mut self, objs: &mut [Primitive], z: u32) -> bool {
 		let idxs = &mut self.idxs;
 		let l = idxs.iter().rposition(|i| i.idx < z).map(|i| i + 1).unwrap_or(0);
 		if !idxs[l..].is_empty() {
-			idxs.drain(l..).for_each(|o| unsafe { objs.get_unchecked_mut(usize(o.idx)) }.state = State::MISMATCH);
-			idxs.iter().for_each(|o| unsafe { objs.get_unchecked_mut(usize(o.idx)) }.state |= State::RESIZED);
+			idxs.drain(l..).for_each(|o| objs.at_mut(o.idx).state = State::MISMATCH);
+			idxs.iter().for_each(|o| objs.at_mut(o.idx).state |= State::RESIZED);
 		}
 		idxs.is_empty()
 	}
@@ -74,18 +67,16 @@ impl Batch {
 		let (t, mut idxs, obj) = (self.typ(objs).obj(), self.idxs.iter(), o.obj());
 		t.ordered()
 			&& obj.ordered()
-			&& idxs
-				.find(|i| {
-					let l = get(objs, i).obj().base();
-					l.intersects(obj.base())
-				})
-				.is_some()
+			&& idxs.any(|i| {
+				let l = get(objs, i).obj().base();
+				l.intersects(obj.base())
+			})
 	}
 	pub fn redraw(&mut self, objs: &mut [Primitive]) -> (u32, State) {
 		let Self { xyzw, rgba, uv, idxs, .. } = self;
 
 		let (len, mut state) = idxs.iter_mut().fold((0, State::empty()), |(start, flush), Obj { idx, size }| {
-			let Primitive { state, o } = unsafe { objs.get_unchecked_mut(usize(*idx)) };
+			let Primitive { state, o } = objs.at_mut(*idx);
 
 			if !state.is_empty() && *state != State::RESIZED {
 				let new_size = o.obj().vert_count();
@@ -132,5 +123,5 @@ impl Batch {
 	}
 }
 fn get<'a>(objs: &'a [Primitive], o: &Obj) -> &'a ObjStore {
-	&unsafe { objs.get_unchecked(usize(o.idx)) }.o
+	&objs.at(o.idx).o
 }

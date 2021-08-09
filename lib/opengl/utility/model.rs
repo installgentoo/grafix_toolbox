@@ -18,7 +18,6 @@ impl Model {
 				triangulate: true,
 				ignore_points: true,
 				ignore_lines: true,
-				..Def()
 			},
 		)
 		.map_err(|e| format!("Can't load models in {}, {:?}", file, e))?;
@@ -101,14 +100,14 @@ impl Mesh<u16, f32, f16, f32> {
 		let idx = (0..segs)
 			.flat_map(|y| {
 				let s = segs + 1;
-				let row = (0..1 + segs).flat_map(|x| vec![y * s + x, (y + 1) * s + x]);
+				let row = (0..s).flat_map(|x| vec![y * s + x, (y + 1) * s + x]);
 				if y % 2 == y {
 					row.collect::<Vec<_>>()
 				} else {
 					row.rev().collect::<Vec<_>>()
 				}
 			})
-			.map(|i| u16(i))
+			.map(u16)
 			.collect::<Vec<_>>();
 
 		let draw = (u32(idx.len()), gl::TRIANGLE_STRIP);

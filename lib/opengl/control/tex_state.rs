@@ -2,8 +2,8 @@ use super::{policy::*, universion::*};
 use crate::uses::*;
 
 struct Units {
-	at: usize,
-	len: usize,
+	at: u32,
+	len: u32,
 	units: Vec<(u32, u32, u32)>,
 }
 
@@ -12,21 +12,21 @@ pub mod TexState {
 
 	fn bound_units() -> &'static mut Units {
 		UnsafeOnce!(Units, {
-			let len = usize(GL::MAX_TEXTURE_IMAGE_UNITS().min(GL::MAX_COMBINED_TEXTURE_IMAGE_UNITS()));
+			let len = u32(GL::MAX_TEXTURE_IMAGE_UNITS().min(GL::MAX_COMBINED_TEXTURE_IMAGE_UNITS()));
 			Units {
 				at: 0,
 				len,
-				units: vec![(0, 0, 0); len],
+				units: vec![(0, 0, 0); usize(len)],
 			}
 		})
 	}
-	fn garbage_collect<T: TexType>() -> usize {
+	fn garbage_collect<T: TexType>() -> u32 {
 		let Units { at, len, units } = bound_units();
 
 		let npos = 1 + *len;
 		let mut empty = npos;
 		for i in 0..*len {
-			let (unit, _, counter) = unsafe { units.get_unchecked_mut(i) };
+			let (unit, _, counter) = units.at_mut(i);
 			if *counter == 0 {
 				DEBUG!("Unbing GL {} {} from unit {}", type_name!(Texture<T>), *unit, i);
 				*unit = 0;
@@ -47,13 +47,13 @@ pub mod TexState {
 		empty
 	}
 	pub fn Unbind(u: u32) {
-		let (_, _, counter) = unsafe { bound_units().units.get_unchecked_mut(usize(u)) };
+		let (_, _, counter) = bound_units().units.at_mut(u);
 		*counter -= 1;
 	}
 	pub fn Bind<T: TexType>(obj: u32, s: u32, hint: u32) -> u32 {
 		let Units { at, len, units } = bound_units();
 
-		let (h_obj, samp, counter) = unsafe { units.get_unchecked_mut(usize(hint)) };
+		let (h_obj, samp, counter) = units.at_mut(hint);
 		if *h_obj == obj && *samp == s {
 			*counter += 1;
 			return hint;
@@ -62,10 +62,10 @@ pub mod TexState {
 		let npos = 1 + *len;
 		let mut empty = npos;
 		for i in 0..*at {
-			let (unit, samp, counter) = unsafe { units.get_unchecked_mut(i) };
+			let (unit, samp, counter) = units.at_mut(i);
 			if *unit == obj && *samp == s {
 				*counter += 1;
-				return u32(i);
+				return i;
 			}
 			if empty == npos && *unit == 0 {
 				empty = i;
@@ -81,10 +81,10 @@ pub mod TexState {
 			empty = garbage_collect::<T>();
 		}
 
-		let (unit, samp, counter) = unsafe { units.get_unchecked_mut(empty) };
+		let (unit, samp, counter) = units.at_mut(empty);
 		*counter += 1;
 		*unit = obj;
-		let u = u32(empty);
+		let u = empty;
 		DEBUG!("Binding GL {} {} to unit {}", type_name!(Texture<T>), obj, u);
 		GLCheck!(glBindTextureUnit(T::TYPE, u, obj));
 		if *samp != s {
@@ -98,7 +98,7 @@ pub mod TexState {
 	pub fn BindAny<T: TexType>(obj: u32, hint: u32) -> u32 {
 		let Units { at, len, units } = bound_units();
 
-		let (h_obj, _, counter) = unsafe { units.get_unchecked_mut(usize(hint)) };
+		let (h_obj, _, counter) = units.at_mut(hint);
 		if *h_obj == obj {
 			*counter += 1;
 			return hint;
@@ -107,10 +107,10 @@ pub mod TexState {
 		let npos = 1 + *len;
 		let mut empty = npos;
 		for i in 0..*at {
-			let (unit, _, counter) = unsafe { units.get_unchecked_mut(i) };
+			let (unit, _, counter) = units.at_mut(i);
 			if *unit == obj {
 				*counter += 1;
-				return u32(i);
+				return i;
 			}
 			if empty == npos && *unit == 0 {
 				empty = i;
@@ -126,10 +126,10 @@ pub mod TexState {
 			empty = garbage_collect::<T>();
 		}
 
-		let (unit, _, counter) = unsafe { units.get_unchecked_mut(empty) };
+		let (unit, _, counter) = units.at_mut(empty);
 		*counter += 1;
 		*unit = obj;
-		let u = u32(empty);
+		let u = empty;
 		DEBUG!("Binding GL {} {} to unit {}", type_name!(Texture<T>), obj, u);
 		GLCheck!(glBindTextureUnit(T::TYPE, u, obj));
 		DEBUG!("GL texture units: {:?}", units);
@@ -138,7 +138,7 @@ pub mod TexState {
 	pub fn drop_tex(obj: u32) {
 		let Units { at, len, units } = bound_units();
 		for i in 0..*len {
-			let (unit, _, _counter) = unsafe { units.get_unchecked_mut(i) };
+			let (unit, _, _counter) = units.at_mut(i);
 			if obj == *unit {
 				ASSERT!(*_counter == 0, "Leakage in GL texture {} binding", obj);
 				*unit = 0;
@@ -151,7 +151,7 @@ pub mod TexState {
 	pub fn drop_samp(s: u32) {
 		let Units { len, units, .. } = bound_units();
 		for i in 0..*len {
-			let (_, samp, _) = unsafe { units.get_unchecked_mut(i) };
+			let (_, samp, _) = units.at_mut(i);
 			if s == *samp {
 				*samp = 0;
 			}

@@ -66,9 +66,9 @@ where
 	vec2<isize>: Cast<(X, Y)>,
 {
 	let (_, y) = ilVec2(caret);
-	let y = usize(y.clamp(0, isize(lines.last_idx())));
-	if lines.len() > 0 {
-		unsafe { lines.get_unchecked(y) }
+	let y = y.clamp(0, isize(lines.last_idx()));
+	if !lines.is_empty() {
+		lines.at(y)
 	} else {
 		""
 	}

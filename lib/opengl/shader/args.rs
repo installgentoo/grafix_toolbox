@@ -1,5 +1,4 @@
-use crate::uses::CowStr;
-use std::ffi::CString;
+use crate::uses::*;
 
 pub type CompileArgs = (CowStr, Option<CowStr>, CowStr);
 pub trait ShdTypeArgs {
@@ -15,5 +14,3 @@ impl<V: Into<CowStr>, G: Into<CowStr>, P: Into<CowStr>> ShdTypeArgs for (V, G, P
 		(self.0.into(), Some(self.1.into()), self.2.into())
 	}
 }
-
-pub type SourcePack = Vec<(String, CString)>;

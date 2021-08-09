@@ -20,13 +20,15 @@ pub fn pack(w: i32, h: i32, empty: &mut Vec<Rect>, filled: &mut Vec<Rect>, min: 
 	while i < empty.len() {
 		let e = empty[i];
 		if b.intersects(&e) {
-			#[cfg_attr(rustfmt, rustfmt::skip)] {
-			let mut push = |cond, x, y, w, h| { if cond && (w, h).ge(min).all() { empty.push(Rect { x, y, w, h }) } };
-
-			push(b.x2() < e.x2(), b.x2(), e.y,    e.x2() - b.x2(), e.h);
-			push(b.y2() < e.y2(), e.x,    b.y2(), e.w,             e.y2() - b.y2());
-			push(b.x > e.x,       e.x,    e.y,    b.x - e.x,       e.h);
-			push(b.y > e.y,       e.x,    e.y,    e.w,             b.y - e.y); }
+			let mut push = |cond, x, y, w, h| {
+				if cond && (w, h).ge(min).all() {
+					empty.push(Rect { x, y, w, h })
+				}
+			};
+			#[rustfmt::skip] push(b.x2() < e.x2(), b.x2(), e.y,    e.x2() - b.x2(), e.h);
+			#[rustfmt::skip] push(b.y2() < e.y2(), e.x,    b.y2(), e.w,             e.y2() - b.y2());
+			#[rustfmt::skip] push(b.x > e.x,       e.x,    e.y,    b.x - e.x,       e.h);
+			#[rustfmt::skip] push(b.y > e.y,       e.x,    e.y,    e.w,             b.y - e.y);
 			empty.remove(i);
 		} else {
 			i += 1;

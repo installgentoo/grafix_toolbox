@@ -1,3 +1,4 @@
+#![allow(clippy::mut_mutex_lock)]
 use crate::uses::{sync::*, time::*, GL, *};
 
 #[cfg(not(feature = "profiling"))]

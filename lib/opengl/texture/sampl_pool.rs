@@ -26,7 +26,7 @@ impl Sampler {
 		args.iter().for_each(|&(p, v)| s.Parameter(p, v));
 		let s = Rc::new(s);
 		p.insert(id, Rc::downgrade(&s));
-		return s;
+		s
 	}
 	pub fn linear() -> Rc<Self> {
 		Sampler!(

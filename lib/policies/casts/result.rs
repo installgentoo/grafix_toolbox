@@ -2,7 +2,7 @@ use crate::uses::*;
 
 impl<T> Cast<Option<T>> for Result<T, String> {
 	fn to(v: Option<T>) -> Self {
-		v.ok_or("Is None".into())
+		v.ok_or_else(|| "Is None".into())
 	}
 }
 impl<T, E: std::fmt::Display> Cast<Result<T, E>> for Result<T, String> {

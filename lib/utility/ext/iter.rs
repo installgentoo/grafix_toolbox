@@ -1,6 +1,6 @@
 use crate::uses::{ops::*, *};
 
-pub fn iter2d<T: Rangeable>(args: impl IterArgs2d<T>) -> impl iter::Iterator<Item = vec2<T>> {
+pub fn iter2d<T: Rangeable>(args: impl IterArgs2d<T>) -> impl Iterator<Item = vec2<T>> {
 	let (wr, h) = args.get();
 	let (mut x, w, mut y, h) = (wr.start, wr.end, h.start, h.end);
 	let ident = T::to(1);
@@ -19,7 +19,7 @@ pub fn iter2d<T: Rangeable>(args: impl IterArgs2d<T>) -> impl iter::Iterator<Ite
 	})
 }
 
-pub fn iter3d<T: Rangeable>(args: impl IterArgs3d<T>) -> impl iter::Iterator<Item = vec3<T>> {
+pub fn iter3d<T: Rangeable>(args: impl IterArgs3d<T>) -> impl Iterator<Item = vec3<T>> {
 	let (wr, hr, d) = args.get();
 	let (mut x, w, mut y, h, mut z, d) = (wr.start, wr.end, hr.start, hr.end, d.start, d.end);
 	let ident = T::to(1);

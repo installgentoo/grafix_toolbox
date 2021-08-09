@@ -29,7 +29,7 @@ impl<'a> Text<'_, 'a> {
 			.fuse()
 			.last()
 			.map_or(((0., 0.), 0), |((x, g), i)| ((x + g.coord.z(), 1.).mul(scale), i));
-		let i = text[i..].char_indices().skip(1).next().map_or(text.len(), |(l, _)| i + l);
+		let i = text[i..].char_indices().nth(1).map_or(text.len(), |(l, _)| i + l);
 		(size, (&text[..i], &text[i..]))
 	}
 	pub fn adv_at(text: &str, font: &Font, scale: f32, at_glyph: usize) -> f32 {
@@ -46,6 +46,7 @@ impl<'a> Text<'_, 'a> {
 			.last()
 			.map_or(0., |x| x * scale)
 	}
+	#[allow(clippy::redundant_closure)]
 	pub fn char_at(text: &str, font: &Font, scale: f32, at_glyph: usize) -> Glyph {
 		text.chars().take(at_glyph + 1).last().map_or_else(
 			|| Def(),

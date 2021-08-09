@@ -1,5 +1,5 @@
-use super::args::*;
 use crate::uses::{slicing::*, *};
+use std::ffi::CString;
 
 pub fn parse_shader_sources(filename: &str, text: &str) -> SourcePack {
 	let mut cur_row_number = 0;
@@ -42,7 +42,7 @@ pub fn parse_shader_sources(filename: &str, text: &str) -> SourcePack {
 				}?;
 				let newlines = "\n".repeat(cur_row_number);
 				cur_row_number += body.lines().count();
-				let shader = PASS!(std::ffi::CString::new(CONCAT![header, &newlines, body]));
+				let shader = PASS!(CString::new(CONCAT![header, &newlines, body]));
 				Ok((name, shader))
 			})
 			.collect::<Res<_>>()
@@ -71,3 +71,5 @@ pub fn print_shader_log(obj: u32) -> String {
 
 	String::from_utf8_lossy(&log).into()
 }
+
+pub type SourcePack = Vec<(String, CString)>;

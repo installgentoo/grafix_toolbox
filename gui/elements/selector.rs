@@ -19,7 +19,7 @@ impl Selector {
 			editing,
 			choice,
 		} = self;
-		let text = &options[*choice];
+		let text = options.at(*choice);
 
 		if !*open {
 			choices.clear();
@@ -40,7 +40,7 @@ impl Selector {
 				}
 			}
 
-			let text = &mut options[usize(*choice)];
+			let text = options.at_mut(*choice);
 
 			if *editing {
 				if !r.focused(LUID(line_edit)) {

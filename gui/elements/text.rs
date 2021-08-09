@@ -133,7 +133,7 @@ impl TextEdit {
 				let (lines, line_cache) = unsafe { mem::transmute::<&mut _, &'static mut Option<(Vec<_>, Vec<_>)>>(changes) }.as_mut().unwrap();
 				let mut _lines = StaticPtr!(lines);
 				let pip = pip_pos.get_mut();
-				let clampx = |c| util::clamp(&lines, c);
+				let clampx = |c| util::clamp(lines, c);
 				let setx = |c, o| util::move_caret(lines, c, (o, 0), true);
 				let sety = |c, o| util::move_caret(lines, c, (0, o), false);
 				let click = |p| util::caret_to_cursor(lines, vis_range(), t, scale, pos.sum((offset.x(), size.y())), p);
@@ -278,12 +278,12 @@ impl TextEdit {
 						Key::Enter if !readonly => {
 							let (beg, end) = caret_range(lines, *caret, *select);
 							let (b, e) = range(beg, end, text);
+
+							lines.insert(beg.y(), "\n");
 							if beg != end {
-								lines.insert(beg.y(), "\n");
 								history.push(Delete(text[b..e].into(), b, beg));
 								text.str().replace_range(b..e, "\n");
 							} else {
-								lines.insert(beg.y(), "\n");
 								text.str().insert(b, '\n');
 							}
 							history.push(Insert("\n".into(), b, beg));
@@ -317,13 +317,12 @@ impl TextEdit {
 						if beg != end {
 							history.push(Delete(text[b..e].into(), b, beg));
 							text.str().replace_range(b..e, &ins);
-							line_cache.push(CONCAT![lines[beg.y()], &ins]);
-							lines[beg.y()] = &line_cache.last().unwrap();
 						} else {
 							text.str().insert(b, *ch);
-							line_cache.push(CONCAT![lines[beg.y()], &ins]);
-							lines[beg.y()] = &line_cache.last().unwrap();
 						}
+						line_cache.push(CONCAT![lines[beg.y()], &ins]);
+						lines[beg.y()] = line_cache.last().unwrap();
+
 						history.push(Insert(ins, b, beg));
 						*caret = beg.sum((1, 0));
 						*select = *caret;
@@ -421,7 +420,7 @@ fn parse_text(text: &str, font: &Font, scale: f32, max_w: f32) -> (Vec<Str>, Vec
 				if tail.len() != last_len {
 					(head, tail)
 				} else {
-					let (first_char, _) = l.char_indices().skip(1).next().unwrap_or_else(|| (l.len(), ' '));
+					let (first_char, _) = l.char_indices().nth(1).unwrap_or_else(|| (l.len(), ' '));
 					l.split_at(first_char)
 				}
 			};

@@ -51,7 +51,7 @@ pub mod Save {
 			let (sender, reciever): (Sender<Message>, Receiver<Message>) = chan::unbounded();
 			let handle = task::spawn(async move {
 				while let Ok(msg) = reciever.recv_async().await {
-					if !task::spawn(async move {
+					let disk = task::spawn(async move {
 						use MessageType::*;
 						let (name, operation, data) = msg;
 						let file = match operation {
@@ -73,9 +73,8 @@ pub mod Save {
 							FAILED!(map_err(file, &name));
 						}
 						true
-					})
-					.await
-					{
+					});
+					if !disk.await {
 						break;
 					}
 				}
@@ -89,7 +88,7 @@ pub mod Save {
 			unsafe { SENDER = Some(sender) };
 		});
 
-		&unsafe { &SENDER }.as_ref().unwrap_or_else(|| ASSERT!(false, "File loader failed"))
+		unsafe { &SENDER }.as_ref().unwrap_or_else(|| ASSERT!(false, "File loader failed"))
 	}
 }
 
@@ -134,11 +133,8 @@ macro_rules! LOADER {
 					match self {
 						Done(vec) => Some(vec),
 						Loading(handle) => {
-							let res = task::block_on(async move { task::poll_once(handle).await });
-							if res.is_none() {
-								return None;
-							}
-							*self = Done(OR_DEF!(res.unwrap()));
+							let res = task::block_on(async move { task::poll_once(handle).await })?;
+							*self = Done(OR_DEF!(res));
 							self.if_ready()
 						}
 					}

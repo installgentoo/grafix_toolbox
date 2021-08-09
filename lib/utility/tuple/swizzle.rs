@@ -1,5 +1,5 @@
 #[rustfmt::skip]
-pub mod swizzle {
+pub mod s {
 pub trait TupleSwizzle2<A, B> {
 	fn x(self) -> A;
 	fn y(self) -> B;

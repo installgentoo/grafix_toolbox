@@ -93,12 +93,12 @@ macro_rules! ASSERT {
 		ASSERT_IMPL!($($t)+);
 	}};
 	($e: expr, $w: expr) => {{
-		if !($e) {
+		if $e {} else {
 			ASSERT_IMPL!("{:?}", $w);
 		}
 	}};
 	($e: expr, $($t: tt)+) => {{
-		if !($e) {
+		if $e {} else {
 			ASSERT_IMPL!($($t)+);
 		}
 	}}
