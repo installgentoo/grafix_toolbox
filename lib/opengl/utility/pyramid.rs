@@ -61,26 +61,18 @@ pub fn collapse(mut pyramid: Vec<Tex2d<RGBA, f32>>) -> Tex2d<RGBA, f32> {
 mod shd {
 	SHADER!(
 		sub,
-		r"#version 330 core
-		in vec2 glTexCoord;
-		layout(location = 0)out vec4 glFragColor;
+		r"in vec2 glTexCoord;
+		layout(location = 0) out vec4 glFragColor;
 		uniform sampler2D tex1, tex2;
 
-		void main()
-		{
-			glFragColor = texture(tex1, glTexCoord) - texture(tex2, glTexCoord);
-		}"
+		void main() { glFragColor = texture(tex1, glTexCoord) - texture(tex2, glTexCoord); }"
 	);
 	SHADER!(
 		add,
-		r"#version 330 core
-		in vec2 glTexCoord;
-		layout(location = 0)out vec4 glFragColor;
+		r"in vec2 glTexCoord;
+		layout(location = 0) out vec4 glFragColor;
 		uniform sampler2D tex1, tex2;
 
-		void main()
-		{
-			glFragColor = texture(tex1, glTexCoord) + texture(tex2, glTexCoord);
-		}"
+		void main() { glFragColor = texture(tex1, glTexCoord) + texture(tex2, glTexCoord); }"
 	);
 }

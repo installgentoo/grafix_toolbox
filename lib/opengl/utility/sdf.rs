@@ -1,6 +1,6 @@
 use crate::glsl::*;
 use crate::uses::*;
-use crate::GL::{mesh::Screen, shader::*, tex::*, Fbo, *};
+use GL::{mesh::Screen, shader::*, tex::*, Fbo, *};
 
 pub struct SdfGenerator {
 	dst_t: Shader,
@@ -27,13 +27,13 @@ impl SdfGenerator {
 			let mut surf_in = Fbo::<RGBA, f32>::new((w, h));
 			{
 				let t = tex.Bind(sampl);
-				let s = Uniforms!(dst_t, ("tex", &t), ("r", border), ("step", (0., 1. / f32(h))));
+				let s = Uniforms!(dst_t, ("tex", &t), ("iBorder", border), ("iStep", (0., 1. / f32(h))));
 
-				let s = Uniform!(s, ("side", 1.));
+				let s = Uniform!(s, ("iSide", 1.));
 				surf_out.bind();
 				Screen::Draw();
 
-				let _ = Uniform!(s, ("side", -1.));
+				let _ = Uniform!(s, ("iSide", -1.));
 				surf_in.bind();
 				Screen::Draw();
 			}
@@ -41,7 +41,7 @@ impl SdfGenerator {
 			{
 				let to = surf_out.tex.Bind(sampl);
 				let ti = surf_in.tex.Bind(sampl);
-				let _ = Uniforms!(dt_h, ("tex_o", &to), ("tex_i", &ti), ("r", border), ("step", (1. / f32(w), 0.)));
+				let _ = Uniforms!(dt_h, ("tex_o", &to), ("tex_i", &ti), ("iBorder", border), ("iStep", (1. / f32(w), 0.)));
 				out.bind();
 				Screen::Draw();
 			}
@@ -61,23 +61,19 @@ impl SdfGenerator {
 
 SHADER!(
 	sdf__distance_transform_v_ps,
-	r"#version 330 core
-	in vec2 glTexCoord;
-	layout(location = 0)out vec4 glFragColor;
+	r"in vec2 glTexCoord;
+	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D tex;
-	uniform int r;
-	uniform vec2 step;
-	uniform float side;
+	uniform int iBorder;
+	uniform vec2 iStep;
+	uniform float iSide;
 
-	void main()
-	{
-		for(int i=0; i<r; ++i)
-		{
-			vec2 o = step * float(i);
-			float t = side * 0.5;
-			if((side * texture(tex, glTexCoord + o).r > t) || (side * texture(tex, glTexCoord - o).r > t))
-			{
-				glFragColor = vec4(vec3(float(i) / r), 1.);
+	void main() {
+		for (int i = 0; i < iBorder; ++i) {
+			vec2 o = iStep * float(i);
+			float t = iSide * .5;
+			if (iSide * texture(tex, glTexCoord + o).r > t || iSide * texture(tex, glTexCoord - o).r > t) {
+				glFragColor = vec4(vec3(float(i) / iBorder), 1);
 				return;
 			}
 		}
@@ -88,29 +84,26 @@ SHADER!(
 
 SHADER!(
 	sdf__distance_transform_ps,
-	r"#version 330 core
-	in vec2 glTexCoord;
-	layout(location = 0)out vec4 glFragColor;
+	r"in vec2 glTexCoord;
+	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D tex_i, tex_o;
-	uniform int r;
-	uniform vec2 step;
+	uniform int iBorder;
+	uniform vec2 iStep;
 
-	void main()
-	{
+	void main() {
 		float d_i = texture(tex_i, glTexCoord).r;
 		float d_o = texture(tex_o, glTexCoord).r;
 
-		for(int i=1; i<r; ++i)
-		{
-			float v = float(i) / r;
-			vec2 o = step * float(i);
+		for (int i = 1; i < iBorder; ++i) {
+			float v = float(i) / iBorder;
+			vec2 o = iStep * float(i);
 			d_o = min(d_o, min(length(vec2(v, texture(tex_o, glTexCoord + o).r)), length(vec2(v, texture(tex_o, glTexCoord - o).r))));
 			d_i = min(d_i, min(length(vec2(v, texture(tex_i, glTexCoord + o).r)), length(vec2(v, texture(tex_i, glTexCoord - o).r))));
 		}
 
-		d_o = 0.5 - d_o * 0.5;
-		d_i = 0.5 + d_i * 0.5;
+		d_o = .5 - d_o * .5;
+		d_i = .5 + d_i * .5;
 
-		glFragColor = vec4(vec3(mix(d_o, d_i, float(d_i > 0.5))), 1.);
+		glFragColor = vec4(vec3(mix(d_o, d_i, float(d_i > .5))), 1);
 	}"
 );

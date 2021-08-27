@@ -32,6 +32,11 @@ impl<T: State> Binding<'_, T> {
 		T::Bind(o.obj);
 		Self { t: Dummy }
 	}
+	pub fn zero() -> Self {
+		T::Lock(0);
+		T::Bind(0);
+		Self { t: Dummy }
+	}
 }
 impl<T: State> Drop for Binding<'_, T> {
 	fn drop(&mut self) {

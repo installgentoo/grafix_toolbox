@@ -4,13 +4,10 @@ use std::ffi::CString;
 pub fn parse_shader_sources(filename: &str, text: &str) -> SourcePack {
 	let mut cur_row_number = 0;
 	let parsed: Res<_> = (|| {
-		cur_row_number = {
-			let end = PASS!(text.find("//--GLOBAL:"));
-			text[..end].lines().count()
-		};
+		cur_row_number = text.find("//--GLOBAL:").map(|end| text[..end].lines().count()).unwrap_or(0);
 		let (header, mut body) = {
 			if let Some(beg) = text.find("//--GLOBAL:") {
-				let text = &text[beg + 11..];
+				let text = &text[beg + 12..];
 				let end = PASS!(text.find("//--"));
 				(&text[..end], &text[end..])
 			} else {
@@ -37,12 +34,13 @@ pub fn parse_shader_sources(filename: &str, text: &str) -> SourcePack {
 					if n.is_empty() || b.is_empty() {
 						Err("Failed to parse shader name")
 					} else {
-						Ok((n.replace(char::is_whitespace, ""), b))
+						let o = 1.or_def(cur_row_number == 0 && header.is_empty()); // skip newline to compensate for version line
+						Ok((n.replace(char::is_whitespace, ""), slice((o, b))))
 					}
 				}?;
 				let newlines = "\n".repeat(cur_row_number);
 				cur_row_number += body.lines().count();
-				let shader = PASS!(CString::new(CONCAT![header, &newlines, body]));
+				let shader = PASS!(CString::new(CONCAT![GL::unigl::GLSL_VERSION, header, &newlines, body]));
 				Ok((name, shader))
 			})
 			.collect::<Res<_>>()

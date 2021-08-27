@@ -6,7 +6,7 @@ use std::ffi::CString;
 macro_rules! SHADER {
 	($n: ident, $($body: expr),+) => {
 		#[allow(non_upper_case_globals)]
-		pub const $n: crate::uses::GL::macro_uses::InlineShader = crate::uses::GL::macro_uses::InlineShader(stringify!($n), const_format::concatcp!($($body,)+));
+		pub const $n: crate::uses::GL::macro_uses::InlineShader = crate::uses::GL::macro_uses::InlineShader(stringify!($n), const_format::concatcp!(crate::uses::GL::unigl::GLSL_VERSION, $($body,)+));
 	};
 }
 

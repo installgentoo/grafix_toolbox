@@ -87,15 +87,10 @@ impl Image<RGB, f32> {
 	pub fn load(data: impl AsRef<[u8]>) -> Res<Self> {
 		let img = io::BufReader::new(io::Cursor::new(data.as_ref()));
 		let img = hdr::HdrDecoder::new(img).map_err(|_| "Cannot decode hdr image")?;
-		let ((w, h), data) = {
-			let m = img.metadata();
-			let (w, h) = (m.width, m.height);
-			let img = img.read_image_hdr().map_err(|_| "Cannot read hdr pixels")?;
-			(
-				(w, h),
-				img.chunks(usize(w)).rev().flat_map(|l| l.iter().flat_map(|image::Rgb(p)| p)).cloned().collect::<Vec<_>>(),
-			)
-		};
+		let m = img.metadata();
+		let (w, h) = (m.width, m.height);
+		let img = img.read_image_hdr().map_err(|_| "Cannot read hdr pixels")?;
+		let data: Vec<_> = img.chunks(usize(w)).rev().flat_map(|l| l.iter().flat_map(|image::Rgb(p)| p)).cloned().collect();
 		Ok(Self { w, h, data, s: Dummy })
 	}
 }

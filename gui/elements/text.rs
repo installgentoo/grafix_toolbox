@@ -232,7 +232,7 @@ impl TextEdit {
 								let (beg, end) = caret_range(lines, *caret, *select);
 								let (b, e) = range(beg, end, text);
 								let drained = text.str().drain(b..e);
-								let drained = drained.collect::<String>();
+								let drained: String = drained.collect();
 								RenderLock::set_clipboard(&drained);
 								history.push(Delete(drained, b, beg));
 								*caret = beg;

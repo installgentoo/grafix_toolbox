@@ -84,7 +84,7 @@ impl Objects {
 						if ordered {
 							v.extend_from_slice(upd);
 						} else {
-							v.extend_from_slice(&upd.chunks(dim).rev().flatten().cloned().collect::<Vec<_>>());
+							v.extend(upd.chunks(dim).rev().flatten());
 						}
 					}
 				}

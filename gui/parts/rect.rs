@@ -1,6 +1,6 @@
 use super::obj::*;
 use crate::uses::{math::*, *};
-use crate::GL::{shader::*, window::*, VaoBinding};
+use GL::{shader::*, window::*, VaoBinding};
 
 pub struct Rect {
 	pub pos: Vec2,
@@ -38,7 +38,7 @@ impl Object for RectImpl {
 	fn write_mesh(&self, (z, state, xyzw, rgba, _): BatchRange) {
 		if state.contains(State::XYZW) {
 			let ((x1, y1), (x2, y2)) = <_>::to({
-				let (aspect, (crop1, crop2)) = (Window::aspect(), self.base.bound_box());
+				let (aspect, (crop1, crop2)) = (Window::_aspect(), self.base.bound_box());
 				(crop1.mul(aspect), crop2.mul(aspect))
 			});
 			const O: f16 = f16::ZERO;
@@ -66,25 +66,19 @@ impl Object for RectImpl {
 
 SHADER!(
 	gui__pos_col_vs,
-	r"#version 330 core
-	layout(location = 0)in vec4 Position;
-	layout(location = 1)in vec4 Color;
+	r"layout(location = 0) in vec4 Position;
+	layout(location = 1) in vec4 Color;
 	out vec4 glColor;
 
-	void main()
-	{
+	void main() {
 		gl_Position = vec4(Position.xyz, 1.);
 		glColor = Color;
 	}"
 );
 SHADER!(
 	gui__col_ps,
-	r"#version 330 core
-	in vec4 glColor;
-	layout(location = 0)out vec4 glFragColor;
+	r"in vec4 glColor;
+	layout(location = 0) out vec4 glFragColor;
 
-	void main()
-	{
-		glFragColor = glColor;
-	}"
+	void main() { glFragColor = glColor; }"
 );

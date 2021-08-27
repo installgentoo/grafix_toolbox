@@ -2,7 +2,7 @@ use super::obj::*;
 use super::sprite::{gui__pos_col_tex_vs, sampler};
 use super::sprite9::{sprite9_idxs, write_sprite9};
 use crate::uses::{math::*, *};
-use crate::GL::{atlas::VTex2d, shader::*, window::*, VaoBinding, RGBA};
+use GL::{atlas::VTex2d, shader::*, window::*, VaoBinding, RGBA};
 
 pub struct Frame9<'r> {
 	pub pos: Vec2,
@@ -47,7 +47,7 @@ impl Object for Frame9Impl {
 	fn write_mesh(&self, range: BatchRange) {
 		let (crop, &Base { pos, size, color, .. }) = (self.base.bound_box(), self.base());
 		let c = size.x().min(size.y()) * self.corner.min(0.5).max(0.);
-		write_sprite9((Window::aspect(), pos, size, (c, c), crop, (0., 0., 1., 1.), color), range);
+		write_sprite9((Window::_aspect(), pos, size, (c, c), crop, (0., 0., 1., 1.), color), range);
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
 		let s = UnsafeOnce!(Shader, { EXPECT!(Shader::new((gui__pos_col_tex_vs, gui__frame_ps))) });
@@ -55,7 +55,7 @@ impl Object for Frame9Impl {
 		let tex = unsafe { &*self.tex };
 		let t = tex.tex.Bind(sampler());
 		let (x, y, w, _) = tex.region;
-		let _ = Uniforms!(s, ("src", &t), ("theme_coords", (x, y, w - x)));
+		let _ = Uniforms!(s, ("tex", &t), ("iThemeCoords", (x, y, w - x)));
 		b.Draw((num, offset, gl::TRIANGLES));
 	}
 
@@ -69,17 +69,15 @@ impl Object for Frame9Impl {
 
 SHADER!(
 	gui__frame_ps,
-	r"#version 330 core
-	in vec4 glColor;
+	r"in vec4 glColor;
 	in vec2 glTexCoord;
-	layout(location = 0)out vec4 glFragColor;
-	uniform sampler2D src;
-	uniform vec3 theme_coords;
+	layout(location = 0) out vec4 glFragColor;
+	uniform sampler2D tex;
+	uniform vec3 iThemeCoords;
 
-	void main()
-	{
-		float d = min(0.9, length(glTexCoord));
-		vec4 c = texture(src, theme_coords.xy + vec2(d * theme_coords.z, 0.));
+	void main() {
+		float d = min(.9, length(glTexCoord));
+		vec4 c = texture(tex, iThemeCoords.xy + vec2(d * iThemeCoords.z, 0));
 		glFragColor = glColor * c;
 	}"
 );

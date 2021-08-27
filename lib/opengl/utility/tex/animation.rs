@@ -1,5 +1,5 @@
 use crate::uses::{math::*, slicing::*, *};
-use crate::GL::{atlas::*, tex::*};
+use GL::{atlas::*, tex::*};
 
 pub struct Animation<'a, S: TexSize> {
 	frames: Vec<((f32, f32), AtlasTex2d<'a, S>)>,

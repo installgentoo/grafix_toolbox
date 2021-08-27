@@ -1,5 +1,5 @@
 use crate::uses::{mem::ManuallyDrop, *};
-use crate::GL::{buffer::*, spec::*};
+use GL::{buffer::*, spec::*};
 
 pub mod Screen {
 	use super::*;

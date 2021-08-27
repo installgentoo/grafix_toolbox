@@ -1,6 +1,6 @@
 use super::obj::*;
 use crate::uses::{math::*, *};
-use crate::GL::{atlas::VTex2d, shader::*, tex::*, window::*, VaoBinding};
+use GL::{atlas::VTex2d, shader::*, tex::*, window::*, VaoBinding};
 
 pub struct Sprite<'r, S> {
 	pub pos: Vec2,
@@ -42,7 +42,7 @@ impl<S: TexSize> Object for SpriteImpl<S> {
 	fn write_mesh(&self, (z, state, xyzw, rgba, uv): BatchRange) {
 		if state.contains(State::XYZW | State::UV) {
 			let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <_>::to({
-				let (aspect, (crop1, crop2), &Base { pos, size, .. }) = (Window::aspect(), self.base.bound_box(), self.base());
+				let (aspect, (crop1, crop2), &Base { pos, size, .. }) = (Window::_aspect(), self.base.bound_box(), self.base());
 				let (xy1, xy2, uv) = (pos, pos.sum(size), unsafe { &*self.tex }.region);
 				let uv = bound_uv((crop1, crop2), (xy1, xy2), uv);
 
@@ -69,7 +69,7 @@ impl<S: TexSize> Object for SpriteImpl<S> {
 		let s = UnsafeOnce!(Shader, { EXPECT!(Shader::new((gui__pos_col_tex_vs, gui__col_tex_ps))) });
 
 		let t = unsafe { &*self.tex }.tex.Bind(sampler());
-		let _ = Uniforms!(s, ("src", &t));
+		let _ = Uniforms!(s, ("tex", &t));
 		b.Draw((num, offset, gl::TRIANGLES));
 	}
 
@@ -84,30 +84,24 @@ pub fn sampler() -> &'static Sampler {
 
 SHADER!(
 	gui__pos_col_tex_vs,
-	r"#version 330 core
-layout(location = 0)in vec4 Position;
-layout(location = 1)in vec4 Color;
-layout(location = 2)in vec2 TexCoord;
-out vec4 glColor;
-out vec2 glTexCoord;
+	r"layout(location = 0) in vec4 Position;
+	layout(location = 1) in vec4 Color;
+	layout(location = 2) in vec2 TexCoord;
+	out vec4 glColor;
+	out vec2 glTexCoord;
 
-void main()
-{
-gl_Position = vec4(Position.xyz, 1.);
-glColor = Color;
-glTexCoord = TexCoord;
-}"
+	void main() {
+		gl_Position = vec4(Position.xyz, 1);
+		glColor = Color;
+		glTexCoord = TexCoord;
+	}"
 );
 SHADER!(
 	gui__col_tex_ps,
-	r"#version 330 core
-in vec4 glColor;
-in vec2 glTexCoord;
-layout(location = 0)out vec4 glFragColor;
-uniform sampler2D src;
+	r"in vec4 glColor;
+	in vec2 glTexCoord;
+	layout(location = 0) out vec4 glFragColor;
+	uniform sampler2D tex;
 
-void main()
-{
-glFragColor = glColor * texture(src, glTexCoord);
-}"
+	void main() { glFragColor = glColor * texture(tex, glTexCoord); }"
 );

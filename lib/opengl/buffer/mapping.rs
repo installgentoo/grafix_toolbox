@@ -1,5 +1,5 @@
-use super::{object::*, policy::*, types::*, universion::*};
 use crate::uses::*;
+use GL::{spec::*, types::*, unigl::*};
 
 pub struct Mapping<'l, T: Buffer, D> {
 	o: &'l ArrObject<T, D>,

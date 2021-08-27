@@ -1,7 +1,7 @@
 use super::{objects::*, parts::*};
 use crate::events::*;
 use crate::uses::{math::*, *};
-use crate::GL::{spec, window::*, Vao, RGB, RGBA};
+use GL::{spec, Frame, Vao, RGB, RGBA};
 
 macro_rules! Draw {
 	($t: ty, $draw_spec: tt) => {
@@ -97,7 +97,7 @@ impl<'l> RenderLock<'l> {
 	pub fn mouse_pos(&self) -> Vec2 {
 		self.r.mouse_pos
 	}
-	pub fn unlock(self, events: &mut Vec<Event>) -> Renderer {
+	pub fn unlock(self, w: &mut impl Frame, events: &mut Vec<Event>) -> Renderer {
 		debug_assert!({
 			super::sugar::borrow_map().clear();
 			true
@@ -107,7 +107,7 @@ impl<'l> RenderLock<'l> {
 			r.objs.shrink(n);
 		}
 		r.consume_events(logics, events);
-		r.render();
+		r.render(w);
 		r
 	}
 }
@@ -132,12 +132,6 @@ impl Renderer {
 		RenderLock {
 			r: self,
 			clip: vec![((-L, -L), (L, L))],
-			..Def()
-		}
-	}
-	pub fn default() -> Self {
-		Self {
-			aspect: Window::aspect(),
 			..Def()
 		}
 	}
@@ -222,7 +216,7 @@ impl Renderer {
 			true
 		});
 	}
-	fn render(&mut self) {
+	fn render(&mut self, frame: &mut impl Frame) {
 		let Self {
 			vao,
 			idxs,
@@ -245,7 +239,8 @@ impl Renderer {
 			uv.flush(flush.3, |o| vao.AttribFmt(o, (2, 2)));
 		}
 
-		GL::ClearDepth(1.);
+		frame.bind();
+		frame.ClearDepth(1);
 
 		GL::BlendFunc::Save();
 		GL::DepthFunc::Save();
@@ -270,8 +265,8 @@ impl Renderer {
 		GL::DepthFunc::Restore();
 
 		*flush = State::empty();
-		*status = State::XYZW.or_def(Window::aspect() != *aspect);
-		*aspect = Window::aspect();
+		*status = State::XYZW.or_def(frame.aspect() != *aspect);
+		*aspect = frame.aspect();
 	}
 }
 

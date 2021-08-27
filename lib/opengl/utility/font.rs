@@ -1,6 +1,6 @@
 use super::sdf::*;
 use crate::uses::{math::*, *};
-use crate::GL::{atlas::*, Tex2d, RED};
+use GL::{atlas::*, Tex2d, RED};
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct Glyph {
@@ -40,7 +40,8 @@ impl Font {
 	pub fn kern(&self, l: char, r: char) -> f32 {
 		(|| Some(*self.kerning.get(&l)?.get(&r)?))().unwrap_or(0.)
 	}
-	pub fn new_cached(name: &str, alphabet: &str) -> Self {
+	pub fn new_cached(name: &str, alphabet: impl AsRef<str>) -> Self {
+		let alphabet = alphabet.as_ref();
 		let alph_chksum = chksum::const_fnv1(alphabet.as_bytes()).to_string();
 		let cache = &CONCAT![name, ".", &alph_chksum, ".font.z"];
 		if let Ok(d) = FS::Load::Archive(cache) {
@@ -58,8 +59,9 @@ impl Font {
 		})();
 		OR_DEF!(font)
 	}
-	pub fn new(font_data: impl Borrow<Vec<u8>>, alphabet: &str) -> Self {
+	pub fn new(font_data: impl Borrow<Vec<u8>>, alphabet: impl AsRef<str>) -> Self {
 		use rusttype as ttf;
+		let alphabet = alphabet.as_ref();
 		let (glyph_size, border, supersample) = (28, 2, 16);
 		let alphabet = || alphabet.chars();
 		let glyph_divisor = 2. / f32(glyph_size + border * 2);

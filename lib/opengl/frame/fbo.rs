@@ -1,5 +1,6 @@
+use super::args::*;
 use crate::uses::*;
-use crate::GL::{spec::*, tex::*, Framebuffer};
+use GL::{fbo::*, spec::*, tex::*};
 
 pub struct Fbo<S, F> {
 	pub fb: Framebuffer,
@@ -12,11 +13,17 @@ impl<S: TexSize, F: TexFmt> Fbo<S, F> {
 		let fb = Framebuffer::new().attach((&tex, gl::COLOR_ATTACHMENT0));
 		Self { fb, tex }
 	}
-	pub fn bind(&mut self) -> Binding<Framebuff> {
-		self.fb.Bind(&self.tex)
+}
+impl<S: TexSize, F: TexFmt> Frame for Fbo<S, F> {
+	fn ClearColor(&self, args: impl ClearArgs) {
+		self.fb.Clear(gl::COLOR, args);
 	}
-	pub fn clear(&self) {
-		self.fb.ClearColor(0);
+	fn size(&self) -> uVec2 {
+		let TexParam { w, h, .. } = self.tex.param;
+		uVec2((w, h))
+	}
+	fn bind(&mut self) -> Binding<Framebuff> {
+		self.fb.Bind(&self.tex)
 	}
 }
 

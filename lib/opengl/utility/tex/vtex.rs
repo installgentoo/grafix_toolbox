@@ -1,5 +1,5 @@
 use crate::uses::{prefetch::*, *};
-use crate::GL::{atlas, tex::*, uImage};
+use GL::{atlas, tex::*, uImage};
 
 #[derive(Debug)]
 pub struct VTex2d<S, F> {

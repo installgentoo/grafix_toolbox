@@ -9,7 +9,7 @@ mod buffer;
 mod consts_def;
 mod debug;
 mod fence;
-mod screen;
+mod frame;
 mod texture;
 mod utility;
 
@@ -25,7 +25,6 @@ pub mod opengl {
 	pub use bind::*;
 	pub use buffer::*;
 	pub use fbo::*;
-	pub use screen::*;
 	pub use shader::*;
 	pub use states::*;
 	pub use tex::*;
@@ -44,11 +43,7 @@ pub mod opengl {
 	}
 	pub mod fbo {
 		use super::super::*;
-		pub use texture::{Framebuffer, Renderbuffer};
-		pub use utility::Fbo;
-	}
-	pub mod screen {
-		pub use super::super::screen::{BindScreenFbo, ClearColor, ClearDepth, ClearScreen, Viewport};
+		pub use frame::{Fbo, Frame, Framebuffer, RenderTgt, Renderbuffer, Slab};
 	}
 	pub mod shader {
 		pub use super::super::shader::{Shader, ShaderManager};
@@ -80,9 +75,6 @@ pub mod opengl {
 	}
 	pub mod offhand {
 		pub use super::super::utility::Offhand;
-	}
-	pub mod pingpong {
-		pub use super::super::utility::{PPDrawableArg, Slab};
 	}
 	pub mod laplacian {
 		pub use super::super::utility::{collapse, pyramid};

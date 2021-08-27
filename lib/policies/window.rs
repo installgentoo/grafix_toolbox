@@ -2,17 +2,16 @@ use crate::events::*;
 use crate::uses::{adapters::*, math::*, sync::*, *};
 use std::{ffi::CStr, sync::mpsc::Receiver};
 
-pub trait WindowPolicy {
-	fn size() -> uVec2;
-	fn aspect() -> Vec2;
-	fn pixel() -> Vec2;
+pub trait WindowSpec {
+	fn _size() -> uVec2;
+	fn _aspect() -> Vec2;
+	fn _pixel() -> Vec2;
 
 	unsafe fn clipboard(&self) -> String;
 	fn set_clipboard(&mut self, str: &str);
 	fn resize(&mut self, size: uVec2);
 
 	fn spawn_offhand_gl(&mut self, f: impl OffhandFunc) -> JoinHandle<Res<()>>;
-	fn draw_to_screen(&mut self);
 	fn poll_events(&mut self) -> Vec<Event>;
 	fn swap(&mut self);
 }
@@ -35,7 +34,7 @@ impl GlfwWindow {
 			ctx.window_hint(ClientApi(ClientApiHint::OpenGl));
 			ctx.window_hint(ContextVersion(GL::unigl::GL_VERSION.0, GL::unigl::GL_VERSION.1));
 			ctx.window_hint(OpenGlForwardCompat(true));
-			ctx.window_hint(OpenGlDebugContext(false));
+			ctx.window_hint(OpenGlDebugContext(GL::unigl::IS_DEBUG));
 			ctx.window_hint(OpenGlProfile(OpenGlProfileHint::Core));
 			ctx.window_hint(Samples(Some(4)));
 			//ctx.window_hint(DoubleBuffer(false));
@@ -61,6 +60,9 @@ impl GlfwWindow {
 		let version = PASS!(unsafe { CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8) }.to_str());
 		PRINT!("Initialized OpenGL, {}", version);
 		GL::macro_uses::gl_was_initialized(true);
+		if GL::unigl::IS_DEBUG {
+			GL::EnableDebugContext(GL::DebugLevel::All);
+		}
 
 		Self::set_size((w, h));
 		Ok(GlfwWindow {
@@ -71,33 +73,33 @@ impl GlfwWindow {
 	}
 
 	fn set_size((w, h): uVec2) {
-		*Self::_size() = (w, h);
+		*Self::size() = (w, h);
 		let (w, h, min) = Vec3((w, h, w.min(h)));
-		*Self::_aspect() = (min, min).div((w, h));
-		*Self::_pixel() = (1., 1.).div((w, h));
+		*Self::aspect() = (min, min).div((w, h));
+		*Self::pixel() = (1., 1.).div((w, h));
 	}
-	fn _size() -> &'static mut uVec2 {
+	fn size() -> &'static mut uVec2 {
 		static mut S: uVec2 = (0, 0);
 		unsafe { &mut S }
 	}
-	fn _aspect() -> &'static mut Vec2 {
+	fn aspect() -> &'static mut Vec2 {
 		static mut A: Vec2 = (0., 0.);
 		unsafe { &mut A }
 	}
-	fn _pixel() -> &'static mut Vec2 {
+	fn pixel() -> &'static mut Vec2 {
 		static mut P: Vec2 = (0., 0.);
 		unsafe { &mut P }
 	}
 }
-impl WindowPolicy for GlfwWindow {
-	fn size() -> uVec2 {
-		*Self::_size()
+impl WindowSpec for GlfwWindow {
+	fn _size() -> uVec2 {
+		*Self::size()
 	}
-	fn aspect() -> Vec2 {
-		*Self::_aspect()
+	fn _aspect() -> Vec2 {
+		*Self::aspect()
 	}
-	fn pixel() -> Vec2 {
-		*Self::_pixel()
+	fn _pixel() -> Vec2 {
+		*Self::pixel()
 	}
 	unsafe fn clipboard(&self) -> String {
 		//TODO glfw-rs is broken
@@ -144,12 +146,6 @@ impl WindowPolicy for GlfwWindow {
 		self.window.make_current();
 		ret
 	}
-	fn draw_to_screen(&mut self) {
-		let (w, h) = *Self::_size();
-
-		GL::Viewport((0, 0, w, h));
-		GL::BindScreenFbo();
-	}
 	fn poll_events(&mut self) -> Vec<Event> {
 		let action = |a| match a {
 			glfw::Action::Press => Mod::PRESS,
@@ -180,7 +176,7 @@ impl WindowPolicy for GlfwWindow {
 		let mut events: Vec<Event> = glfw::flush_messages(events)
 			.filter_map(|(_, event)| match event {
 				glfw::WindowEvent::CursorPos(x, y) => {
-					let ((x, y), (w, h)) = ((2., 2.).mul((x, y)), Vec2(Self::size()));
+					let ((x, y), (w, h)) = ((2., 2.).mul((x, y)), Vec2(Self::_size()));
 					let at = (x - w, h - y).div(w.min(h));
 					let state = collect_mods();
 					Some(Event::MouseMove { at, state })
@@ -218,7 +214,7 @@ impl WindowPolicy for GlfwWindow {
 			.collect();
 		if *resized_hint {
 			*resized_hint = false;
-			let ((x, y), (w, h)) = ((2., 2.).mul(window.get_cursor_pos()), Vec2(Self::size()));
+			let ((x, y), (w, h)) = ((2., 2.).mul(window.get_cursor_pos()), Vec2(Self::_size()));
 			let at = (x - w, h - y).div(w.min(h));
 			let state = collect_mods();
 			events.push(Event::MouseMove { at, state })

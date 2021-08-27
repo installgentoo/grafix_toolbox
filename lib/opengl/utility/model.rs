@@ -47,7 +47,7 @@ impl Model {
 				}
 				let d: Vec3 = max.sub(min);
 				let (center, scale) = (max.sum(min).div(2), (1., 1., 1.).div(d.x().max(d.y()).max(d.z())).mul(scale));
-				let xyz = xyz.chunks(3).flat_map(|s| <[_; 3]>::to((Vec3(s)).sub(center).mul(scale)).to_vec()).collect::<Vec<_>>();
+				let xyz: Vec<_> = xyz.chunks(3).flat_map(|s| <[_; 3]>::to((Vec3(s)).sub(center).mul(scale)).to_vec()).collect();
 				Model { idxs, xyz, uv, norm }
 			})
 			.collect();

@@ -1,12 +1,12 @@
 use crate::uses::{sync::*, *};
-use crate::GL::{window::WindowPolicy, Fence};
+use GL::{window::*, Fence};
 
 pub struct Offhand<O> {
 	handle: Option<JoinHandle<Res<()>>>,
 	rx: Receiver<(O, Fence)>,
 }
 impl<O: 'static + Send> Offhand<O> {
-	pub fn new<I: 'static + Send>(window: &mut impl WindowPolicy, depth: usize, process: impl 'static + Send + Fn(I) -> O) -> (Sender<I>, Self) {
+	pub fn new<I: 'static + Send>(window: &mut Window, depth: usize, process: impl 'static + Send + Fn(I) -> O) -> (Sender<I>, Self) {
 		let (data_sn, data_rx): (Sender<I>, Receiver<I>) = chan::bounded(depth);
 		let (res_sn, res_rx): (Sender<(O, Fence)>, Receiver<(O, Fence)>) = chan::bounded(depth);
 		let handle = window.spawn_offhand_gl(move || {
