@@ -2,7 +2,7 @@ use super::obj::*;
 use super::sprite::{gui__pos_col_tex_vs, sampler};
 use super::sprite9::{sprite9_idxs, write_sprite9};
 use crate::uses::{math::*, *};
-use GL::{atlas::VTex2d, shader::*, window::*, VaoBinding, RGBA};
+use GL::{atlas::VTex2d, shader::*, VaoBinding, RGBA};
 
 pub struct Frame9<'r> {
 	pub pos: Vec2,
@@ -44,10 +44,10 @@ impl Object for Frame9Impl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, range: BatchRange) {
+	fn write_mesh(&self, aspect: Vec2, range: BatchRange) {
 		let (crop, &Base { pos, size, color, .. }) = (self.base.bound_box(), self.base());
 		let c = size.x().min(size.y()) * self.corner.min(0.5).max(0.);
-		write_sprite9((Window::_aspect(), pos, size, (c, c), crop, (0., 0., 1., 1.), color), range);
+		write_sprite9((aspect, pos, size, (c, c), crop, (0., 0., 1., 1.), color), range);
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
 		let s = UnsafeOnce!(Shader, { EXPECT!(Shader::new((gui__pos_col_tex_vs, gui__frame_ps))) });

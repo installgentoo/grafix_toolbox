@@ -8,9 +8,9 @@ mod shader;
 mod buffer;
 mod consts_def;
 mod debug;
-mod fence;
 mod frame;
 mod texture;
+mod thread;
 mod utility;
 
 use control::*;
@@ -21,7 +21,7 @@ pub mod opengl {
 	pub use gl;
 	pub type Query = spec::Object<spec::Query>;
 	pub use super::debug::{DebugLevel, EnableDebugContext};
-	pub use super::fence::Fence;
+	pub use super::thread::Fence;
 	pub use bind::*;
 	pub use buffer::*;
 	pub use fbo::*;
@@ -74,7 +74,7 @@ pub mod opengl {
 		pub use super::super::utility::{Font, Glyph};
 	}
 	pub mod offhand {
-		pub use super::super::utility::Offhand;
+		pub use super::super::thread::Offhand;
 	}
 	pub mod laplacian {
 		pub use super::super::utility::{collapse, pyramid};

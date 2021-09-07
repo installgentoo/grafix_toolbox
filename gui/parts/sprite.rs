@@ -1,6 +1,6 @@
 use super::obj::*;
 use crate::uses::{math::*, *};
-use GL::{atlas::VTex2d, shader::*, tex::*, window::*, VaoBinding};
+use GL::{atlas::VTex2d, shader::*, tex::*, VaoBinding};
 
 pub struct Sprite<'r, S> {
 	pub pos: Vec2,
@@ -39,10 +39,10 @@ impl<S: TexSize> Object for SpriteImpl<S> {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, (z, state, xyzw, rgba, uv): BatchRange) {
+	fn write_mesh(&self, aspect: Vec2, (z, state, xyzw, rgba, uv): BatchRange) {
 		if state.contains(State::XYZW | State::UV) {
 			let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <_>::to({
-				let (aspect, (crop1, crop2), &Base { pos, size, .. }) = (Window::_aspect(), self.base.bound_box(), self.base());
+				let (aspect, (crop1, crop2), &Base { pos, size, .. }) = (aspect, self.base.bound_box(), self.base());
 				let (xy1, xy2, uv) = (pos, pos.sum(size), unsafe { &*self.tex }.region);
 				let uv = bound_uv((crop1, crop2), (xy1, xy2), uv);
 

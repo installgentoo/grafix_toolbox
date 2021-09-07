@@ -2,14 +2,14 @@ use crate::uses::*;
 
 pub trait Utf8Len {
 	fn utf8_len(&self) -> usize;
-	fn len_at_char(&self, i: usize) -> usize;
+	fn len_at_char(&self, idx: usize) -> usize;
 }
 impl Utf8Len for &str {
 	fn utf8_len(&self) -> usize {
 		self.chars().count()
 	}
-	fn len_at_char(&self, i: usize) -> usize {
-		self.char_indices().nth(i).map_or_else(|| self.len(), |(i, _)| i)
+	fn len_at_char(&self, idx: usize) -> usize {
+		self.char_indices().nth(idx).map_or_else(|| self.len(), |(i, _)| i)
 	}
 }
 
@@ -88,12 +88,12 @@ impl<T: Default> ResizeDefault for Vec<T> {
 }
 
 pub trait Retain_Mut<T> {
-	fn retain_mut<F>(&mut self, f: F)
+	fn retain_mut<F>(&mut self, filter: F)
 	where
 		F: FnMut(&mut T) -> bool;
 }
 impl<T> Retain_Mut<T> for Vec<T> {
-	fn retain_mut<F>(&mut self, mut f: F)
+	fn retain_mut<F>(&mut self, mut filter: F)
 	where
 		F: FnMut(&mut T) -> bool,
 	{
@@ -103,7 +103,7 @@ impl<T> Retain_Mut<T> for Vec<T> {
 			let v = &mut **self;
 
 			for i in 0..len {
-				if !f(&mut v[i]) {
+				if !filter(&mut v[i]) {
 					del += 1;
 				} else if del > 0 {
 					v.swap(i - del, i);

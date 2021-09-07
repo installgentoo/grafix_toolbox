@@ -14,7 +14,7 @@ impl Layout {
 		let id = LUID(self);
 		let Self { click, pos, size } = self;
 		{
-			let a = Window::_aspect();
+			let a = r.aspect();
 			let (lb, ru) = ((-1., -1.).div(a), (1., 1.).div(a));
 			*size = size.clmp((0., 0.), ru.mul(2).sub(CRN_PAD));
 			*pos = pos.clmp(lb.sum((0, CRN_PAD)), ru.sub(*size).sub((CRN_PAD, 0)));

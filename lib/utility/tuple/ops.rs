@@ -14,7 +14,7 @@ pub trait TupleVecIdentity: Copy + Default {
 }
 
 pub trait Tuple2Geometry<A> {
-	fn rotate(self, def: A) -> Self;
+	fn rotate(self, deg: A) -> Self;
 }
 
 impl TupleAllAny for (bool, bool) {

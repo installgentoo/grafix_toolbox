@@ -1,6 +1,6 @@
 use super::obj::*;
 use crate::uses::{math::*, *};
-use GL::{shader::*, window::*, VaoBinding};
+use GL::{shader::*, VaoBinding};
 
 pub struct Rect {
 	pub pos: Vec2,
@@ -35,10 +35,10 @@ impl Object for RectImpl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, (z, state, xyzw, rgba, _): BatchRange) {
+	fn write_mesh(&self, aspect: Vec2, (z, state, xyzw, rgba, _): BatchRange) {
 		if state.contains(State::XYZW) {
 			let ((x1, y1), (x2, y2)) = <_>::to({
-				let (aspect, (crop1, crop2)) = (Window::_aspect(), self.base.bound_box());
+				let (aspect, (crop1, crop2)) = (aspect, self.base.bound_box());
 				(crop1.mul(aspect), crop2.mul(aspect))
 			});
 			const O: f16 = f16::ZERO;

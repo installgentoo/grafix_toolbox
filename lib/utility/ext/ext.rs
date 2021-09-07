@@ -27,21 +27,21 @@ pub fn Def<T: Default>() -> T {
 }
 
 pub trait OrAssignment {
-	fn or_def(self, with: bool) -> Self;
-	fn or_val(self, with: bool, v: Self) -> Self;
+	fn or_def(self, filter: bool) -> Self;
+	fn or_val(self, filter: bool, val: Self) -> Self;
 }
 impl<T: Default> OrAssignment for T {
 	#[inline(always)]
-	fn or_def(self, with: bool) -> Self {
-		if with {
+	fn or_def(self, filter: bool) -> Self {
+		if filter {
 			self
 		} else {
 			Def()
 		}
 	}
 	#[inline(always)]
-	fn or_val(self, with: bool, v: Self) -> Self {
-		if with {
+	fn or_val(self, filter: bool, v: Self) -> Self {
+		if filter {
 			self
 		} else {
 			v

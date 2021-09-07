@@ -97,6 +97,9 @@ impl<'l> RenderLock<'l> {
 	pub fn mouse_pos(&self) -> Vec2 {
 		self.r.mouse_pos
 	}
+	pub fn aspect(&self) -> Vec2 {
+		self.r.aspect
+	}
 	pub fn unlock(self, w: &mut impl Frame, events: &mut Vec<Event>) -> Renderer {
 		debug_assert!({
 			super::sugar::borrow_map().clear();
@@ -229,9 +232,10 @@ impl Renderer {
 			aspect,
 			..
 		} = self;
+
 		if !flush.is_empty() {
 			objs.batch();
-			let flush = objs.flush(&mut idxs.buff, &mut xyzw.buff, &mut rgba.buff, &mut uv.buff);
+			let flush = objs.flush(frame.aspect(), &mut idxs.buff, &mut xyzw.buff, &mut rgba.buff, &mut uv.buff);
 
 			idxs.flush(flush.0, |o| vao.BindIdxs(o));
 			xyzw.flush(flush.1, |o| vao.AttribFmt(o, (0, 4)));
@@ -287,7 +291,7 @@ impl<T: spec::Buffer, D: Copy> Storage<T, D> {
 			}
 
 			*size = new_size;
-			*obj = spec::ArrObject::new((&buff[..], gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT));
+			*obj = spec::ArrObject::new((buff, gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT));
 			rebind(obj);
 		}
 	}

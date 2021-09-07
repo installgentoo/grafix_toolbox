@@ -11,7 +11,7 @@ pub trait WindowSpec {
 	fn set_clipboard(&mut self, str: &str);
 	fn resize(&mut self, size: uVec2);
 
-	fn spawn_offhand_gl(&mut self, f: impl OffhandFunc) -> JoinHandle<Res<()>>;
+	fn spawn_offhand_gl(&mut self, _: impl OffhandFunc) -> JoinHandle<Res<()>>;
 	fn poll_events(&mut self) -> Vec<Event>;
 	fn swap(&mut self);
 }

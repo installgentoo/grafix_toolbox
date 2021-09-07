@@ -60,13 +60,15 @@ impl Objects {
 			*first_transparent = batches.iter().position(|b| b.typ(objs).obj().ordered()).unwrap_or(batches.len());
 		}
 	}
-	pub fn flush(&mut self, idxs: &mut Vec<u16>, xyzw: &mut Vec<f16>, rgba: &mut Vec<u8>, uv: &mut Vec<f16>) -> (Option<usize>, Option<usize>, Option<usize>, Option<usize>) {
+	pub fn flush(
+		&mut self, aspect: Vec2, idxs: &mut Vec<u16>, xyzw: &mut Vec<f16>, rgba: &mut Vec<u8>, uv: &mut Vec<f16>,
+	) -> (Option<usize>, Option<usize>, Option<usize>, Option<usize>) {
 		let Self { batches, objs, .. } = self;
 
 		batches
 			.iter_mut()
 			.fold(((None, None, None, None), State::empty(), 0, 0), |(mut flush, mut state, idx_start, batch_start), b| {
-				let (batch_size, s) = b.redraw(objs);
+				let (batch_size, s) = b.redraw(aspect, objs);
 				state |= s;
 
 				if state.contains(State::RESIZED) {

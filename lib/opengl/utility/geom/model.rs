@@ -73,11 +73,11 @@ impl Model {
 impl<T: Borrow<Model>> From<T> for Mesh<u32, f32, f16, f16> {
 	fn from(m: T) -> Self {
 		let m = m.borrow();
-		let (i, c, n) = (&m.idxs[..], &m.xyz[..], &m.norm[..]);
+		let (i, c, n) = (&m.idxs, &m.xyz, &m.norm);
 		if m.uv.is_empty() {
 			Self::new((i, c, n, gl::TRIANGLES))
 		} else {
-			Self::new((i, c, &m.uv[..], n, gl::TRIANGLES))
+			Self::new((i, c, &m.uv, n, gl::TRIANGLES))
 		}
 	}
 }

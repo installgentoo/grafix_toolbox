@@ -1,7 +1,7 @@
 use super::obj::*;
 use super::sprite::{gui__pos_col_tex_vs, sampler};
 use crate::uses::{math::*, *};
-use GL::{font::*, shader::*, window::*, VaoBinding};
+use GL::{font::*, shader::*, VaoBinding};
 
 pub struct Text<'r, 'a> {
 	pub pos: Vec2,
@@ -114,7 +114,7 @@ impl Object for TextImpl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, (z, state, mut xyzw, mut rgba, mut uv): BatchRange) {
+	fn write_mesh(&self, aspect: Vec2, (z, state, mut xyzw, mut rgba, mut uv): BatchRange) {
 		if self.text.is_empty() {
 			return;
 		}
@@ -125,7 +125,7 @@ impl Object for TextImpl {
 		} = base;
 
 		if state.contains(State::XYZW) {
-			let (aspect, s) = (Window::_aspect(), *scale);
+			let (aspect, s) = (aspect, *scale);
 
 			let (mut x, mut last_c) = (-font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char);
 			for c in text.chars() {

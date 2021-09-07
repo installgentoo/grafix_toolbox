@@ -1,6 +1,6 @@
 [package]
 name = "grafix-toolbox"
-version = "0.8.0"
+version = "0.8.1"
 authors = ["Alexander Drozdoff"]
 edition = "2018"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
@@ -19,26 +19,26 @@ path = "./crate.rs"
 
 [dependencies]
 backtrace = "^0.3"
-bitflags = "^1.2"
+bincode = "^1"
+bitflags = "^1"
 const_format = "^0.2"
 flume = "^0.10"
 gl = "^0.14"
-glfw = "^0.41"
-half = { version = "^1.7", features = ["serde"] }
+glfw = "^0.42"
+half = { version = "^1", features = ["serde"] }
 hashbrown = { version = "^0.11", features = ["serde"] }
 image = { version = "^0.23", default-features = false, features = ["gif", "jpeg", "hdr", "png"] }
 libwebp-image = "^0.2"
-serde = { version = "^1", features = ["derive"] }
-serde_json = "^1"
-bincode = "^1"
-nalgebra = "^0.27"
-nalgebra-glm = "^0.13"
+nalgebra = "^0.29"
+nalgebra-glm = "^0.15"
+num_cpus = "^1"
 rand = "^0.8"
 rand_xorshift = "^0.3"
 rusttype = "^0.9"
+serde = { version = "^1", features = ["derive"] }
+serde_json = "^1"
 simdnoise = "^3"
 smol = "^1"
 tobj = "^3"
 trait-set = "^0.2"
-num_cpus = "^1"
 zstd = "^0.9"

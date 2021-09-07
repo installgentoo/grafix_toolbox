@@ -72,7 +72,7 @@ impl Batch {
 				l.intersects(obj.base())
 			})
 	}
-	pub fn redraw(&mut self, objs: &mut [Primitive]) -> (u32, State) {
+	pub fn redraw(&mut self, aspect: Vec2, objs: &mut [Primitive]) -> (u32, State) {
 		let Self { xyzw, rgba, uv, idxs, .. } = self;
 
 		let (len, mut state) = idxs.iter_mut().fold((0, State::empty()), |(start, flush), Obj { idx, size }| {
@@ -108,7 +108,8 @@ impl Batch {
 				*size = new_size;
 
 				let (z, s) = <(f32, usize)>::to((*idx, start));
-				o.obj().write_mesh((f16(1. - z / 1000.), *state, &mut xyzw[s * 4..], &mut rgba[s * 4..], &mut uv[s * 2..]));
+				o.obj()
+					.write_mesh(aspect, (f16(1. - z / 1000.), *state, &mut xyzw[s * 4..], &mut rgba[s * 4..], &mut uv[s * 2..]));
 			}
 			(start + *size, flush | *state)
 		});

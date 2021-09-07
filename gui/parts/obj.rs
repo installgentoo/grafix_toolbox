@@ -3,8 +3,8 @@ use GL::{atlas::VTex2d, tex::*, VaoBinding};
 
 pub trait Object {
 	fn base(&self) -> &Base;
-	fn write_mesh(&self, _: BatchRange);
-	fn batch_draw(&self, b: &VaoBinding<u16>, range: (u16, u16));
+	fn write_mesh(&self, aspect: Vec2, _: BatchRange);
+	fn batch_draw(&self, _: &VaoBinding<u16>, range: (u16, u16));
 
 	fn vert_count(&self) -> u32 {
 		4
