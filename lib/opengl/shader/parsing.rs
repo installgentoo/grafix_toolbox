@@ -8,7 +8,7 @@ pub fn parse_shader_sources(filename: &str, text: &str) -> SourcePack {
 		let (header, mut body) = {
 			if let Some(beg) = text.find("//--GLOBAL:") {
 				let text = &text[beg + 12..];
-				let end = PASS!(text.find("//--"));
+				let end = Res(text.find("//--"))?;
 				(&text[..end], &text[end..])
 			} else {
 				("", text)
@@ -40,13 +40,13 @@ pub fn parse_shader_sources(filename: &str, text: &str) -> SourcePack {
 				}?;
 				let newlines = "\n".repeat(cur_row_number);
 				cur_row_number += body.lines().count();
-				let shader = PASS!(CString::new(CONCAT![GL::unigl::GLSL_VERSION, header, &newlines, body]));
+				let shader = Res(CString::new(conc![GL::unigl::GLSL_VERSION, header, &newlines, body]))?;
 				Ok((name, shader))
 			})
 			.collect::<Res<_>>()
 	})();
 
-	OR_DEF!(parsed, "Malformed .glsl file {}, row {}, {:?}", filename, cur_row_number)
+	OR_DEFAULT!(parsed, "Malformed .glsl file {}, row {}, {:?}", filename, cur_row_number)
 }
 
 pub fn print_shader_log(obj: u32) -> String {

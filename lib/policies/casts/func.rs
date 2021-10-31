@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 use crate::uses::*;
 
-#[macro_export]
 macro_rules! func_cast {
 	($t: ident) => {
 		pub fn $t<T>(v: T) -> $t

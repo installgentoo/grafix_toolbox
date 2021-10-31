@@ -29,7 +29,7 @@ impl GlfwWindow {
 		use glfw::{WindowHint::*, *};
 
 		let init_ctx: fn() -> Res<_> = || {
-			let mut ctx = PASS!(glfw::init(FAIL_ON_ERRORS), |e| CONCAT!("GLFW initialization failed, ", &e));
+			let mut ctx = Res(glfw::init(FAIL_ON_ERRORS)).map_err(|e| conc!("GLFW initialization failed, ", &e))?;
 
 			ctx.window_hint(ClientApi(ClientApiHint::OpenGl));
 			ctx.window_hint(ContextVersion(GL::unigl::GL_VERSION.0, GL::unigl::GL_VERSION.1));
@@ -43,7 +43,7 @@ impl GlfwWindow {
 		};
 
 		let (x, y, w, h) = args.get();
-		let (mut window, events) = PASS!(init_ctx()?.create_window(w, h, title, WindowMode::Windowed), |_| "Failed to create GLFW window.");
+		let (mut window, events) = Res(init_ctx()?.create_window(w, h, title, WindowMode::Windowed)).map_err(|_| "Failed to create GLFW window.")?;
 
 		window.set_pos(x, y);
 		window.make_current();
@@ -57,7 +57,7 @@ impl GlfwWindow {
 
 		gl::load_with(|s| window.get_proc_address(s) as *const _);
 
-		let version = PASS!(unsafe { CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8) }.to_str());
+		let version = Res(unsafe { CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8) }.to_str())?;
 		PRINT!("Initialized OpenGL, {}", version);
 		GL::macro_uses::gl_was_initialized(true);
 		if GL::unigl::IS_DEBUG {

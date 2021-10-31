@@ -53,7 +53,7 @@ impl Object for RectImpl {
 		}
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = UnsafeOnce!(Shader, { EXPECT!(Shader::new((gui__pos_col_vs, gui__col_ps))) });
+		let s = UnsafeOnce!(Shader, { Shader::pure((gui__pos_col_vs, gui__col_ps)) });
 
 		let _ = s.Bind();
 		b.Draw((num, offset, gl::TRIANGLES));

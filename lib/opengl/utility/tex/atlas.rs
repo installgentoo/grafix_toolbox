@@ -5,6 +5,11 @@ pub fn pack_into_atlas<K, T: Tile<F>, S: TexSize, F: TexFmt>(mut tiles: Vec<(K, 
 where
 	K: Debug + Clone + Eq + hash::Hash,
 {
+	if tiles.is_empty() {
+		FAIL!("Vector supplied to atlas is empty");
+		return Def();
+	}
+
 	tiles.sort_by(|(_, l), (_, r)| if l.h() != r.h() { r.h().cmp(&l.h()) } else { r.w().cmp(&l.w()) });
 	ASSERT!(
 		tiles.iter().map(|(l, _)| l).collect::<HashSet<_>>().len() == tiles.len(),
@@ -15,7 +20,7 @@ where
 		let area = tiles.iter().fold(0, |v, (_, t)| v + usize(t.w()) * usize(t.h()));
 		max_w.min(i32(2_u32.pow(u32(f64(area).sqrt().log2().ceil()))))
 	};
-	let (min_w, min_h) = (tiles.iter().map(|(_, e)| e.w()).min().unwrap(), tiles.iter().rev().take(1).next().unwrap().1.h());
+	let (min_w, min_h) = (tiles.iter().map(|(_, e)| e.w()).min().unwrap(), tiles.last().unwrap().1.h());
 
 	let (c, empty, filled) = (S::SIZE, &mut vec![Rect { x: 0, y: 0, w: max_w, h: max_h }], &mut vec![]);
 	let (mut tail, mut atlas, mut packed) = (vec![], vec![], HashMap::new());

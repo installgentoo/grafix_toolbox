@@ -14,3 +14,7 @@ impl<V: Into<CowStr>, G: Into<CowStr>, P: Into<CowStr>> ShdTypeArgs for (V, G, P
 		(self.0.into(), Some(self.1.into()), self.2.into())
 	}
 }
+
+pub trait PureShdTypeArgs: ShdTypeArgs {}
+impl_trait_for!(PureShdTypeArgs = (I, I), (I, I, I));
+type I = super::InlineShader;

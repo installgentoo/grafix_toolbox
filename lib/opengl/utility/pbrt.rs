@@ -24,7 +24,7 @@ pub struct Environment {
 }
 impl Environment {
 	pub fn new_cached(name: &str) -> Res<Self> {
-		let cache = &CONCAT![name, ".hdr.z"];
+		let cache = &conc![name, ".hdr.z"];
 		if let Ok(d) = FS::Load::Archive(cache) {
 			if let Ok(env) = SERDE::FromVec(&d) {
 				return Ok(env);
@@ -32,11 +32,10 @@ impl Environment {
 		}
 
 		let env: Res<_> = (|| {
-			let file = FS::Load::File(CONCAT!["res/", name, ".hdr"])?;
-			let equirect = Tex2d::from(EXPECT!(Image::<RGB, f32>::load(file)));
+			let file = FS::Load::File(conc!["res/", name, ".hdr"])?;
+			let equirect = Tex2d::from(Image::<RGB, f32>::load(file)?);
 			let env = Self::new(equirect);
-			let v = EXPECT!(SERDE::ToVec(&env));
-			FS::Save::Archive((cache, v));
+			let _ = SERDE::ToVec(&env).map(|v| FS::Save::Archive((cache, v)));
 			Ok(env)
 		})();
 		env
@@ -50,12 +49,11 @@ impl Environment {
 		}
 
 		let lut = Self::lut();
-		let v = EXPECT!(SERDE::ToVec(&lut));
-		FS::Save::Archive((cache, v));
+		let _ = SERDE::ToVec(&lut).map(|v| FS::Save::Archive((cache, v)));
 		lut.into()
 	}
 	pub fn lut() -> fImage<RG> {
-		let mut lut = EXPECT!(Shader::new((mesh__2d_screen_vs, env__gen_lut_ps)));
+		let mut lut = Shader::pure((mesh__2d_screen_vs, env__gen_lut_ps));
 		let mut surf = Fbo::<RGBA, f32>::new((512, 512));
 		{
 			Screen::Prepare();
@@ -71,7 +69,7 @@ impl Environment {
 			use glm::vec3;
 			let s = |to, up| glm::look_at(&vec3(0., 0., 0.), &to, &up);
 			let proj = glm::perspective(1., 90_f32.to_radians(), 0.1, 10.);
-			vec![
+			[
 				s(vec3(1., 0., 0.), vec3(0., -1., 0.)),
 				s(vec3(-1., 0., 0.), vec3(0., -1., 0.)),
 				s(vec3(0., 1., 0.), vec3(0., 0., 1.)),
@@ -79,21 +77,19 @@ impl Environment {
 				s(vec3(0., 0., 1.), vec3(0., -1., 0.)),
 				s(vec3(0., 0., -1.), vec3(0., -1., 0.)),
 			]
-			.into_iter()
 			.map(|side| Camera::new(proj, side).VP())
-			.collect::<Vec<_>>()
 		};
 
 		let sampl = &Sampler::linear();
-		let mut equirect_shd = EXPECT!(Shader::new((env__gen_vs, env__unwrap_equirect_ps)));
-		let mut irradiance_shd = EXPECT!(Shader::new((env__gen_vs, env__gen_irradiance_ps)));
-		let mut specular_shd = EXPECT!(Shader::new((env__gen_vs, env__gen_spec_ps)));
+		let mut equirect_shd = Shader::pure((env__gen_vs, env__unwrap_equirect_ps));
+		let mut irradiance_shd = Shader::pure((env__gen_vs, env__gen_irradiance_ps));
+		let mut specular_shd = Shader::pure((env__gen_vs, env__gen_spec_ps));
 
 		let color: [_; 6] = VP_mats
 			.iter()
 			.map(|cam| {
 				let e = equirect.Bind(sampl);
-				let _ = Uniforms!(equirect_shd, ("equirect_tex", &e), ("MVPMat", *cam));
+				let _ = Uniforms!(equirect_shd, ("equirect_tex", &e), ("MVPMat", cam));
 				let mut surf = Fbo::<RGBA, f32>::new((512, 512));
 				surf.bind();
 				Skybox::Draw();
@@ -108,7 +104,7 @@ impl Environment {
 			.iter()
 			.map(|cam| {
 				let e = cubemap.Bind(sampl);
-				let _ = Uniforms!(irradiance_shd, ("env_cubetex", &e), ("MVPMat", *cam), ("iDelta", 0.025));
+				let _ = Uniforms!(irradiance_shd, ("env_cubetex", &e), ("MVPMat", cam), ("iDelta", 0.025));
 				let mut surf = Fbo::<RGBA, f32>::new((64, 64));
 				surf.bind();
 				Skybox::Draw();
@@ -130,7 +126,7 @@ impl Environment {
 							.iter()
 							.map(|cam| {
 								let e = cubemap.Bind(sampl);
-								let _ = Uniforms!(specular_shd, ("env_cubetex", &e), ("MVPMat", *cam), ("iSamples", 4096_u32), ("iRoughness", r));
+								let _ = Uniforms!(specular_shd, ("env_cubetex", &e), ("MVPMat", cam), ("iSamples", 4096_u32), ("iRoughness", r));
 								let mut surf = Fbo::<RGBA, f32>::new(wh);
 								surf.bind();
 								Skybox::Draw();

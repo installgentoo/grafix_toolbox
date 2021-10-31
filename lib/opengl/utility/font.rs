@@ -43,7 +43,7 @@ impl Font {
 	pub fn new_cached(name: &str, alphabet: impl AsRef<str>) -> Self {
 		let alphabet = alphabet.as_ref();
 		let alph_chksum = chksum::const_fnv1(alphabet.as_bytes()).to_string();
-		let cache = &CONCAT![name, ".", &alph_chksum, ".font.z"];
+		let cache = &conc![name, ".", &alph_chksum, ".font.z"];
 		if let Ok(d) = FS::Load::Archive(cache) {
 			if let Ok(font) = SERDE::FromVec(&d) {
 				return font;
@@ -51,15 +51,14 @@ impl Font {
 		}
 
 		let font: Res<_> = (|| {
-			let file = FS::Load::File(CONCAT!["res/", name, ".ttf"])?;
-			let font = Font::new(file, alphabet);
-			let v = EXPECT!(SERDE::ToVec(&font));
-			FS::Save::Archive((cache, v));
+			let file = FS::Load::File(conc!["res/", name, ".ttf"])?;
+			let font = Font::new(file, alphabet)?;
+			let _ = SERDE::ToVec(&font).map(|v| FS::Save::Archive((cache, v)));
 			Ok(font)
 		})();
-		OR_DEF!(font)
+		OR_DEFAULT!(font, "Could not load font {}: {}", name)
 	}
-	pub fn new(font_data: impl Borrow<Vec<u8>>, alphabet: impl AsRef<str>) -> Self {
+	pub fn new(font_data: impl Borrow<Vec<u8>>, alphabet: impl AsRef<str>) -> Res<Self> {
 		use rusttype as ttf;
 		let alphabet = alphabet.as_ref();
 		let (glyph_size, border, supersample) = (28, 2, 16);
@@ -68,7 +67,7 @@ impl Font {
 		let divisor = glyph_divisor / f32(supersample);
 		let scale = ttf::Scale::uniform(f32(glyph_size * supersample));
 
-		let font = ttf::Font::try_from_bytes(font_data.borrow()).unwrap();
+		let font = Res(ttf::Font::try_from_bytes(font_data.borrow()))?;
 
 		let kerning = alphabet()
 			.filter_map(|c| {
@@ -143,9 +142,9 @@ impl Font {
 			})
 			.collect();
 
-		let tex = Some(Rc::try_unwrap(tex.unwrap()).unwrap_or_else(|_| unreachable!()));
+		let tex = Some(Rc::try_unwrap(Res(tex)?).unwrap());
 
-		Self { glyphs, kerning, midline, tex }
+		Ok(Self { glyphs, kerning, midline, tex })
 	}
 }
 
@@ -160,7 +159,7 @@ impl PartialEq for ImgBox {
 		if self.w != r.w && self.h != r.h {
 			return false;
 		}
-		let diff = self.data.iter().zip(&r.data).map(|(l, r)| (i32(*l) - i32(*r)).abs()).max().unwrap_or(0);
+		let diff = self.data.iter().zip(&r.data).map(|(&l, &r)| (i32(l) - i32(r)).abs()).max().unwrap_or(0);
 		diff < 5
 	}
 }

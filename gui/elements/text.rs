@@ -92,7 +92,7 @@ impl TextEdit {
 			size: (offset.x(), size.y()),
 			color: t.fg,
 		});
-		wraps.iter().skip(start).take(len).enumerate().filter(|(_, w)| **w == 0).for_each(|(n, _)| {
+		wraps.iter().skip(start).take(len).enumerate().filter(|(_, &w)| w == 0).for_each(|(n, _)| {
 			r.draw(Rect {
 				pos: p(size.x() - SCR_PAD - CUR_PAD * 1.5, n + start),
 				size: (CUR_PAD, CUR_PAD),
@@ -320,7 +320,7 @@ impl TextEdit {
 						} else {
 							text.str().insert(b, *ch);
 						}
-						line_cache.push(CONCAT![lines[beg.y()], &ins]);
+						line_cache.push(conc![lines[beg.y()], &ins]);
 						lines[beg.y()] = line_cache.last().unwrap();
 
 						history.push(Insert(ins, b, beg));

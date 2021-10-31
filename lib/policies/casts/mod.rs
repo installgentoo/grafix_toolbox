@@ -12,7 +12,7 @@ mod i32;
 mod i64;
 mod i8;
 mod isize;
-mod matrix;
+mod nalgebra;
 mod tuples;
 mod u128;
 mod u16;

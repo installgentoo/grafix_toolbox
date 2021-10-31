@@ -12,7 +12,7 @@ impl<O: 'static + Send> Offhand<O> {
 		let handle = window.spawn_offhand_gl(move || {
 			while let Ok(msg) = data_rx.recv() {
 				let res = process(msg);
-				EXPECT!(res_sn.send((res, Fence::new())));
+				let _ = res_sn.send((res, Fence::new())).map_err(|e| FAIL!(e));
 			}
 		});
 		let (handle, rx) = (Some(handle), res_rx);
@@ -27,7 +27,7 @@ impl<O: 'static + Send> Offhand<O> {
 }
 impl<O> Drop for Offhand<O> {
 	fn drop(&mut self) {
-		EXPECT!(self.handle.take().unwrap().join().unwrap());
+		self.handle.take().unwrap().join().unwrap().unwrap();
 	}
 }
 

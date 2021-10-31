@@ -1,4 +1,4 @@
-use crate::{impl_trait_for, uses::*};
+use crate::uses::*;
 
 macro_rules! APPLICATOR {
 	($n: ident, $($t: ident),+) => {

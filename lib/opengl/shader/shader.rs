@@ -17,6 +17,9 @@ pub struct Shader {
 	tex_cache: HashMap<i32, i32>,
 }
 impl Shader {
+	pub fn pure(args: impl PureShdTypeArgs) -> Shader {
+		Self::new(args).unwrap()
+	}
 	pub fn new(args: impl ShdTypeArgs) -> Res<Shader> {
 		let (program, name) = ShaderManager::compile(args.get())?;
 
@@ -51,7 +54,7 @@ impl<'l> ShaderBinding<'l> {
 			let c_name = match CString::new(name) {
 				Ok(str) => str,
 				Err(e) => {
-					FAILED!(&e.to_string());
+					FAIL!(&e.to_string());
 					return;
 				}
 			};
@@ -90,7 +93,7 @@ impl ShaderManager {
 		let m = Self::get();
 		let name = filename.into();
 		m.loading.push(task::spawn(async move {
-			let data = OR_DEF!(Res(FS::read_text(name.as_ref()).await));
+			let data = OR_DEFAULT!(FS::read_text(name.as_ref()).await);
 			parse_shader_sources(&name, &data)
 		}));
 	}
@@ -98,18 +101,18 @@ impl ShaderManager {
 		let name = name.into();
 		let m = Self::get();
 		m.sources
-			.insert(name.clone(), EXPECT!(CString::new(source)))
+			.insert(name.clone(), CString::new(source).unwrap())
 			.map(|_| m.objects.remove(&name).map(|o| GLCheck!(gl::DeleteShader(o))));
 	}
 	pub fn ClearSources() {
 		let m = Self::get();
-		m.objects.iter().for_each(|(_, o)| GLCheck!(gl::DeleteShader(*o)));
+		m.objects.iter().for_each(|(_, &o)| GLCheck!(gl::DeleteShader(o)));
 		m.objects.clear();
 	}
 
 	fn compile((vert, geom, pix): CompileArgs) -> Res<(Object<ShdProg>, String)> {
 		let m = Self::get();
-		let mut get_object = |name: CowStr, typ| {
+		let get_object = |(name, typ): (CowStr, _)| {
 			let Self { objects, sources, loading } = m;
 			if let Some(found) = objects.get(&name) {
 				return Ok(*found);
@@ -126,14 +129,11 @@ impl ShaderManager {
 			.into_iter()
 			.flatten()
 			.for_each(|(name, body)| {
-				let exists = sources.insert(name.clone().into(), body);
-				if exists.is_some() {
-					FAILED!("Shader source '{}' was already loaded", name);
-				};
+				sources.insert(name.clone().into(), body).map(|_| WARN!("Shader source '{}' was already loaded", name));
 			});
 
 			let (typ, type_name) = SHD_DEFS[typ as usize];
-			let source = PASS!(sources.get(&name), |_| CONCAT!("No ", type_name, " shader '", &name, "' in loaded sources"));
+			let source = Res(sources.get(&name)).map_err(|_| conc!("No ", type_name, " shader '", &name, "' in loaded sources"))?;
 
 			let obj = GLCheck!(gl::CreateShader(typ));
 			ASSERT!(obj != 0, "Failed to create {} shader object '{}'", type_name, &name);
@@ -142,7 +142,7 @@ impl ShaderManager {
 			let mut status: i32 = 0;
 			GLCheck!(gl::GetShaderiv(obj, gl::COMPILE_STATUS, &mut status));
 			if GLbool::to(status) != gl::TRUE {
-				let err = CONCAT!("Error compiling ", type_name, " shader '", &name, "'\n", &print_shader_log(obj));
+				let err = conc!("Error compiling ", type_name, " shader '", &name, "'\n", &print_shader_log(obj));
 				GLCheck!(gl::DeleteShader(obj));
 				return Err(err);
 			}
@@ -153,16 +153,16 @@ impl ShaderManager {
 
 		use ShaderType::*;
 		let (name, objects) = if let Some(geom) = geom {
-			let n = CONCAT!("v:", &vert, "|g:", &geom, "|p:", &pix);
+			let n = conc!("v:", &vert, "|g:", &geom, "|p:", &pix);
 			let o = vec![(vert, VERTEX), (geom, GEOMETRY), (pix, FRAGMENT)];
 			(n, o)
 		} else {
-			let n = CONCAT!("v:", &vert, "|p:", &pix);
+			let n = conc!("v:", &vert, "|p:", &pix);
 			let o = vec![(vert, VERTEX), (pix, FRAGMENT)];
 			(n, o)
 		};
 
-		let objects: Vec<_> = objects.into_iter().map(|(n, t)| get_object(n, t)).collect::<Res<_>>()?;
+		let objects: Vec<_> = objects.into_iter().map(get_object).collect::<Res<_>>()?;
 		let prog = Object::new();
 		let obj = prog.obj;
 
@@ -173,7 +173,7 @@ impl ShaderManager {
 		objects.iter().for_each(|&o| GLCheck!(gl::DetachShader(obj, o)));
 
 		if GLbool::to(status) == gl::FALSE {
-			return Err(CONCAT!("Error linking program '", &name, "',", &obj.to_string(), "\n", &print_shader_log(obj)));
+			return Err(conc!("Error linking program '", &name, "',", &obj.to_string(), "\n", &print_shader_log(obj)));
 		}
 
 		Ok((prog, name))
@@ -182,9 +182,9 @@ impl ShaderManager {
 	fn inline_source(name: Str, source: Str) {
 		let m = Self::get();
 		if let Some(_found) = m.sources.get(name) {
-			ASSERT!(*_found == EXPECT!(CString::new(source)), "Shader source '{}' already loaded", name);
+			ASSERT!(*_found == CString::new(source).unwrap(), "Shader '{}' already exists", name);
 		} else {
-			m.sources.insert(name.into(), EXPECT!(CString::new(source)));
+			m.sources.insert(name.into(), CString::new(source).unwrap());
 		}
 	}
 

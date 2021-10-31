@@ -4,6 +4,10 @@ pub type CowStr = std::borrow::Cow<'static, str>;
 pub type Res<T> = Result<T, String>;
 pub type Str = &'static str;
 
+pub fn lambda<'a, T: Fn(A) -> R + 'a, A, R>(f: T) -> Box<dyn Fn(A) -> R + 'a> {
+	Box::new(f)
+}
+
 #[macro_export]
 macro_rules! map_enum {
 	($t: pat = $e: expr => $do: expr) => {
@@ -12,13 +16,6 @@ macro_rules! map_enum {
 		} else {
 			None
 		}
-	};
-}
-
-#[macro_export]
-macro_rules! impl_trait_for {
-	($trait: ty = $($types: ty),+) => {
-		$(impl $trait for $types {})+
 	};
 }
 

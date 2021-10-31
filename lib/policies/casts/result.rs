@@ -12,7 +12,7 @@ impl<T, E: std::fmt::Display> Cast<Result<T, E>> for Result<T, String> {
 			if "String" == t {
 				e.to_string()
 			} else {
-				CONCAT!(&t, ": ", &e.to_string())
+				conc!(&t, ": ", &e.to_string())
 			}
 		}) //TODO specialization
 	}

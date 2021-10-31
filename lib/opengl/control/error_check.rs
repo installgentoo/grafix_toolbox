@@ -26,13 +26,13 @@ macro_rules! GLCheck {
 				gl::OUT_OF_MEMORY => "GL_OUT_OF_MEMORY".into(),
 				gl::INVALID_FRAMEBUFFER_OPERATION => "GL_INVALID_FRAMEBUFFER_OPERATION".into(),
 				gl::CONTEXT_LOST => "GL_CONTEXT_LOST".into(),
-				_ => CONCAT!("GL_?_", &code.to_string()).into(),
+				_ => conc!("GL_?_", &code.to_string()).into(),
 			}
 		}
 
 		let (val, err) = unsafe { ($fun, gl::GetError()) };
 		if err != gl::NO_ERROR {
-			WARN!("OpenGL error {} in {}", code_to_error(err), stringify!($fun));
+			FAIL!("OpenGL error {} in {}", code_to_error(err), stringify!($fun));
 		}
 		val
 	}};

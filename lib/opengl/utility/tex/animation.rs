@@ -8,7 +8,7 @@ pub struct Animation<'a, S: TexSize> {
 }
 impl<'a, S: TexSize> Animation<'a, S> {
 	pub fn from_file(name: &str, atlas: &'a TexAtlas<S>) -> Self {
-		let anim_desc = CONCAT!("res/", name, "/desc");
+		let anim_desc = conc!("res/", name, "/desc");
 		let data = EXPECT!(FS::Load::Text(&anim_desc));
 
 		let mut time = 0.;
@@ -19,7 +19,7 @@ impl<'a, S: TexSize> Animation<'a, S> {
 					time += EXPECT!(slice((2, l)).parse::<f32>());
 					None
 				} else {
-					let t = atlas.load(&CONCAT!(name, "/", l));
+					let t = atlas.load(&conc!(name, "/", l));
 					let f = (time, t);
 					time += 1.;
 					Some(f)
@@ -40,12 +40,12 @@ impl<'a, S: TexSize> Animation<'a, S> {
 		let Self { frames, c, .. } = self;
 		ASSERT!(t <= 1., "Animation assumes time in (0..1), given {}", t);
 
-		for (n, ((b, e), guess)) in frames.iter().enumerate().skip(*c).chain(frames.iter().enumerate().take(*c)) {
+		for (n, ((b, e), guess)) in frames.iter().skip(*c).chain(frames.iter().take(*c)).enumerate() {
 			if t >= *b && t <= *e {
 				*c = n;
 				return guess.get();
 			}
 		}
-		EXPECT!(frames.last()).1.get()
+		frames.last().unwrap().1.get()
 	}
 }

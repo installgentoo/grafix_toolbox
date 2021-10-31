@@ -29,7 +29,7 @@ macro_rules! TIMER {
 	}};
 }
 
-macro_rules! Profiler {
+macro_rules! PROFILER {
 	($n: ident, $t: ty) => {
 		pub mod $n {
 			use super::*;
@@ -40,21 +40,21 @@ macro_rules! Profiler {
 				INIT.call_once(move || {
 					logging::Logger::AddPostmortem(PrintAll);
 				});
-				let mut lock = EXPECT!(map().lock());
+				let mut lock = map().lock().unwrap();
 				let t = lock.remove(name).unwrap_or_else(Timer::new::<$t>);
 				lock.insert(name, t.start(name));
 			}
 			pub fn Stop(name: Str) {
-				let mut lock = EXPECT!(map().lock());
+				let mut lock = map().lock().unwrap();
 				let t = lock.remove(name).unwrap_or_else(Timer::new::<$t>);
 				lock.insert(name, t.stop(name));
 			}
 			pub fn Print(name: Str) {
-				let t = EXPECT!(EXPECT!(map().lock()).remove(name), "No timer '{}'", name);
+				let t = EXPECT!(map().lock().unwrap().remove(name), "No timer '{}'", name);
 				print_impl(name, t);
 			}
 			pub fn PrintAll() {
-				let mut all: Vec<_> = EXPECT!(map().lock()).drain().collect();
+				let mut all: Vec<_> = map().lock().unwrap().drain().collect();
 				all.sort_by(|(a, _), (b, _)| a.cmp(b));
 				all.into_iter().for_each(|(n, t)| print_impl(n, t));
 			}
@@ -65,10 +65,10 @@ macro_rules! Profiler {
 					for step in &[(1_000_000_000, " s"), (1_000_000, " ms"), (1_000, " us")] {
 						let frame = i * step.0;
 						if t >= frame {
-							return CONCAT!(&(f64(t) / f64(frame)).to_string(), step.1);
+							return conc!(&(f64(t) / f64(frame)).to_string(), step.1);
 						}
 					}
-					return CONCAT!(&(f64(t) / f64(i)).to_string(), " ns");
+					return conc!(&(f64(t) / f64(i)).to_string(), " ns");
 				};
 				PRINT!("Timer '{}': {} |{}", name, format(), i);
 			}
@@ -85,9 +85,8 @@ macro_rules! Profiler {
 		}
 	};
 }
-
-Profiler!(CPU, CPUTimerStopped);
-Profiler!(GPU, GLTimer);
+PROFILER!(CPU, CPUTimerStopped);
+PROFILER!(GPU, GLTimer);
 
 enum GenericTimer {
 	Started(Started),

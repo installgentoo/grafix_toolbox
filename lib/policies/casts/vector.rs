@@ -1,21 +1,5 @@
 use crate::uses::*;
 
-impl Cast<glm::Vec2> for Vec2 {
-	fn to(v: glm::Vec2) -> Self {
-		unsafe { mem::transmute::<[_; 2], _>(v.into()) }
-	}
-}
-impl Cast<glm::Vec3> for Vec3 {
-	fn to(v: glm::Vec3) -> Self {
-		unsafe { mem::transmute::<[_; 3], _>(v.into()) }
-	}
-}
-impl Cast<glm::Vec4> for Vec4 {
-	fn to(v: glm::Vec4) -> Self {
-		unsafe { mem::transmute::<[_; 4], _>(v.into()) }
-	}
-}
-
 impl<T: Copy> Cast<&[T]> for vec2<T> {
 	fn to(v: &[T]) -> Self {
 		ASSERT!(v.len() > 1, "Slice is too short for Vec2");
@@ -32,22 +16,6 @@ impl<T: Copy> Cast<&[T]> for vec4<T> {
 	fn to(v: &[T]) -> Self {
 		ASSERT!(v.len() > 3, "Slice is too short for Vec4");
 		(*v.at(0), *v.at(1), *v.at(2), *v.at(3))
-	}
-}
-
-impl Cast<Vec2> for glm::Vec2 {
-	fn to(v: Vec2) -> Self {
-		Self::from(<[_; 2]>::to(v))
-	}
-}
-impl Cast<Vec3> for glm::Vec3 {
-	fn to(v: Vec3) -> Self {
-		Self::from(<[_; 3]>::to(v))
-	}
-}
-impl Cast<Vec4> for glm::Vec4 {
-	fn to(v: Vec4) -> Self {
-		Self::from(<[_; 4]>::to(v))
 	}
 }
 

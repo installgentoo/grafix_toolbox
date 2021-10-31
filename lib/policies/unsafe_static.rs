@@ -83,9 +83,9 @@ impl<T: Send + Sync> Clone for static_ptr<T> {
 #[macro_export]
 macro_rules! StaticPtr {
 	($n: expr) => {
-			unsafe { static_ptr::new($n) };
+			unsafe { static_ptr::new($n) }
 	};
 	($($n: expr),+) => {
-			unsafe { ($(static_ptr::new($n),)+) };
+			unsafe { ($(static_ptr::new($n),)+) }
 	};
 }

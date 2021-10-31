@@ -1,13 +1,13 @@
 # grafix_toolbox
 
-[![Crates.io](https://crates.io/crates.io/tuple_swizzle)](https://crates.io/crates/grafix_toolbox)
+[![Crates.io](https://crates.io/crates.io/grafix_toolbox)](https://crates.io/crates/grafix_toolbox)
 
-[![Docs.rs](https://docs.rs/tuple_swizzle)](https://docs.rs/grafix_toolbox)
+[![Docs.rs](https://docs.rs/grafix_toolbox)](https://docs.rs/grafix_toolbox)
 
 # Using in your project
 
 ~~~
-grafix_toolbox = "^0"
+grafix_toolbox = "*"
 ~~~
 
 grafix_toolbox is a collection of my personal tools.

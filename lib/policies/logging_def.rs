@@ -6,7 +6,7 @@ macro_rules! LOGGER {
 }
 
 #[macro_export]
-macro_rules! CONCAT {
+macro_rules! conc {
 	($($t: expr),+) => {
 		[$($t),+].concat()
 	};
@@ -25,17 +25,7 @@ macro_rules! EXPECT {
 }
 
 #[macro_export]
-macro_rules! PASS {
-	($e: expr) => {
-		Res($e)?
-	};
-	($e: expr, $w: expr) => {
-		Res($e).map_err($w)?
-	};
-}
-
-#[macro_export]
-macro_rules! OR_DEF {
+macro_rules! OR_DEFAULT {
 	($e: expr) => {{
 		EXPECT_OR_DEF_IMPL!($e, "{}")
 	}};
@@ -50,28 +40,12 @@ macro_rules! EXPECT_OR_DEF_IMPL {
 		use logging::UniformUnwrapOrDefault;
 		if e.uni_is_err() {
 			let (v, e) = e.uni_err();
-			FAILED!($($t)+, e);
+			FAIL!($($t)+, e);
 			v
 		} else {
 			e.unwrap()
 		}
 	}};
-}
-
-#[cfg(not(debug_assertions))]
-#[macro_export]
-macro_rules! FAILED {
-	($($t: tt)+) => {{
-		WARN!($($t)+);
-	}}
-}
-
-#[cfg(debug_assertions)]
-#[macro_export]
-macro_rules! FAILED {
-	($($t: tt)+) => {{
-		ASSERT!(0 == 1, $($t)+);
-	}}
 }
 
 #[cfg(not(debug_assertions))]
@@ -106,7 +80,7 @@ macro_rules! ASSERT {
 #[macro_export]
 macro_rules! ASSERT_IMPL {
 	($($t: tt)+) => {{
-		logging::Logger::Log(CONCAT!("A| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"));
+		logging::Logger::Log(conc!("A| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"));
 		panic!()
 	}}
 }
@@ -120,10 +94,26 @@ macro_rules! ERROR {
 macro_rules! ERROR_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
-		Logger::Log(CONCAT!("E| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"));
+		Logger::Log(conc!("E| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"));
 		Logger::Log(format!("{:?}", backtrace::Backtrace::new()));
 		panic!();
 	}};
+}
+
+#[cfg(not(debug_assertions))]
+#[macro_export]
+macro_rules! FAIL {
+	($($t: tt)+) => {{
+		WARN!($($t)+);
+	}}
+}
+
+#[cfg(debug_assertions)]
+#[macro_export]
+macro_rules! FAIL {
+	($($t: tt)+) => {{
+		ASSERT!(0 == 1, $($t)+);
+	}}
 }
 
 #[macro_export]
@@ -136,7 +126,7 @@ macro_rules! WARN_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
 		if (Level::WARNING as i32) <= Logger::level() {
-			Logger::Log(CONCAT!("W| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"));
+			Logger::Log(conc!("W| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"));
 		}
 	}};
 }
@@ -151,7 +141,7 @@ macro_rules! INFO_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
 		if (Level::INFO as i32) <= Logger::level() {
-			Logger::Log(CONCAT!("I| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"));
+			Logger::Log(conc!("I| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"));
 		}
 	}}
 }
@@ -174,19 +164,19 @@ macro_rules! DEBUG_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
 		if (Level::DEBUG as i32) <= Logger::level() {
-			Logger::Log(CONCAT!("D| ", &format!($($t)+), "\n"));
+			Logger::Log(conc!("D| ", &format!($($t)+), "\n"));
 		}
 	}}
 }
 
 #[macro_export]
 macro_rules! PRINT {
-	($e: expr) => {{ _PRINT!("{:?}", $e); }};
-	($($t: tt)+) => {{ _PRINT!($($t)+); }}
+	($e: expr) => {{ PRINT_IMPL!("{:?}", $e); }};
+	($($t: tt)+) => {{ PRINT_IMPL!($($t)+); }}
 }
 #[macro_export]
-macro_rules! _PRINT {
+macro_rules! PRINT_IMPL {
 	($($t: tt)+) => {{
-		logging::Logger::Log(CONCAT!(&format!($($t)+), "\n"));
+		logging::Logger::Log(conc!(&format!($($t)+), "\n"));
 	}}
 }

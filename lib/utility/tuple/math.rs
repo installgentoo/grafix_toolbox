@@ -44,19 +44,19 @@ impl<S: TupleApply<RA, A, A, AR = Self>, RA, A: TupleMathReq<A>> TupleMath<RA, A
 
 pub trait TupleSelf<A: TupleMathReq<A>>: TupleTrans<A> + TupleMath<A, A> + TupleVecIdentity {
 	fn round(self) -> Self {
-		self.trans(|v| v.round())
+		self.map(|v| v.round())
 	}
 	fn abs(self) -> Self {
-		self.trans(|v| v.abs())
+		self.map(|v| v.abs())
 	}
 	fn sgn(self) -> Self {
-		self.trans(|v| A::to((v > A::to(0)) as i32) * A::to(2) - A::to(1))
+		self.map(|v| A::to((v > A::to(0)) as i32) * A::to(2) - A::to(1))
 	}
 	fn pow2(self) -> Self {
-		self.trans(|v| v * v)
+		self.map(|v| v * v)
 	}
 	fn len(self) -> A {
-		self.pow2().merge(|l, r| l + r).root()
+		self.pow2().fold(|l, r| l + r).root()
 	}
 	fn norm(self) -> Self {
 		let l = self.len();
@@ -67,7 +67,7 @@ impl<S: TupleTrans<A> + TupleTrans<A> + TupleMath<A, A> + TupleVecIdentity, A: T
 
 pub trait TupleSigned<A: Neg<Output = A>>: TupleTrans<A> {
 	fn neg(self) -> Self {
-		self.trans(|v| -v)
+		self.map(|v| -v)
 	}
 }
 impl<S: TupleTrans<A>, A: Neg<Output = A>> TupleSigned<A> for S {}

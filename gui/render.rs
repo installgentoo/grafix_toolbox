@@ -3,7 +3,7 @@ use crate::events::*;
 use crate::uses::{math::*, *};
 use GL::{spec, Frame, Vao, RGB, RGBA};
 
-macro_rules! Draw {
+macro_rules! DRAW {
 	($t: ty, $draw_spec: tt) => {
 		impl<'l> DrawablePrimitive<'l> for $t {
 			fn draw(self, obj_n: u32, clip: &Crop, r: &mut Renderer) {
@@ -36,13 +36,13 @@ macro_rules! Draw {
 pub trait DrawablePrimitive<'l> {
 	fn draw(self, _: u32, _: &Crop, _: &mut Renderer);
 }
-Draw!(Rect, Rect);
-Draw!(Sprite<'l, RGB>, ImgRGB);
-Draw!(Sprite<'l, RGBA>, ImgRGBA);
-Draw!(Sprite9<'l, RGB>, Img9RGB);
-Draw!(Sprite9<'l, RGBA>, Img9RGBA);
-Draw!(Frame9<'l>, Frame9);
-Draw!(Text<'l, '_>, Text);
+DRAW!(Rect, Rect);
+DRAW!(Sprite<'l, RGB>, ImgRGB);
+DRAW!(Sprite<'l, RGBA>, ImgRGBA);
+DRAW!(Sprite9<'l, RGB>, Img9RGB);
+DRAW!(Sprite9<'l, RGBA>, Img9RGBA);
+DRAW!(Frame9<'l>, Frame9);
+DRAW!(Text<'l, '_>, Text);
 
 #[derive(Default)]
 pub struct RenderLock<'l> {
@@ -66,7 +66,7 @@ impl<'l> RenderLock<'l> {
 	}
 	pub fn draw(&mut self, prim: impl DrawablePrimitive<'l>) {
 		let Self { r, n, clip, .. } = self;
-		prim.draw(*n, EXPECT!(clip.iter().last()), r);
+		prim.draw(*n, clip.last().unwrap(), r);
 		*n += 1;
 	}
 	pub fn logic(&mut self, b_box: Crop, func: impl 'l + FnMut(&Event, bool, Vec2) -> EventReply, id: LogicId) {
@@ -75,7 +75,7 @@ impl<'l> RenderLock<'l> {
 	}
 	pub fn draw_with_logic(&mut self, prim: impl DrawablePrimitive<'l>, func: impl 'l + FnMut(&Event, bool, Vec2) -> EventReply, id: LogicId) {
 		let Self { r, n, clip, logics, .. } = self;
-		prim.draw(*n, EXPECT!(clip.iter().last()), r);
+		prim.draw(*n, clip.last().unwrap(), r);
 		let (id, bound, func) = (id, LogicBound::Obj(*n), Box::new(func));
 		logics.push(LogicStorage { id, bound, func });
 		*n += 1;

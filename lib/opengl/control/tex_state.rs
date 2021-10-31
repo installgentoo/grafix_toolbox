@@ -40,7 +40,7 @@ pub mod TexState {
 
 		ASSERT!(empty != npos, "Ran out of GL texture units, {} available", len);
 		if empty == npos {
-			WARN!("Ran out of GL texture units({} available), returning rubbish", len);
+			FAIL!("Ran out of GL texture units({} available), returning rubbish", len);
 			empty = 0;
 		}
 

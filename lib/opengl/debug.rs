@@ -38,7 +38,7 @@ extern "system" fn debug_gl_printer(src: GLenum, typ: GLenum, id: u32, lvl: GLen
 			}
 			"TIP".into()
 		}
-		_ => CONCAT!("SVERITY_?_", &lvl.to_string()),
+		_ => conc!("SEVERITY_?_", &lvl.to_string()),
 	};
 
 	let src = match src {
@@ -48,7 +48,7 @@ extern "system" fn debug_gl_printer(src: GLenum, typ: GLenum, id: u32, lvl: GLen
 		gl::DEBUG_SOURCE_THIRD_PARTY => "SOURCE_THIRD_PARTY".into(),
 		gl::DEBUG_SOURCE_APPLICATION => "SOURCE_APPLICATION".into(),
 		gl::DEBUG_SOURCE_OTHER => "SOURCE_OTHER".into(),
-		_ => CONCAT!("SOURCE_?_", &src.to_string()),
+		_ => conc!("SOURCE_?_", &src.to_string()),
 	};
 
 	let typ = match typ {
@@ -61,8 +61,15 @@ extern "system" fn debug_gl_printer(src: GLenum, typ: GLenum, id: u32, lvl: GLen
 		gl::DEBUG_TYPE_PUSH_GROUP => "TYPE_PUSH_GROUP".into(),
 		gl::DEBUG_TYPE_POP_GROUP => "TYPE_POP_GROUP".into(),
 		gl::DEBUG_TYPE_OTHER => "TYPE_OTHER".into(),
-		_ => CONCAT!("TYPE_?_", &typ.to_string()),
+		_ => conc!("TYPE_?_", &typ.to_string()),
 	};
 
-	WARN!("GLDBG_{}, {}: {} {} {}", id, lvl, typ, src, EXPECT!(unsafe { std::ffi::CStr::from_ptr(msg) }.to_str()));
+	WARN!(
+		"GLDBG_{}, {}: {} {} {}",
+		id,
+		lvl,
+		typ,
+		src,
+		unsafe { std::ffi::CStr::from_ptr(msg) }.to_str().unwrap_or("failed to parse utf8")
+	);
 }

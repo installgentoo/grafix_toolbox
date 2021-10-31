@@ -7,16 +7,16 @@ pub mod Save {
 
 	pub fn Write(p: impl Into<PathBuf>, data: impl Into<Vec<u8>>) {
 		let sender = setup_impl();
-		EXPECT!(sender.send((p.into(), MessageType::Write, data.into())));
+		sender.send((p.into(), MessageType::Write, data.into())).unwrap();
 	}
 	pub fn Append(p: impl Into<PathBuf>, data: impl Into<Vec<u8>>) {
 		let sender = setup_impl();
-		EXPECT!(sender.send((p.into(), MessageType::Append, data.into())));
+		sender.send((p.into(), MessageType::Append, data.into())).unwrap();
 	}
 	pub fn Archive(args: impl CompressArgs) {
 		let (p, data, level) = args.get();
 		let sender = setup_impl();
-		EXPECT!(sender.send((p, MessageType::ComprW(level), data)));
+		sender.send((p, MessageType::ComprW(level), data)).unwrap();
 	}
 
 	type Args = (PathBuf, Vec<u8>, i32);
@@ -62,15 +62,15 @@ pub mod Save {
 
 						if let Ok(mut file) = file {
 							let data = if let ComprW(l) = operation {
-								OR_DEF!(Res(zstd::stream::encode_all(&data[..], l)))
+								OR_DEFAULT!(zstd::stream::encode_all(&data[..], l))
 							} else {
 								data
 							};
 
-							let _ = OR_DEF!(file.write_all(&data).await);
+							let _ = OR_DEFAULT!(file.write_all(&data).await);
 							EXPECT!(file.sync_all().await);
 						} else {
-							FAILED!(map_err(file, &name));
+							FAIL!(fmt_err(file, &name));
 						}
 						true
 					});
@@ -81,7 +81,7 @@ pub mod Save {
 			});
 
 			logging::Logger::AddPostmortem(move || {
-				EXPECT!(setup_impl().send((PathBuf::new(), MessageType::Close, vec![])));
+				setup_impl().send((PathBuf::new(), MessageType::Close, vec![])).unwrap();
 				task::block_on(async move { handle.await });
 			});
 
@@ -96,20 +96,20 @@ pub mod Load {
 	use super::*;
 	pub fn File(p: impl AsRef<Path>) -> Res<Vec<u8>> {
 		let p: &Path = p.as_ref();
-		map_err(std::fs::read(p), p)
+		fmt_err(std::fs::read(p), p)
 	}
 	pub fn Text(p: impl AsRef<Path>) -> Res<String> {
 		let p: &Path = p.as_ref();
-		map_err(std::fs::read_to_string(p), p)
+		fmt_err(std::fs::read_to_string(p), p)
 	}
 	pub fn Archive(p: impl AsRef<Path>) -> Res<Vec<u8>> {
 		let decode = |p| -> Res<_> {
-			let f = PASS!(std::fs::File::open(p));
-			let b = PASS!(zstd::stream::decode_all(f));
+			let f = Res(std::fs::File::open(p))?;
+			let b = Res(zstd::stream::decode_all(f))?;
 			Ok(b)
 		};
 		let p = p.as_ref();
-		map_err(decode(p), p)
+		fmt_err(decode(p), p)
 	}
 }
 
@@ -134,7 +134,7 @@ macro_rules! LOADER {
 						Done(vec) => Some(vec),
 						Loading(handle) => {
 							let res = task::block_on(async move { task::poll_once(handle).await })?;
-							*self = Done(OR_DEF!(res));
+							*self = Done(OR_DEFAULT!(res));
 							self.if_ready()
 						}
 					}
@@ -154,7 +154,7 @@ macro_rules! LOADER {
 						Done(vec) => vec,
 						Loading(handle) => {
 							let res = task::block_on(async move { handle.await });
-							*self = Done(OR_DEF!(res));
+							*self = Done(OR_DEFAULT!(res));
 							self.get()
 						}
 					}
@@ -162,7 +162,7 @@ macro_rules! LOADER {
 				pub fn take(self) -> $ret {
 					match self {
 						Done(vec) => vec,
-						Loading(handle) => OR_DEF!(task::block_on(async move { handle.await })),
+						Loading(handle) => OR_DEFAULT!(task::block_on(async move { handle.await })),
 					}
 				}
 			}
@@ -176,31 +176,31 @@ macro_rules! LOADER {
 LOADER!(File, Vec<u8>, s, { read_file(&s).await });
 LOADER!(Text, String, s, { read_text(&s).await });
 LOADER!(Archive, Vec<u8>, s, {
-	let data = PASS!(read_file(&s).await);
+	let data = Res(read_file(&s).await)?;
 	zstd::stream::decode_all(&data[..])
 });
 
 pub async fn read_file(p: impl AsRef<Path>) -> Res<Vec<u8>> {
 	async fn read(p: &Path) -> Res<Vec<u8>> {
-		let mut f = PASS!(fs::File::open(p).await);
+		let mut f = Res(fs::File::open(p).await)?;
 		let mut b = vec![];
-		PASS!(f.read_to_end(&mut b).await);
+		Res(f.read_to_end(&mut b).await)?;
 		Ok(b)
 	}
 	let p = p.as_ref();
-	map_err(read(p).await, p)
+	fmt_err(read(p).await, p)
 }
 pub async fn read_text(p: impl AsRef<Path>) -> Res<String> {
 	async fn read(p: &Path) -> Res<String> {
-		let mut f = PASS!(fs::File::open(p).await);
+		let mut f = Res(fs::File::open(p).await)?;
 		let mut b = String::new();
-		PASS!(f.read_to_string(&mut b).await);
+		Res(f.read_to_string(&mut b).await)?;
 		Ok(b)
 	}
 	let p = p.as_ref();
-	map_err(read(p).await, p)
+	fmt_err(read(p).await, p)
 }
 
-fn map_err<T>(r: Result<T, impl std::fmt::Display>, p: &Path) -> Res<T> {
+fn fmt_err<T>(r: Result<T, impl std::fmt::Display>, p: &Path) -> Res<T> {
 	r.map_err(|e| format!("Could not open file {:?}\n{}", p, e))
 }

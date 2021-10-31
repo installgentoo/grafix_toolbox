@@ -1,7 +1,7 @@
 use crate::uses::{math::*, *};
 
 pub fn pack(w: i32, h: i32, empty: &mut Vec<Rect>, filled: &mut Vec<Rect>, min: iVec2) -> Res<Rect> {
-	let (b, min_y) = PASS!(empty
+	let (b, min_y) = Res(empty
 		.iter()
 		.filter(|e| e.w >= w && e.h >= h)
 		.map(|e| {
@@ -10,7 +10,7 @@ pub fn pack(w: i32, h: i32, empty: &mut Vec<Rect>, filled: &mut Vec<Rect>, min: 
 				.fold(0, |sum, f| sum + i32(e.x == f.x2() && ((f.y - e.y) * 2 + f.h - e.h).abs() < f.h.max(e.h)));
 			(e, e.y - 2 * sum)
 		})
-		.min_by(|(_, l_sum), (_, r_sum)| l_sum.cmp(r_sum)));
+		.min_by(|(_, l_sum), (_, r_sum)| l_sum.cmp(r_sum)))?;
 
 	let x = if b.y != min_y { b.x } else { b.x2() - w };
 	filled.push(Rect { x, y: b.y, w, h });

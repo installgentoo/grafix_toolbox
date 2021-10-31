@@ -1,7 +1,7 @@
 use super::{state::*, tex_state::*, universion::*};
 use crate::uses::*;
 
-macro_rules! m_state {
+macro_rules! m_STATE {
 	() => {
 		fn bound_obj() -> &'static mut u32 {
 			static mut STATE: u32 = 0;
@@ -21,7 +21,7 @@ pub trait Buffer: TrivialBound + State {
 #[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Attribute;
 impl State for Attribute {
-	m_state!();
+	m_STATE!();
 }
 impl Buffer for Attribute {
 	const TYPE: GLenum = gl::ARRAY_BUFFER;
@@ -30,7 +30,7 @@ impl Buffer for Attribute {
 #[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Index;
 impl State for Index {
-	m_state!();
+	m_STATE!();
 }
 impl Buffer for Index {
 	const TYPE: GLenum = gl::ELEMENT_ARRAY_BUFFER;
@@ -39,7 +39,7 @@ impl Buffer for Index {
 #[derive(Default)]
 pub struct ShdProg;
 impl State for ShdProg {
-	m_state!();
+	m_STATE!();
 	unsafe fn bind(obj: u32) {
 		gl::UseProgram(obj);
 	}
@@ -54,7 +54,7 @@ impl State for ShdProg {
 #[derive(Default)]
 pub struct VertArrObj;
 impl State for VertArrObj {
-	m_state!();
+	m_STATE!();
 	unsafe fn bind(obj: u32) {
 		gl::BindVertexArray(obj);
 	}
@@ -69,7 +69,7 @@ impl State for VertArrObj {
 #[derive(Default)]
 pub struct Query;
 impl State for Query {
-	m_state!();
+	m_STATE!();
 	unsafe fn gen(obj: &mut u32) {
 		gl::GenQueries(1, obj);
 	}
@@ -81,7 +81,7 @@ impl State for Query {
 #[derive(Default)]
 pub struct Framebuff;
 impl State for Framebuff {
-	m_state!();
+	m_STATE!();
 	unsafe fn bind(obj: u32) {
 		gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, obj);
 	}
@@ -96,7 +96,7 @@ impl State for Framebuff {
 #[derive(Default)]
 pub struct Renderbuff;
 impl State for Renderbuff {
-	m_state!();
+	m_STATE!();
 	unsafe fn gen(obj: &mut u32) {
 		glCreateRenderbuff(obj);
 	}
@@ -108,7 +108,7 @@ impl State for Renderbuff {
 #[derive(Default)]
 pub struct SamplObj;
 impl State for SamplObj {
-	m_state!();
+	m_STATE!();
 	unsafe fn gen(obj: &mut u32) {
 		gl::GenSamplers(1, obj);
 	}
@@ -123,7 +123,7 @@ pub struct Texture<T> {
 	t: Dummy<T>,
 }
 impl<T: TexType> State for Texture<T> {
-	m_state!();
+	m_STATE!();
 	unsafe fn gen(obj: &mut u32) {
 		glCreateTexture(T::TYPE, obj);
 	}

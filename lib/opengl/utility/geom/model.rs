@@ -10,7 +10,7 @@ pub struct Model {
 }
 impl Model {
 	pub fn load_models(file: &str, scale: f32) -> Res<Vec<Model>> {
-		let file = &CONCAT!["res/", file, ".obj"];
+		let file = &conc!["res/", file, ".obj"];
 		let (models, _) = tobj::load_obj(
 			file,
 			&tobj::LoadOptions {
@@ -28,8 +28,8 @@ impl Model {
 				let (idxs, xyz, uv, mut norm) = (
 					m.indices,
 					m.positions,
-					m.texcoords.iter().map(|v| f16(*v)).collect(),
-					m.normals.iter().map(|v| f16(*v)).collect::<Vec<_>>(),
+					m.texcoords.into_iter().map(f16).collect(),
+					m.normals.iter().map(|&v| f16(v)).collect::<Vec<_>>(),
 				);
 				let (mut min, mut max) = ((0., 0., 0.), (0., 0., 0.));
 				for i in (0..xyz.len()).step_by(3) {
@@ -54,7 +54,7 @@ impl Model {
 		Ok(models)
 	}
 	pub fn new_cached(name: &str) -> Res<Self> {
-		let cache = &CONCAT![name, ".obj.z"];
+		let cache = &conc![name, ".obj.z"];
 		if let Ok(d) = FS::Load::Archive(cache) {
 			if let Ok(model) = SERDE::FromVec(&d) {
 				return Ok(model);
@@ -63,8 +63,7 @@ impl Model {
 
 		let model: Res<Model> = (|| {
 			let m = Model::load_models(name, 1.)?.into_iter().next().ok_or("Empty models file")?;
-			let v = EXPECT!(SERDE::ToVec(&m));
-			FS::Save::Archive((cache, v));
+			let _ = SERDE::ToVec(&m).map(|v| FS::Save::Archive((cache, v)));
 			Ok(m)
 		})();
 		model
@@ -151,7 +150,6 @@ impl<'de> Deserialize<'de> for Model {
 
 impl Model {
 	pub fn to_bytes(&self) -> Vec<u8> {
-		let mut v = vec![];
 		let Self { idxs, xyz, uv, norm } = self;
 		let il: [_; 8] = (idxs.len() * type_size!(u32)).to_le_bytes();
 		let cl: [_; 8] = (xyz.len() * type_size!(f32)).to_le_bytes();
@@ -160,8 +158,7 @@ impl Model {
 		let (_, c, _) = unsafe { xyz.align_to() };
 		let (_, t, _) = unsafe { uv.align_to() };
 		let (_, n, _) = unsafe { norm.align_to() };
-		v.extend(il.iter().chain(&cl).chain(&tl).chain(i).chain(c).chain(t).chain(n));
-		v
+		[&il, &cl, &tl, i, c, t, n].concat()
 	}
 	pub fn from_bytes(v: &[u8]) -> Self {
 		let il = 24 + usize::from_le_bytes(v[0..8].try_into().unwrap());

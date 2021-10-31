@@ -49,7 +49,7 @@ impl<S: TexSize> Object for Sprite9Impl<S> {
 		write_sprite9((aspect, pos, size, (c, c), crop, (u1, v2, u2, v1), color), range);
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = UnsafeOnce!(Shader, { EXPECT!(Shader::new((gui__pos_col_tex_vs, gui__col_tex_ps))) });
+		let s = UnsafeOnce!(Shader, { Shader::pure((gui__pos_col_tex_vs, gui__col_tex_ps)) });
 
 		let t = unsafe { &*self.tex }.tex.Bind(sampler());
 		let _ = Uniforms!(s, ("src", &t));
@@ -117,14 +117,15 @@ pub fn write_sprite9((aspect, pos, size, corner, (crop1, crop2), (u1, v1, u2, v2
 }
 
 pub fn sprite9_idxs((start, size): (u16, u16)) -> Vec<u16> {
-	let mut v = vec![];
-	v.reserve(usize(size) * 8 / 27);
-	for i in (start..(start + size)).step_by(16) {
-		let s = |j| i + j;
-		#[rustfmt::skip]
-		v.extend_from_slice(&[s(0), s(1), s(4), s(4), s(1), s(5),     s(5), s(1), s(2), s(2), s(5), s(6),       s(6), s(2), s(3), s(3), s(6), s(7),
-							  s(7), s(6), s(11), s(11), s(6), s(10),  s(10), s(6), s(5), s(5), s(10), s(9),     s(9), s(5), s(4), s(4), s(9), s(8),
-							  s(8), s(9), s(12), s(12), s(9), s(13),  s(13), s(9), s(10), s(10), s(13), s(14),  s(14), s(10), s(11), s(11), s(14), s(15)]);
-	}
-	v
+	(start..(start + size))
+		.step_by(16)
+		.flat_map(|i| {
+			let s = |j| i + j;
+			#[rustfmt::skip] let s =
+			[s(0), s(1), s(4), s(4), s(1), s(5),     s(5), s(1), s(2), s(2), s(5), s(6),       s(6), s(2), s(3), s(3), s(6), s(7),
+			 s(7), s(6), s(11), s(11), s(6), s(10),  s(10), s(6), s(5), s(5), s(10), s(9),     s(9), s(5), s(4), s(4), s(9), s(8),
+			 s(8), s(9), s(12), s(12), s(9), s(13),  s(13), s(9), s(10), s(10), s(13), s(14),  s(14), s(10), s(11), s(11), s(14), s(15)];
+			s
+		})
+		.collect()
 }

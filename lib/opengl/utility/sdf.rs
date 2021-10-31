@@ -10,9 +10,9 @@ pub struct SdfGenerator {
 }
 impl SdfGenerator {
 	pub fn new() -> Self {
-		let dst_t = EXPECT!(Shader::new((mesh__2d_screen_vs, sdf__distance_transform_v_ps)));
-		let dt_h = EXPECT!(Shader::new((mesh__2d_screen_vs, sdf__distance_transform_ps)));
-		let render = EXPECT!(Shader::new((mesh__2d_screen_vs, mesh__2d_screen_ps)));
+		let dst_t = Shader::pure((mesh__2d_screen_vs, sdf__distance_transform_v_ps));
+		let dt_h = Shader::pure((mesh__2d_screen_vs, sdf__distance_transform_ps));
+		let render = Shader::pure((mesh__2d_screen_vs, mesh__2d_screen_ps));
 		let sampl = Sampler::linear();
 		Self { dst_t, dt_h, render, sampl }
 	}

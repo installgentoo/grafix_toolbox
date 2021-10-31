@@ -1,7 +1,6 @@
 #[cfg(debug_assertions)]
 macro_rules! cast {
 	($v: expr, $t: ident) => {{
-		use std::convert::TryFrom;
 		$t::try_from($v).unwrap_or_else(|_| ASSERT!(false, "Error casting {} to {}", $v, stringify!($t)))
 	}};
 }

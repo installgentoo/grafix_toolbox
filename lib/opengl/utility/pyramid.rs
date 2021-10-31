@@ -6,8 +6,8 @@ pub fn pyramid(img: impl Into<Tex2d<RGBA, f32>>) -> Vec<Tex2d<RGBA, f32>> {
 	let (w, h) = (img.param.w, img.param.h);
 	let levels = i32(f64(w.min(h)).log2());
 
-	let mut render = EXPECT!(Shader::new((mesh__2d_screen_vs, mesh__2d_screen_ps)));
-	let mut sub = EXPECT!(Shader::new((mesh__2d_screen_vs, shd::sub)));
+	let mut render = Shader::pure((mesh__2d_screen_vs, mesh__2d_screen_ps));
+	let mut sub = Shader::pure((mesh__2d_screen_vs, shd::sub));
 	let linear = &Sampler::linear();
 
 	let mut img1 = img;
@@ -38,7 +38,7 @@ pub fn pyramid(img: impl Into<Tex2d<RGBA, f32>>) -> Vec<Tex2d<RGBA, f32>> {
 }
 
 pub fn collapse(mut pyramid: Vec<Tex2d<RGBA, f32>>) -> Tex2d<RGBA, f32> {
-	let mut add = EXPECT!(Shader::new((mesh__2d_screen_vs, shd::add)));
+	let mut add = Shader::pure((mesh__2d_screen_vs, shd::add));
 	let linear = &Sampler::linear();
 
 	let mut img1 = pyramid.pop().unwrap();

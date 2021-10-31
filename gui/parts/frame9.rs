@@ -50,7 +50,7 @@ impl Object for Frame9Impl {
 		write_sprite9((aspect, pos, size, (c, c), crop, (0., 0., 1., 1.), color), range);
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = UnsafeOnce!(Shader, { EXPECT!(Shader::new((gui__pos_col_tex_vs, gui__frame_ps))) });
+		let s = UnsafeOnce!(Shader, { Shader::pure((gui__pos_col_tex_vs, gui__frame_ps)) });
 
 		let tex = unsafe { &*self.tex };
 		let t = tex.tex.Bind(sampler());

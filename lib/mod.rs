@@ -11,7 +11,7 @@ pub mod uses {
 	pub use std::cell::{Cell, RefCell, UnsafeCell};
 	pub use std::collections::{BTreeMap, BTreeSet, VecDeque};
 	pub use std::marker::PhantomData as Dummy;
-	pub use std::{char, cmp, convert::TryInto, fmt, fmt::Debug, hash, mem, ops, path, path::Path, ptr, rc::Rc, rc::Weak, slice, time};
+	pub use std::{char, cmp, fmt, fmt::Debug, hash, mem, ops, path, path::Path, ptr, rc::Rc, rc::Weak, slice, time};
 	pub mod iter {
 		pub use std::iter::*;
 		pub fn counter() -> impl Iterator<Item = usize> {

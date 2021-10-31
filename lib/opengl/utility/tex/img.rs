@@ -53,18 +53,18 @@ impl<S: TexSize> uImage<S> {
 			}
 		};
 		imageops::flip_vertical_in_place(&mut img);
-		let ((w, h), data) = match S::TYPE {
+		let ((w, h), data): (_, Vec<_>) = match S::TYPE {
 			gl::RED => {
 				let img = img.into_luma8();
-				(img.dimensions(), img.pixels().flat_map(|image::Luma(p)| p).cloned().collect::<Vec<_>>())
+				(img.dimensions(), img.pixels().flat_map(|image::Luma(p)| p).copied().collect())
 			}
 			gl::RGB => {
 				let img = img.into_rgb8();
-				(img.dimensions(), img.pixels().flat_map(|image::Rgb(p)| p).cloned().collect::<Vec<_>>())
+				(img.dimensions(), img.pixels().flat_map(|image::Rgb(p)| p).copied().collect())
 			}
 			gl::RGBA => {
 				let img = img.into_rgba8();
-				(img.dimensions(), img.pixels().flat_map(|image::Rgba(p)| p).cloned().collect::<Vec<_>>())
+				(img.dimensions(), img.pixels().flat_map(|image::Rgba(p)| p).copied().collect())
 			}
 			_ => ASSERT!(false, "Not impl"),
 		};
@@ -90,7 +90,7 @@ impl Image<RGB, f32> {
 		let m = img.metadata();
 		let (w, h) = (m.width, m.height);
 		let img = img.read_image_hdr().map_err(|_| "Cannot read hdr pixels")?;
-		let data: Vec<_> = img.chunks(usize(w)).rev().flat_map(|l| l.iter().flat_map(|image::Rgb(p)| p)).cloned().collect();
+		let data: Vec<_> = img.chunks(usize(w)).rev().flat_map(|l| l.iter().flat_map(|image::Rgb(p)| p)).copied().collect();
 		Ok(Self { w, h, data, s: Dummy })
 	}
 }

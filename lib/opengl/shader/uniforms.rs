@@ -23,119 +23,47 @@ macro_rules! Uniforms {
 pub trait UniformImpl {
 	fn apply(&self, _: i32);
 }
-impl UniformImpl for [u32] {
-	fn apply(&self, name: i32) {
-		uni(gl::Uniform1uiv, name, self);
-	}
+macro_rules! impl_uniform_type {
+	($v: ident, $t: ty, $f: ident) => {
+		impl UniformImpl for $t {
+			fn apply(&self, name: i32) {
+				$v(gl::$f, name, &[*self]);
+			}
+		}
+		impl UniformImpl for [$t] {
+			fn apply(&self, name: i32) {
+				$v(gl::$f, name, self);
+			}
+		}
+	};
 }
-impl UniformImpl for [uVec2] {
-	fn apply(&self, name: i32) {
-		uni(gl::Uniform2uiv, name, self);
-	}
-}
-impl UniformImpl for [uVec3] {
-	fn apply(&self, name: i32) {
-		uni(gl::Uniform3uiv, name, self);
-	}
-}
-impl UniformImpl for [uVec4] {
-	fn apply(&self, name: i32) {
-		uni(gl::Uniform4uiv, name, self);
-	}
-}
-impl UniformImpl for [i32] {
-	fn apply(&self, name: i32) {
-		uni(gl::Uniform1iv, name, self);
-	}
-}
-impl UniformImpl for [iVec2] {
-	fn apply(&self, name: i32) {
-		uni(gl::Uniform2iv, name, self);
-	}
-}
-impl UniformImpl for [iVec3] {
-	fn apply(&self, name: i32) {
-		uni(gl::Uniform3iv, name, self);
-	}
-}
-impl UniformImpl for [iVec4] {
-	fn apply(&self, name: i32) {
-		uni(gl::Uniform4iv, name, self);
-	}
-}
-impl UniformImpl for [f32] {
-	fn apply(&self, name: i32) {
-		uni(gl::Uniform1fv, name, self);
-	}
-}
-impl UniformImpl for [Vec2] {
-	fn apply(&self, name: i32) {
-		uni(gl::Uniform2fv, name, self);
-	}
-}
-impl UniformImpl for [Vec3] {
-	fn apply(&self, name: i32) {
-		uni(gl::Uniform3fv, name, self);
-	}
-}
-impl UniformImpl for [Vec4] {
-	fn apply(&self, name: i32) {
-		uni(gl::Uniform4fv, name, self);
-	}
-}
-impl UniformImpl for [Mat2] {
-	fn apply(&self, name: i32) {
-		uni_mat(gl::UniformMatrix2fv, name, self);
-	}
-}
-impl UniformImpl for [Mat3] {
-	fn apply(&self, name: i32) {
-		uni_mat(gl::UniformMatrix3fv, name, self);
-	}
-}
-impl UniformImpl for [Mat4] {
-	fn apply(&self, name: i32) {
-		uni_mat(gl::UniformMatrix4fv, name, self);
-	}
-}
-impl UniformImpl for [Mat2x3] {
-	fn apply(&self, name: i32) {
-		uni_mat(gl::UniformMatrix2x3fv, name, self);
-	}
-}
-impl UniformImpl for [Mat3x2] {
-	fn apply(&self, name: i32) {
-		uni_mat(gl::UniformMatrix3x2fv, name, self);
-	}
-}
-impl UniformImpl for [Mat2x4] {
-	fn apply(&self, name: i32) {
-		uni_mat(gl::UniformMatrix2x4fv, name, self);
-	}
-}
-impl UniformImpl for [Mat4x2] {
-	fn apply(&self, name: i32) {
-		uni_mat(gl::UniformMatrix4x2fv, name, self);
-	}
-}
-impl UniformImpl for [Mat3x4] {
-	fn apply(&self, name: i32) {
-		uni_mat(gl::UniformMatrix3x4fv, name, self);
-	}
-}
-impl UniformImpl for [Mat4x3] {
-	fn apply(&self, name: i32) {
-		uni_mat(gl::UniformMatrix4x3fv, name, self);
-	}
-}
-
-fn uni<T, S>(f: unsafe fn(i32, i32, *const T), name: i32, slice: &[S]) {
+fn val<T, S>(f: unsafe fn(i32, i32, *const T), name: i32, slice: &[S]) {
 	GLCheck!(f(name, i32(slice.len()), slice.as_ptr() as *const T));
 }
-
-fn uni_mat<S>(f: unsafe fn(i32, i32, GLbool, *const f32), name: i32, slice: &[S]) {
+fn mat<S>(f: unsafe fn(i32, i32, GLbool, *const f32), name: i32, slice: &[S]) {
 	GLCheck!(f(name, i32(slice.len()), gl::FALSE, slice.as_ptr() as *const f32));
 }
+impl_uniform_type!(val, u32, Uniform1uiv);
+impl_uniform_type!(val, uVec2, Uniform2uiv);
+impl_uniform_type!(val, uVec3, Uniform3uiv);
+impl_uniform_type!(val, uVec4, Uniform4uiv);
+impl_uniform_type!(val, i32, Uniform1iv);
+impl_uniform_type!(val, iVec2, Uniform2iv);
+impl_uniform_type!(val, iVec3, Uniform3iv);
+impl_uniform_type!(val, iVec4, Uniform4iv);
+impl_uniform_type!(val, f32, Uniform1fv);
+impl_uniform_type!(val, Vec2, Uniform2fv);
+impl_uniform_type!(val, Vec3, Uniform3fv);
+impl_uniform_type!(val, Vec4, Uniform4fv);
+impl_uniform_type!(mat, Mat2, UniformMatrix2fv);
+impl_uniform_type!(mat, Mat3, UniformMatrix3fv);
+impl_uniform_type!(mat, Mat4, UniformMatrix4fv);
+impl_uniform_type!(mat, Mat2x3, UniformMatrix2x3fv);
+impl_uniform_type!(mat, Mat3x2, UniformMatrix3x2fv);
+impl_uniform_type!(mat, Mat2x4, UniformMatrix2x4fv);
+impl_uniform_type!(mat, Mat4x2, UniformMatrix4x2fv);
+impl_uniform_type!(mat, Mat3x4, UniformMatrix3x4fv);
+impl_uniform_type!(mat, Mat4x3, UniformMatrix4x3fv);
 
 pub trait UniformArgs {
 	fn get(self, _: i32, _: &mut HashMap<i32, i32>);
@@ -152,6 +80,14 @@ impl<T: TexType> UniformArgs for &TextureBinding<'_, T> {
 			GLCheck!(gl::Uniform1i(name, u));
 			*ent = u;
 		}
+	}
+}
+impl<T> UniformArgs for &T
+where
+	T: UniformImpl,
+{
+	fn get(self, name: i32, _: &mut HashMap<i32, i32>) {
+		self.apply(name);
 	}
 }
 impl<T> UniformArgs for T

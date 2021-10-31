@@ -21,7 +21,7 @@ impl<'a> Text<'_, 'a> {
 				*x += font.kern(*last_c, c);
 				*last_c = c;
 				let ch = font.char(c);
-				Some((*x, ch)).filter(|(x, ch)| (*x + ch.coord.z()) * scale <= max_width).map(|r| {
+				Some((*x, ch)).filter(|(x, ch)| (x + ch.coord.z()) * scale <= max_width).map(|r| {
 					*x += ch.adv;
 					(r, i)
 				})
@@ -166,7 +166,7 @@ impl Object for TextImpl {
 		}
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = UnsafeOnce!(Shader, { EXPECT!(Shader::new((gui__pos_col_tex_vs, gui_sdftext_ps))) });
+		let s = UnsafeOnce!(Shader, { Shader::pure((gui__pos_col_tex_vs, gui_sdftext_ps)) });
 
 		let t = self.font.tex().Bind(sampler());
 		let _ = Uniforms!(s, ("tex", &t));

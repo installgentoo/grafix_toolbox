@@ -35,7 +35,7 @@ impl<S: TexSize> TexAtlas<S> {
 		let (reqs, _textures) = unsafe { &mut *self.t.get() };
 		ASSERT!(_textures.is_empty(), "Loading into atlas after batching");
 		let k = u32(reqs.len());
-		reqs.push(FS::Preload::File(CONCAT!("res/", name)));
+		reqs.push(FS::Preload::File(conc!("res/", name)));
 		Prefetched::new(k, self)
 	}
 	fn initialize(&self) {

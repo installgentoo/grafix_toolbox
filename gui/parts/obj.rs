@@ -79,10 +79,5 @@ pub fn bound_uv((crop1, crop2): Crop, (xy1, xy2): Crop, (u1, v1, u2, v2): TexCoo
 }
 
 pub fn rect_idxs((start, size): (u16, u16)) -> Vec<u16> {
-	let mut v = vec![];
-	v.reserve(usize(size) * 3 / 2);
-	for i in (start..(start + size)).step_by(4) {
-		v.extend_from_slice(&[i, i + 1, i + 3, i + 3, i + 1, i + 2]);
-	}
-	v
+	(start..(start + size)).step_by(4).flat_map(|i| [i, i + 1, i + 3, i + 3, i + 1, i + 2]).collect()
 }

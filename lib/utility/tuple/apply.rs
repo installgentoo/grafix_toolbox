@@ -5,8 +5,8 @@ pub trait TupleApply<RA, A, R>: Sized {
 	fn apply<F: Fn(A, A) -> R>(self, r: RA, op: F) -> Self::AR;
 }
 pub trait TupleTrans<A>: Sized {
-	fn trans<F: Fn(A) -> A>(self, op: F) -> Self;
-	fn merge<F: Fn(A, A) -> A>(self, op: F) -> A;
+	fn map<F: Fn(A) -> A>(self, op: F) -> Self;
+	fn fold<F: Fn(A, A) -> A>(self, op: F) -> A;
 }
 
 impl<RA, A, R> TupleApply<RA, A, R> for (A, A)
@@ -20,10 +20,10 @@ where
 	}
 }
 impl<A> TupleTrans<A> for (A, A) {
-	fn trans<F: Fn(A) -> A>(self, op: F) -> Self {
+	fn map<F: Fn(A) -> A>(self, op: F) -> Self {
 		(op(self.0), op(self.1))
 	}
-	fn merge<F: Fn(A, A) -> A>(self, op: F) -> A {
+	fn fold<F: Fn(A, A) -> A>(self, op: F) -> A {
 		op(self.0, self.1)
 	}
 }
@@ -39,10 +39,10 @@ where
 	}
 }
 impl<A> TupleTrans<A> for (A, A, A) {
-	fn trans<F: Fn(A) -> A>(self, op: F) -> Self {
+	fn map<F: Fn(A) -> A>(self, op: F) -> Self {
 		(op(self.0), op(self.1), op(self.2))
 	}
-	fn merge<F: Fn(A, A) -> A>(self, op: F) -> A {
+	fn fold<F: Fn(A, A) -> A>(self, op: F) -> A {
 		op(op(self.0, self.1), self.2)
 	}
 }
@@ -58,10 +58,10 @@ where
 	}
 }
 impl<A> TupleTrans<A> for (A, A, A, A) {
-	fn trans<F: Fn(A) -> A>(self, op: F) -> Self {
+	fn map<F: Fn(A) -> A>(self, op: F) -> Self {
 		(op(self.0), op(self.1), op(self.2), op(self.3))
 	}
-	fn merge<F: Fn(A, A) -> A>(self, op: F) -> A {
+	fn fold<F: Fn(A, A) -> A>(self, op: F) -> A {
 		op(op(op(self.0, self.1), self.2), self.3)
 	}
 }

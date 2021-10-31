@@ -38,13 +38,11 @@ impl<'de, S: TexSize, F: TexFmt> Deserialize<'de> for Image<S, F> {
 
 impl<S: TexSize, F: TexFmt> Image<S, F> {
 	pub fn to_bytes(&self) -> Vec<u8> {
-		let mut v = vec![];
 		let Self { w, h, data, .. } = self;
 		let w: [_; 4] = w.to_le_bytes();
 		let h: [_; 4] = h.to_le_bytes();
 		let (_, d, _) = unsafe { data.align_to() };
-		v.extend(w.iter().chain(&h).chain(d));
-		v
+		[&w, &h, d].concat()
 	}
 	pub fn from_bytes(v: &[u8]) -> Self {
 		let w = u32::from_le_bytes(v[0..4].try_into().unwrap());
