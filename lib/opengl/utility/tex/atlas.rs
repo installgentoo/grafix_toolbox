@@ -20,18 +20,18 @@ where
 		let area = tiles.iter().fold(0, |v, (_, t)| v + usize(t.w()) * usize(t.h()));
 		max_w.min(i32(2_u32.pow(u32(f64(area).sqrt().log2().ceil()))))
 	};
-	let (min_w, min_h) = (tiles.iter().map(|(_, e)| e.w()).min().unwrap(), tiles.last().unwrap().1.h());
+	let (min_w, min_h) = (tiles.iter().map(|(_, e)| e.w()).min().valid(), tiles.last().valid().1.h());
 
 	let (c, empty, filled) = (S::SIZE, &mut vec![Rect { x: 0, y: 0, w: max_w, h: max_h }], &mut vec![]);
 	let (mut tail, mut atlas, mut packed) = (vec![], vec![], HashMap::new());
 
-	let mut tiles: Vec<_> = tiles.into_iter().map(Some).collect();
+	let mut tiles = tiles.into_iter().map(Some).collect_vec();
 	for i in 0..tiles.len() {
 		if let Some((id, img)) = &tiles[i] {
 			let duplicate = tiles[..i].iter().rev().flatten().take_while(|(_, e)| e.h() == img.h()).find(|(_, e)| *img == *e);
 			if let Some((i, _)) = duplicate {
-				packed.insert(id.clone(), *packed.get(i).unwrap());
-				DEBUG!("Deduped {:?}, {:?} in atlas", *i, *id);
+				packed.insert(id.clone(), *packed.get(i).valid());
+				DEBUG!("Deduped {i:?}, {id:?} in atlas");
 				continue;
 			}
 

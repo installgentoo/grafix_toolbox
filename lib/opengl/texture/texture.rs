@@ -1,13 +1,13 @@
 use super::{args::*, format::*, object::*, policy::*, sampler::*, tex_state::*, tex_type::*, types::*, universion::*};
 use crate::uses::*;
 
-#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
+derive_common_VAL! {
 pub struct TexParam {
 	pub w: i32,
 	pub h: i32,
 	pub d: i32,
 	pub l: i32,
-}
+}}
 impl TexParam {
 	pub fn size<T>(self, lvl: T) -> usize
 	where
@@ -21,7 +21,7 @@ impl TexParam {
 		u32: Cast<T>,
 	{
 		let lvl = u32(lvl);
-		ASSERT!(i32(lvl) < self.l, "GL Texture level {} out of bounds, only has {} levels", lvl, self.l);
+		ASSERT!(i32(lvl) < self.l, "GL Texture level {lvl} out of bounds, only has {} levels", self.l);
 		self.dim_unchecked(lvl)
 	}
 	pub fn dim_unchecked(self, lvl: u32) -> iVec3 {
@@ -46,7 +46,6 @@ pub struct Tex<S, F, T: TexType> {
 	s: Dummy<S>,
 	f: Dummy<F>,
 }
-
 macro_rules! tex_decl {
 	($t: ty, $arg_n: tt, $arg_u: tt) => {
 		impl<S: TexSize, F: TexFmt> Tex<S, F, $t> {
@@ -60,7 +59,7 @@ macro_rules! tex_decl {
 				let fmt = normalize_internal_fmt(get_internal_fmt::<S, F>());
 				let check = |m, _l| {
 					let _m = TexParam::mip_levels(m);
-					ASSERT!(_l > 0 && _l <= _m, "GL Texture can only have {} levels, asked for {}", _m, _l);
+					ASSERT!(_l > 0 && _l <= _m, "GL Texture can only have {_m} levels, asked for {_l}");
 				};
 				macro_rules! tex_new {
 					(NewArgs1) => {{
@@ -94,10 +93,8 @@ macro_rules! tex_decl {
 				let mip_size = |lvl, len| {
 					ASSERT!(
 						len <= self.param.size(u32(lvl)) * usize(S::SIZE),
-						"GL Texture data out of bounds at level {}, size should be {}, given {}",
-						lvl,
-						self.param.size(u32(lvl)) * usize(S::SIZE),
-						len
+						"GL Texture data out of bounds at level {lvl}, size should be {}, given {len}",
+						self.param.size(u32(lvl)) * usize(S::SIZE)
 					);
 					self.param.dim(lvl)
 				};

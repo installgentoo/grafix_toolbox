@@ -15,7 +15,7 @@ pub fn pack(w: i32, h: i32, empty: &mut Vec<Rect>, filled: &mut Vec<Rect>, min: 
 	let x = if b.y != min_y { b.x } else { b.x2() - w };
 	filled.push(Rect { x, y: b.y, w, h });
 
-	let b = *filled.last().unwrap();
+	let b = *filled.last().valid();
 	let mut i = 0;
 	while i < empty.len() {
 		let e = empty[i];

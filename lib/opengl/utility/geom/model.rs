@@ -1,16 +1,17 @@
 use super::mesh::*;
-use crate::uses::{math::*, serde_impl::*, GL::buffer::*, *};
+use crate::uses::{math::*, GL::buffer::*, *};
 
-#[derive(Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Model {
 	idxs: Vec<u32>,
 	xyz: Vec<f32>,
 	uv: Vec<f16>,
 	norm: Vec<f16>,
 }
+#[cfg(feature = "obj")]
 impl Model {
 	pub fn load_models(file: &str, scale: f32) -> Res<Vec<Model>> {
-		let file = &conc!["res/", file, ".obj"];
+		let file = &format!("res/{file}.obj");
 		let (models, _) = tobj::load_obj(
 			file,
 			&tobj::LoadOptions {
@@ -20,7 +21,7 @@ impl Model {
 				ignore_lines: true,
 			},
 		)
-		.map_err(|e| format!("Can't load models in {}, {:?}", file, e))?;
+		.map_err(|e| format!("Can't load models in {file}, {e}"))?;
 		let models = models
 			.into_iter()
 			.map(|m| {
@@ -29,7 +30,7 @@ impl Model {
 					m.indices,
 					m.positions,
 					m.texcoords.into_iter().map(f16).collect(),
-					m.normals.iter().map(|&v| f16(v)).collect::<Vec<_>>(),
+					m.normals.iter().map(|&v| f16(v)).collect_vec(),
 				);
 				let (mut min, mut max) = ((0., 0., 0.), (0., 0., 0.));
 				for i in (0..xyz.len()).step_by(3) {
@@ -47,14 +48,15 @@ impl Model {
 				}
 				let d: Vec3 = max.sub(min);
 				let (center, scale) = (max.sum(min).div(2), (1., 1., 1.).div(d.x().max(d.y()).max(d.z())).mul(scale));
-				let xyz: Vec<_> = xyz.chunks(3).flat_map(|s| <[_; 3]>::to((Vec3(s)).sub(center).mul(scale)).to_vec()).collect();
+				let xyz = xyz.chunks(3).flat_map(|s| <[_; 3]>::to((Vec3(s)).sub(center).mul(scale)).to_vec()).collect_vec();
 				Model { idxs, xyz, uv, norm }
 			})
 			.collect();
 		Ok(models)
 	}
+	#[cfg(feature = "adv_fs")]
 	pub fn new_cached(name: &str) -> Res<Self> {
-		let cache = &conc![name, ".obj.z"];
+		let cache = &format!("{name}.obj.z");
 		if let Ok(d) = FS::Load::Archive(cache) {
 			if let Ok(model) = SERDE::FromVec(&d) {
 				return Ok(model);
@@ -101,13 +103,13 @@ impl Mesh<u16, f32, f16, f32> {
 				let s = segs + 1;
 				let row = (0..s).flat_map(|x| vec![y * s + x, (y + 1) * s + x]);
 				if y % 2 == y {
-					row.collect::<Vec<_>>()
+					row.collect_vec()
 				} else {
-					row.rev().collect::<Vec<_>>()
+					row.rev().collect_vec()
 				}
 			})
 			.map(u16)
-			.collect::<Vec<_>>();
+			.collect_vec();
 
 		let draw = (u32(idx.len()), gl::TRIANGLE_STRIP);
 		let idx = IdxArr::new(idx);
@@ -125,26 +127,30 @@ impl Mesh<u16, f32, f16, f32> {
 	}
 }
 
-impl Serialize for Model {
-	fn serialize<SE: Serializer>(&self, serializer: SE) -> Result<SE::Ok, SE::Error> {
-		serializer.serialize_bytes(&self.to_bytes())
-	}
-}
-impl<'de> Deserialize<'de> for Model {
-	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-		struct V;
-		impl Visitor<'_> for V {
-			type Value = Model;
-
-			fn expecting(&self, formatter: &mut Formatter) -> FmtRes {
-				formatter.write_str("Model bytes")
-			}
-			fn visit_bytes<E: de::Error>(self, v: &[u8]) -> Result<Self::Value, E> {
-				Ok(Self::Value::from_bytes(v))
-			}
+#[cfg(feature = "adv_fs")]
+mod serde {
+	use {super::*, SERDE::uses::*};
+	impl Serialize for Model {
+		fn serialize<SE: Serializer>(&self, serializer: SE) -> Result<SE::Ok, SE::Error> {
+			serializer.serialize_bytes(&self.to_bytes())
 		}
+	}
+	impl<'de> Deserialize<'de> for Model {
+		fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+			struct V;
+			impl Visitor<'_> for V {
+				type Value = Model;
 
-		deserializer.deserialize_bytes(V)
+				fn expecting(&self, formatter: &mut Formatter) -> FmtRes {
+					formatter.write_str("Model bytes")
+				}
+				fn visit_bytes<E: de::Error>(self, v: &[u8]) -> Result<Self::Value, E> {
+					Ok(Self::Value::from_bytes(v))
+				}
+			}
+
+			deserializer.deserialize_bytes(V)
+		}
 	}
 }
 
@@ -161,9 +167,9 @@ impl Model {
 		[&il, &cl, &tl, i, c, t, n].concat()
 	}
 	pub fn from_bytes(v: &[u8]) -> Self {
-		let il = 24 + usize::from_le_bytes(v[0..8].try_into().unwrap());
-		let cl = il + usize::from_le_bytes(v[8..16].try_into().unwrap());
-		let tl = cl + usize::from_le_bytes(v[16..24].try_into().unwrap());
+		let il = 24 + usize::from_le_bytes(v[0..8].try_into().valid());
+		let cl = il + usize::from_le_bytes(v[8..16].try_into().valid());
+		let tl = cl + usize::from_le_bytes(v[16..24].try_into().valid());
 		let idxs = unsafe { v[24..il].align_to() }.1.to_vec();
 		let xyz = unsafe { v[il..cl].align_to() }.1.to_vec();
 		let uv = unsafe { v[cl..tl].align_to() }.1.to_vec();

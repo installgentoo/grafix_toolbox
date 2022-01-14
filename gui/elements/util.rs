@@ -52,7 +52,7 @@ pub fn caret_to_cursor(lines: &[&str], (start, len): Vec2, t: &Theme, scale: f32
 	let text = line(lines, (0, y));
 	let ((caret_x, _), (str, _)) = Text::substr(text, &t.font, scale, x - pos.x());
 	let past_end = x > pos.x() + caret_x;
-	let c = (str.utf8_len(), usize(y));
+	let c = (str.utf8_len(), usize(y.max(0)));
 	let o = (1.or_def(past_end), 0);
 	move_caret(lines, c, o, true)
 }

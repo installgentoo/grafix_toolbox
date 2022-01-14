@@ -31,7 +31,7 @@ impl<S: TexSize, F: TexFmt> From<&[&Cube<S, F>]> for CubeTex<S, F> {
 		let w = i32(mips[0][0].w);
 		let l = TexParam::mip_levels(w);
 		let p = TexParam { w, h: w, d: 1, l };
-		ASSERT!(i32(mips.len()) <= l, "Given {} images, but only {} mip levels", mips.len(), l);
+		ASSERT!(i32(mips.len()) <= l, "Given {} images, but only {l} mip levels", mips.len());
 		let l = mips.len();
 
 		let mut t = CubeTex::new_empty((l, w, w));
@@ -40,7 +40,7 @@ impl<S: TexSize, F: TexFmt> From<&[&Cube<S, F>]> for CubeTex<S, F> {
 			cube.iter().enumerate().for_each(|(n, i)| {
 				debug_assert!({
 					let (_w, _h, _) = uVec3(p.dim(l));
-					ASSERT!(_w == i.w && _h == i.h, "Mip size at level {} is {:?}, must be {:?}", l, (_w, _h), (i.w, i.h));
+					ASSERT!(_w == i.w && _h == i.h, "Mip size at level {l} is {:?}, must be {:?}", (_w, _h), (i.w, i.h));
 					true
 				});
 
@@ -52,8 +52,7 @@ impl<S: TexSize, F: TexFmt> From<&[&Cube<S, F>]> for CubeTex<S, F> {
 }
 impl<S: TexSize, F: TexFmt> From<&Vec<Cube<S, F>>> for CubeTex<S, F> {
 	fn from(m: &Vec<Cube<S, F>>) -> Self {
-		let m: Vec<_> = m.iter().collect();
-		m.as_slice().into()
+		m.iter().collect_vec().as_slice().into()
 	}
 }
 impl<S: TexSize, F: TexFmt> From<Vec<Cube<S, F>>> for CubeTex<S, F> {

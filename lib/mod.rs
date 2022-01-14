@@ -42,15 +42,17 @@ pub mod uses {
 		pub use flume as chan;
 		pub use std::sync::{atomic::*, Arc, Barrier, Mutex, Once};
 	}
+	#[cfg(feature = "adv_fs")]
 	pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
+	#[cfg(feature = "adv_fs")]
 	pub mod SERDE {
 		pub use bincode::{deserialize as FromVec, serialize as ToVec};
 		pub use serde_json::{from_str as FromStr, to_string as ToStr};
-	}
-	pub mod serde_impl {
-		pub use serde::{de::*, ser::*, *};
-		pub use std::fmt::Formatter;
-		pub use std::fmt::Result as FmtRes;
+		pub mod uses {
+			pub use serde::{de::*, ser::*, *};
+			pub use std::fmt::Formatter;
+			pub use std::fmt::Result as FmtRes;
+		}
 	}
 	pub use super::{
 		policies::{adapters, chksum, files as FS, logging},
@@ -59,14 +61,11 @@ pub mod uses {
 	pub mod math {
 		pub use super::super::utility::tuple::*;
 	}
-	pub use super::policies::{casts::*, math::*, rand, type_tools, unsafe_static::*};
+	pub use super::policies::{casts::*, derives::TrivialBound, math::*, rand, type_tools, unsafe_static::*};
 	pub use super::utility::{cached_str::CachedStr, ext::*, prefetch, slicing};
 	pub use super::{GL, GL::types::*};
-	pub use {bitflags::bitflags, const_format, num_cpus};
+	pub use {bitflags::bitflags, const_format, num_cpus, trait_set::trait_set}; //TODO replace with trait aliases
 	pub use {nalgebra as na, nalgebra_glm as glm};
-	//TODO replace with trait aliases
-	pub use trait_set::trait_set;
-	trait_set! { pub trait TrivialBound = 'static + Debug + Default + Copy + PartialEq + Serialize + DeserializeOwned }
 }
 
 pub mod events {

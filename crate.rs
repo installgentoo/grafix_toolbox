@@ -16,6 +16,8 @@
 #[macro_use]
 mod lib;
 pub mod glsl;
+
+#[cfg(feature = "gui")]
 pub mod gui;
 
 pub use lib::*;

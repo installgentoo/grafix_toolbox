@@ -1,11 +1,11 @@
 use crate::uses::*;
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+derive_common_OBJ! {
 pub struct CachedStr {
 	str: String,
 	old_str: String,
 	accessed: bool,
-}
+}}
 impl CachedStr {
 	pub fn str(&mut self) -> &mut String {
 		let Self { str, accessed, .. } = self;

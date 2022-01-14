@@ -320,7 +320,7 @@ impl TextEdit {
 						} else {
 							text.str().insert(b, *ch);
 						}
-						line_cache.push(conc![lines[beg.y()], &ins]);
+						line_cache.push([lines[beg.y()], &ins].concat());
 						lines[beg.y()] = line_cache.last().unwrap();
 
 						history.push(Insert(ins, b, beg));

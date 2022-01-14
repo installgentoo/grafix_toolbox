@@ -1,20 +1,20 @@
-use super::sdf::*;
-use crate::uses::{math::*, *};
+use crate::uses::*;
 use GL::{atlas::*, Tex2d, RED};
 
-#[derive(Default, Serialize, Deserialize)]
+derive_common_OBJ! {
 pub struct Glyph {
 	pub adv: f32,
 	pub coord: Vec4,
 	pub uv: Vec4,
-}
+}}
 impl Glyph {
 	pub fn is_empty(&self) -> bool {
 		self.uv.0 == self.uv.2
 	}
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "adv_fs", derive(Serialize, Deserialize))]
+#[derive(Default)]
 pub struct Font {
 	pub glyphs: HashMap<char, Glyph>,
 	pub kerning: HashMap<char, HashMap<char, f32>>,
@@ -28,7 +28,7 @@ impl Font {
 	pub fn char(&self, c: char) -> &Glyph {
 		let g = &self.glyphs;
 		g.get(&c).unwrap_or_else(|| {
-			DEBUG!("No character {:?} in font", c);
+			DEBUG!("No character {c:?} in font");
 			static E: Glyph = Glyph {
 				adv: 0.,
 				coord: (0., 0., 0., 0.),
@@ -38,12 +38,16 @@ impl Font {
 		})
 	}
 	pub fn kern(&self, l: char, r: char) -> f32 {
+		if self.kerning.len() == 0 {
+			return 0.;
+		}
 		(|| Some(*self.kerning.get(&l)?.get(&r)?))().unwrap_or(0.)
 	}
+	#[cfg(all(feature = "adv_fs", feature = "sdf"))]
 	pub fn new_cached(name: &str, alphabet: impl AsRef<str>) -> Self {
 		let alphabet = alphabet.as_ref();
 		let alph_chksum = chksum::const_fnv1(alphabet.as_bytes()).to_string();
-		let cache = &conc![name, ".", &alph_chksum, ".font.z"];
+		let cache = &format!("{name}.{alph_chksum}.font.z");
 		if let Ok(d) = FS::Load::Archive(cache) {
 			if let Ok(font) = SERDE::FromVec(&d) {
 				return font;
@@ -51,15 +55,16 @@ impl Font {
 		}
 
 		let font: Res<_> = (|| {
-			let file = FS::Load::File(conc!["res/", name, ".ttf"])?;
+			let file = FS::Load::File(format!("res/{name}.ttf"))?;
 			let font = Font::new(file, alphabet)?;
 			let _ = SERDE::ToVec(&font).map(|v| FS::Save::Archive((cache, v)));
 			Ok(font)
 		})();
-		OR_DEFAULT!(font, "Could not load font {}: {}", name)
+		OR_DEFAULT!(font, "Could not load font {name}: {}")
 	}
+	#[cfg(feature = "sdf")]
 	pub fn new(font_data: impl Borrow<Vec<u8>>, alphabet: impl AsRef<str>) -> Res<Self> {
-		use rusttype as ttf;
+		use {super::sdf::*, math::*, rusttype as ttf};
 		let alphabet = alphabet.as_ref();
 		let (glyph_size, border, supersample) = (28, 2, 16);
 		let alphabet = || alphabet.chars();
@@ -80,7 +85,7 @@ impl Font {
 				Some((c, kern)).filter(|(_, k)| !k.is_empty())
 			})
 			.collect::<HashMap<_, _>>();
-		DEBUG!("Font kerning: {:?}", kerning);
+		DEBUG!("Font kerning: {kerning:?}");
 
 		let mut glyphs = vec![];
 		let mut sdf = SdfGenerator::new();
@@ -120,7 +125,7 @@ impl Font {
 				});
 				(c, bb, adv)
 			})
-			.collect::<Vec<_>>();
+			.collect_vec();
 
 		let (mut atlas, _rejects) = pack_into_atlas::<_, _, RED, _>(glyphs, GL::MAX_TEXTURE_SIZE(), GL::MAX_TEXTURE_SIZE());
 		ASSERT!(_rejects.is_empty(), "Couldn't fit font into system texture size");

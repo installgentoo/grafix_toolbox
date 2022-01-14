@@ -30,7 +30,7 @@ impl Selector {
 				line_edit.text = text.into();
 			}
 		} else {
-			choices.resize_def(options.len());
+			choices.resize_with(options.len(), Def);
 			for (n, c) in choices.iter_mut().enumerate() {
 				if c.draw(r, t, pos.sum(size.mul((0, n + 1))), size, &options[n]) {
 					*open = false;

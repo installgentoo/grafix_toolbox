@@ -26,7 +26,7 @@ macro_rules! GLCheck {
 				gl::OUT_OF_MEMORY => "GL_OUT_OF_MEMORY".into(),
 				gl::INVALID_FRAMEBUFFER_OPERATION => "GL_INVALID_FRAMEBUFFER_OPERATION".into(),
 				gl::CONTEXT_LOST => "GL_CONTEXT_LOST".into(),
-				_ => conc!("GL_?_", &code.to_string()).into(),
+				_ => format!("GL_?_{code}"),
 			}
 		}
 

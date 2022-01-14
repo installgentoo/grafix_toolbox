@@ -21,7 +21,7 @@ impl Batch {
 		}
 	}
 	pub fn typ<'a>(&self, objs: &'a [Primitive]) -> &'a ObjStore {
-		get(objs, self.idxs.get(0).unwrap())
+		get(objs, self.idxs.get(0).valid())
 	}
 	pub fn contains(&self, objs: &[Primitive], (o, z): (&ObjStore, u32)) -> bool {
 		let (t, idxs) = (self.typ(objs), &self.idxs);
@@ -83,9 +83,9 @@ impl Batch {
 
 				if state.contains(State::TYPE) {
 					let to = usize(start + new_size);
-					xyzw.resize_def(to * 4);
-					rgba.resize_def(to * 4);
-					uv.resize_def(to * 2);
+					xyzw.resize(to * 4, f16(0));
+					rgba.resize(to * 4, 0);
+					uv.resize(to * 2, f16(0));
 				} else {
 					if new_size > *size {
 						const O: f16 = f16::ZERO;

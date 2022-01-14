@@ -8,15 +8,43 @@ pub fn lambda<'a, T: Fn(A) -> R + 'a, A, R>(f: T) -> Box<dyn Fn(A) -> R + 'a> {
 	Box::new(f)
 }
 
+pub trait UnwrapValid<T> {
+	fn valid(self) -> T;
+}
+impl<T> UnwrapValid<T> for Option<T> {
+	fn valid(self) -> T {
+		#[cfg(debug_assertions)]
+		{
+			self.unwrap()
+		}
+		#[cfg(not(debug_assertions))]
+		{
+			unsafe { self.unwrap_unchecked() }
+		}
+	}
+}
+impl<T, E: Debug> UnwrapValid<T> for Result<T, E> {
+	fn valid(self) -> T {
+		#[cfg(debug_assertions)]
+		{
+			self.unwrap()
+		}
+		#[cfg(not(debug_assertions))]
+		{
+			unsafe { self.unwrap_unchecked() }
+		}
+	}
+}
+
 #[macro_export]
 macro_rules! map_enum {
-	($t: pat = $e: expr => $do: expr) => {
+	($t: pat = $e: expr => $do: expr) => {{
 		if let $t = $e {
 			Some($do)
 		} else {
 			None
 		}
-	};
+	}};
 }
 
 pub fn Def<T: Default>() -> T {

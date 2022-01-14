@@ -37,37 +37,37 @@ pub trait GuiStorage {
 }
 impl GuiStorage for Button {
 	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, Button>, { HashMap::new() }).entry(id).or_default()
+		UnsafeOnce!(HashMap<u32, Button>, { Def() }).entry(id).or_default()
 	}
 }
 impl GuiStorage for Label {
 	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, Label>, { HashMap::new() }).entry(id).or_default()
+		UnsafeOnce!(HashMap<u32, Label>, { Def() }).entry(id).or_default()
 	}
 }
 impl GuiStorage for Layout {
 	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, Layout>, { HashMap::new() }).entry(id).or_default()
+		UnsafeOnce!(HashMap<u32, Layout>, { Def() }).entry(id).or_default()
 	}
 }
 impl GuiStorage for LineEdit {
 	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, LineEdit>, { HashMap::new() }).entry(id).or_default()
+		UnsafeOnce!(HashMap<u32, LineEdit>, { Def() }).entry(id).or_default()
 	}
 }
 impl GuiStorage for Selector {
 	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, Selector>, { HashMap::new() }).entry(id).or_default()
+		UnsafeOnce!(HashMap<u32, Selector>, { Def() }).entry(id).or_default()
 	}
 }
 impl GuiStorage for Slider {
 	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, Slider>, { HashMap::new() }).entry(id).or_default()
+		UnsafeOnce!(HashMap<u32, Slider>, { Def() }).entry(id).or_default()
 	}
 }
 impl GuiStorage for TextEdit {
 	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, TextEdit>, { HashMap::new() }).entry(id).or_default()
+		UnsafeOnce!(HashMap<u32, TextEdit>, { Def() }).entry(id).or_default()
 	}
 }
 
@@ -121,12 +121,12 @@ impl<'l> RenderLock<'l> {
 }
 
 pub fn borrow_map() -> &'static mut HashSet<u32> {
-	UnsafeOnce!(HashSet<u32>, { HashSet::new() })
+	UnsafeOnce!(HashSet<u32>, { Def() })
 }
 fn check_borrow(id: u32) {
 	ASSERT!(
 		borrow_map().get(&id).is_none(),
-		"An element `{}' cannot be drawn more than once per frame",
+		"An element {:?} cannot be drawn more than once per frame",
 		chksum::collision_map().get(&id).unwrap()
 	);
 	borrow_map().insert(id);

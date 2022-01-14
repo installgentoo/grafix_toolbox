@@ -4,7 +4,7 @@ use crate::uses::{sync::io, GL::tex::*, *};
 pub type uImage<S> = Image<S, u8>;
 pub type fImage<S> = Image<S, f16>;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Image<S, F> {
 	pub w: u32,
 	pub h: u32,
@@ -43,16 +43,23 @@ impl<S: TexSize, F: TexFmt> Image<S, F> {
 impl<S: TexSize> uImage<S> {
 	pub fn load(data: impl AsRef<[u8]>) -> Res<Self> {
 		let mut img = {
-			let img = Reader::new(io::Cursor::new(data.as_ref())).with_guessed_format().map_err(|_| "Not an image fromat")?;
-			let fmt = Res(img.format())?;
-			if let image::ImageFormat::WebP = fmt {
-				// TODO CARGO.toml throw away libwebp_image when image gets colour info in webp
-				Res(libwebp_image::webp_load(img.into_inner()))?
-			} else {
-				img.decode().map_err(|_| "Cannot decode image")?
+			let data = data.as_ref();
+			let img = Res(image::io::Reader::new(io::Cursor::new(data)).with_guessed_format())?;
+			let fmt = Res(img.format()).map_err(|_| "Not an image format"); // TODO CARGO.toml throw away libwebp_image and jpeg_xl when image gets gud
+			match fmt {
+				#[cfg(feature = "webp")]
+				Ok(image::ImageFormat::WebP) => Res(libwebp_image::webp_load(img.into_inner()))?,
+				Ok(_) => img.decode().map_err(|_| "Cannot decode image")?,
+				#[cfg(feature = "jxl")]
+				Err(_) if data.starts_with(b"\xff\x0a") || data.starts_with(b"\x00\x00\x00\x0c\x4a\x58\x4c\x20\x0d\x0a\x87\x0a") => {
+					let decoder = Res(jpegxl_rs::decoder_builder().build())?;
+					use jpegxl_rs::image::ToDynamic;
+					Res(Res(decoder.decode(data))?.into_dynamic_image())?
+				}
+				Err(e) => return Err(e.into()),
 			}
 		};
-		imageops::flip_vertical_in_place(&mut img);
+		image::imageops::flip_vertical_in_place(&mut img);
 		let ((w, h), data): (_, Vec<_>) = match S::TYPE {
 			gl::RED => {
 				let img = img.into_luma8();
@@ -83,15 +90,15 @@ impl<S: TexSize> uImage<S> {
 	}
 }
 
+#[cfg(feature = "hdr")]
 impl Image<RGB, f32> {
 	pub fn load(data: impl AsRef<[u8]>) -> Res<Self> {
 		let img = io::BufReader::new(io::Cursor::new(data.as_ref()));
-		let img = hdr::HdrDecoder::new(img).map_err(|_| "Cannot decode hdr image")?;
+		let img = image::codecs::hdr::HdrDecoder::new(img).map_err(|_| "Cannot decode hdr image")?;
 		let m = img.metadata();
 		let (w, h) = (m.width, m.height);
 		let img = img.read_image_hdr().map_err(|_| "Cannot read hdr pixels")?;
-		let data: Vec<_> = img.chunks(usize(w)).rev().flat_map(|l| l.iter().flat_map(|image::Rgb(p)| p)).copied().collect();
+		let data = img.chunks(usize(w)).rev().flat_map(|l| l.iter().flat_map(|image::Rgb(p)| p)).copied().collect_vec();
 		Ok(Self { w, h, data, s: Dummy })
 	}
 }
-use image::{codecs::hdr, imageops, io::Reader};

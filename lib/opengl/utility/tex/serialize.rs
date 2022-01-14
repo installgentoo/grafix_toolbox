@@ -1,5 +1,5 @@
 use super::img::*;
-use crate::uses::{serde_impl::*, GL::tex::*, *};
+use crate::uses::{GL::tex::*, SERDE::uses::*, *};
 
 impl<S: TexSize, F: TexFmt> Serialize for Tex2d<S, F> {
 	fn serialize<SE: Serializer>(&self, serializer: SE) -> Result<SE::Ok, SE::Error> {
@@ -45,8 +45,8 @@ impl<S: TexSize, F: TexFmt> Image<S, F> {
 		[&w, &h, d].concat()
 	}
 	pub fn from_bytes(v: &[u8]) -> Self {
-		let w = u32::from_le_bytes(v[0..4].try_into().unwrap());
-		let h = u32::from_le_bytes(v[4..8].try_into().unwrap());
+		let w = u32::from_le_bytes(v[0..4].try_into().valid());
+		let h = u32::from_le_bytes(v[4..8].try_into().valid());
 		let data = unsafe { v[8..].align_to() }.1.to_vec();
 		Self { w, h, data, s: Dummy }
 	}

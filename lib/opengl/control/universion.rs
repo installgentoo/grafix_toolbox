@@ -32,8 +32,8 @@ pub unsafe fn glCreateBuffer(obj: &mut u32) {
 pub unsafe fn glCreateVao(obj: &mut u32) {
 	G!(gl::GenVertexArrays(1, obj), gl::CreateVertexArrays(1, obj));
 }
-pub unsafe fn glCreateTexture(typ: GLenum, obj: &mut u32) {
-	G!(gl::GenTextures(1, obj), gl::CreateTextures(typ, 1, obj));
+pub unsafe fn glCreateTexture(_typ: GLenum, obj: &mut u32) {
+	G!(gl::GenTextures(1, obj), gl::CreateTextures(_typ, 1, obj));
 }
 pub unsafe fn glDeleteTexture(obj: &mut u32) {
 	G!(
@@ -52,13 +52,13 @@ pub unsafe fn glCreateFramebuff(obj: &mut u32) {
 pub unsafe fn glCreateRenderbuff(obj: &mut u32) {
 	G!(gl::GenRenderbuffers(1, obj), gl::CreateRenderbuffers(1, obj));
 }
-pub unsafe fn glBufferStorage(_typ: GLenum, obj: u32, size: isize, data: *const GLvoid, usage: GLenum) {
+pub unsafe fn glBufferStorage(_typ: GLenum, obj: u32, size: isize, data: *const GLvoid, _usage: GLenum) {
 	G!(
 		{
 			gl::BindBuffer(_typ, obj);
 			gl::BufferData(_typ, size, data, gl::DYNAMIC_DRAW);
 		},
-		gl::NamedBufferStorage(obj, size, data, usage)
+		gl::NamedBufferStorage(obj, size, data, _usage)
 	);
 }
 pub unsafe fn glBufferSubData(_typ: GLenum, obj: u32, offset: isize, size: isize, data: *const GLvoid) {
@@ -231,14 +231,14 @@ pub unsafe fn glGenMipmaps(_typ: GLenum, tex: u32) {
 		gl::GenerateTextureMipmap(tex)
 	);
 }
-pub unsafe fn glGetTexture(_typ: GLenum, tex: u32, lvl: i32, fmt: GLenum, t: GLenum, size: i32, data: *mut GLvoid) {
+pub unsafe fn glGetTexture(_typ: GLenum, tex: u32, lvl: i32, fmt: GLenum, t: GLenum, _size: i32, data: *mut GLvoid) {
 	G!(
 		{
 			gl::BindTexture(_typ, tex);
 			gl::GetTexImage(_typ, lvl, fmt, t, data);
 			gl::BindTexture(_typ, *bound_tex33());
 		},
-		gl::GetTextureImage(tex, lvl, fmt, t, size, data)
+		gl::GetTextureImage(tex, lvl, fmt, t, _size, data)
 	);
 }
 pub unsafe fn glClearFramebuff(fb: u32, typ: GLenum, buffidx: i32, val: *const f32) {

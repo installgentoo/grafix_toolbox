@@ -23,7 +23,7 @@ APPLICATOR!(UnpackTuple4, t0, t1, t2, t3, t4);
 APPLICATOR!(UnpackTuple5, t0, t1, t2, t3, t4, t5);
 
 pub fn states_map() -> &'static mut HashMap<usize, (bool, bool)> {
-	UnsafeOnce!(HashMap<usize, (bool, bool)>, { HashMap::new() })
+	UnsafeOnce!(HashMap<usize, (bool, bool)>, { Def() })
 }
 
 macro_rules! FUNC {
@@ -49,7 +49,7 @@ impl $n {
 		if *last_s != state {
 			*last_s = state;
 			state.apply($m::$n);
-			DEBUG!("Set GL::{}({:?})", stringify!($n), state);
+			DEBUG!("Set GL::{}({state:?})", stringify!($n));
 		}
 	}
 
@@ -78,11 +78,11 @@ impl $n {
 		if *state != *prev_s {
 			*state = *prev_s;
 			state.apply($m::$n);
-			DEBUG!("Restored GL::{}({:?})", stringify!($n), state);
+			DEBUG!("Restored GL::{}({state:?})", stringify!($n));
 		}
 	}
 }
-}
+};
 }
 
 pub trait State {
@@ -95,7 +95,7 @@ pub trait State {
 }
 
 pub fn overflow_map() -> &'static mut HashMap<GLenum, i32> {
-	UnsafeOnce!(HashMap<GLenum, i32>, { HashMap::new() })
+	UnsafeOnce!(HashMap<GLenum, i32>, { Def() })
 }
 
 macro_rules! SWITCH {
@@ -103,12 +103,10 @@ macro_rules! SWITCH {
 		impl State for $n {}
 		SWITCH_IMPL!($n, 0);
 	};
-
 	($n: ident, DEFAULT_TRUE) => {
 		impl State for $n {}
 		SWITCH_IMPL!($n, 18446744073709551615);
 	};
-
 	($n: ident, $e: expr, $d: expr, $i: literal) => {
 		impl State for $n {
 			fn gl_enable(_: GLenum) {
@@ -181,7 +179,7 @@ macro_rules! SWITCH_IMPL {
 				let s = *state & 1u64;
 				*state >>= 1;
 				if s != (*state & 1u64) {
-					DEBUG!("Restored GL::{}({})", stringify!($n), s);
+					DEBUG!("Restored GL::{}({s})", stringify!($n));
 					if *state == 0u64 {
 						Self::gl_disable(gl::$n);
 					} else {

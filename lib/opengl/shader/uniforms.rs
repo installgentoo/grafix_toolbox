@@ -73,7 +73,7 @@ impl<T: TexType> UniformArgs for &TextureBinding<'_, T> {
 		let u = i32(self.u);
 		let ent = tex_cache.entry(name).or_insert(-1);
 		if *ent != u {
-			DEBUG!("Updating GL tex {} to {} in shader {}", *ent, u, {
+			DEBUG!("Updating GL tex {ent} to {u} in shader {}", {
 				use super::state::*;
 				ShdProg::bound_obj()
 			});

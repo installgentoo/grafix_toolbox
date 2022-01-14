@@ -209,19 +209,15 @@ SHADER!(
 
 		vec4 correction = vec4(vec3(pix_l, pix_r, pix_n), pix);
 
-		/*// Antialias
+		/* // Antialias
 		float center = texture(tex, glTexCoord.xy).r;
 		float dscale = .354; // half of 1/sqrt2
 		float friends = .5; // scale value to apply to neighbours
-
 		vec2 duv = dscale * (dFdx(v_uv) + dFdy(v_uv));
 		vec4 box = vec4(v_uv-duv, v_uv+duv);
-
 		vec4 c = samp( box.xy ) + samp( box.zw ) + samp( box.xw ) + samp( box.zy );
 		float sum = 4; // 4 neighbouring samples
-
-		rgbaOut = fontColor * (center + friends * c) / (1. + sum*friends);
-		*/
+		rgbaOut = fontColor * (center + friends * c) / (1. + sum*friends); */
 
 		glFragColor = glColor * correction;
 	}"

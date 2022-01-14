@@ -24,6 +24,7 @@ impl SamplerArg for f32 {
 }
 impl SamplerArg for Vec4 {
 	fn apply(&self, obj: u32, name: GLenum) {
-		GLCheck!(gl::SamplerParameterfv(obj, name, [*self].as_ptr() as *const f32));
+		let s = [*self];
+		GLCheck!(gl::SamplerParameterfv(obj, name, s.as_ptr() as *const f32));
 	}
 }

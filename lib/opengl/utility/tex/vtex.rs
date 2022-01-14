@@ -25,7 +25,7 @@ pub type AtlasTex2d<'a, S> = Prefetched<'a, u32, VTex2d<S, u8>, TexAtlas<S>>;
 
 #[derive(Default)]
 pub struct TexAtlas<S> {
-	t: UnsafeCell<(Vec<FS::File::Resource>, HashMap<u32, VTex2d<S, u8>>)>,
+	t: UnsafeCell<(Vec<(String, FS::File::Resource)>, HashMap<u32, VTex2d<S, u8>>)>,
 }
 impl<S: TexSize> TexAtlas<S> {
 	pub fn new() -> Self {
@@ -35,12 +35,17 @@ impl<S: TexSize> TexAtlas<S> {
 		let (reqs, _textures) = unsafe { &mut *self.t.get() };
 		ASSERT!(_textures.is_empty(), "Loading into atlas after batching");
 		let k = u32(reqs.len());
-		reqs.push(FS::Preload::File(conc!("res/", name)));
+		let name = format!("res/{name}");
+		reqs.push((name.clone(), FS::Preload::File(name)));
 		Prefetched::new(k, self)
 	}
 	fn initialize(&self) {
 		let (reqs, textures) = unsafe { &mut *self.t.get() };
-		let reqs: Vec<(u32, _)> = reqs.iter_mut().enumerate().map(|(n, r)| (u32(n), EXPECT!(uImage::<S>::load(r.get())))).collect();
+		let reqs = reqs
+			.iter_mut()
+			.enumerate()
+			.map(|(n, (name, r))| (u32(n), EXPECT!(uImage::<S>::load(r.get()).map_err(|e| format!("{e}, image {name:?}")))))
+			.collect_vec();
 		let max_side = GL::MAX_TEXTURE_SIZE();
 		let (mut atlas, mut tail) = atlas::pack_into_atlas::<_, _, S, _>(reqs, max_side, max_side);
 		if tail.is_empty() {
@@ -53,7 +58,7 @@ impl<S: TexSize> TexAtlas<S> {
 				atlas = a;
 				tail = l;
 				if tail.len() == last_s {
-					ERROR!("Graphics card can't fit textures: {:?}", tail);
+					ERROR!("Graphics card can't fit textures: {tail:?}");
 				}
 				last_s = tail.len();
 			}
@@ -66,13 +71,13 @@ impl<S: TexSize> Fetcher<u32, VTex2d<S, u8>> for TexAtlas<S> {
 		if textures.is_empty() {
 			self.initialize();
 		}
-		textures.get(&k).unwrap()
+		textures.get(&k).valid()
 	}
 	fn take(&self, k: u32) -> VTex2d<S, u8> {
 		let (_, textures) = unsafe { &mut *self.t.get() };
 		if textures.is_empty() {
 			self.initialize();
 		}
-		textures.remove(&k).take().unwrap()
+		textures.remove(&k).take().valid()
 	}
 }

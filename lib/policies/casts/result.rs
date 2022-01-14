@@ -12,7 +12,7 @@ impl<T, E: std::fmt::Display> Cast<Result<T, E>> for Result<T, String> {
 			if "String" == t {
 				e.to_string()
 			} else {
-				conc!(&t, ": ", &e.to_string())
+				format!("{t}: {e}")
 			}
 		}) //TODO specialization
 	}
@@ -49,6 +49,6 @@ impl<T: Default, R: std::fmt::Display> UniformUnwrapOrDefault<T> for Result<T, R
 		self.is_err()
 	}
 	fn uni_err(self) -> (T, String) {
-		(Def(), self.err().unwrap().to_string())
+		(Def(), self.err().valid().to_string())
 	}
 }

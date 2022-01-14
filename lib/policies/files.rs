@@ -81,7 +81,7 @@ pub mod Save {
 			});
 
 			logging::Logger::AddPostmortem(move || {
-				setup_impl().send((PathBuf::new(), MessageType::Close, vec![])).unwrap();
+				setup_impl().send((Def(), MessageType::Close, vec![])).unwrap();
 				task::block_on(async move { handle.await });
 			});
 
@@ -202,5 +202,20 @@ pub async fn read_text(p: impl AsRef<Path>) -> Res<String> {
 }
 
 fn fmt_err<T>(r: Result<T, impl std::fmt::Display>, p: &Path) -> Res<T> {
-	r.map_err(|e| format!("Could not open file {:?}\n{}", p, e))
+	r.map_err(|e| format!("Could not open file {p:?} - {e}"))
+}
+
+#[cfg(not(feature = "zstd"))]
+mod zstd {
+	pub mod stream {
+		use super::super::*;
+		pub fn encode_all(s: &[u8], _: i32) -> Res<Vec<u8>> {
+			Ok(s.to_vec())
+		}
+		pub fn decode_all<R: std::io::Read>(mut s: R) -> Res<Vec<u8>> {
+			let mut b = vec![];
+			Res(s.read_to_end(&mut b))?;
+			Ok(b)
+		}
+	}
 }

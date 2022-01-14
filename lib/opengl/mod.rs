@@ -17,9 +17,8 @@ use control::*;
 use opengl::types;
 
 pub mod opengl {
-	// TODO negative traits stabilization - remove send/sync from Query, Framebuffer and Vao //impl !Send for //impl !Sync for
 	pub use gl;
-	pub type Query = spec::Object<spec::Query>;
+	pub type Query = spec::Object<spec::Query>; // TODO negative traits stabilization - remove send/sync from Query, Framebuffer and Vao //impl !Send for //impl !Sync for
 	pub use super::debug::{DebugLevel, EnableDebugContext};
 	pub use super::thread::Fence;
 	pub use bind::*;

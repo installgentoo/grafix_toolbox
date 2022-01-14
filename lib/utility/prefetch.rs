@@ -24,7 +24,7 @@ impl<'a, K, T, M: Fetcher<K, T>> Prefetched<'a, K, T, M> {
 		match s {
 			Done(v) => v,
 			Started(b) => {
-				let (k, m) = b.take().unwrap();
+				let (k, m) = b.take().valid();
 				let v = m.get(k);
 				*s = Done(v);
 				v
@@ -36,7 +36,7 @@ impl<'a, K, T, M: Fetcher<K, T>> Prefetched<'a, K, T, M> {
 		match s {
 			Done(_) => ASSERT!(false, "Batched value already borrowed, can't take"),
 			Started(b) => {
-				let (k, m) = b.unwrap();
+				let (k, m) = b.valid();
 				m.take(k)
 			}
 		}

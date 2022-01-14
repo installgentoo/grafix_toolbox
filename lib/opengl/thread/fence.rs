@@ -8,7 +8,7 @@ pub struct Fence {
 impl Fence {
 	pub fn new() -> Self {
 		let obj = GLCheck!(gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0));
-		DEBUG!("Created GL Fence {:?}", obj);
+		DEBUG!("Created GL Fence {obj:?}");
 		GLCheck!(gl::Flush());
 		Self { obj }
 	}

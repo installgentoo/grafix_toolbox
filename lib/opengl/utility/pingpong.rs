@@ -5,11 +5,9 @@ use GL::{tex::*, Fbo};
 #[macro_export]
 macro_rules! ComputeShader {
 	($shd: ident, ($n0: literal, $samp: ident, $slab: ident)$(, $($args: tt),+)?) => {{
-		{
-			let mut fbo = &mut $slab.tgt;
-			let src = &$slab.src.tex;
-			ComputeShader!($shd, fbo, ($n0, $samp, src)$(, $($args),+)?);
-		}
+		let mut fbo = &mut $slab.tgt;
+		let src = &$slab.src.tex;
+		ComputeShader!($shd, fbo, ($n0, $samp, src)$(, $($args),+)?);
 		$slab.swap();
 	}};
 	($shd: ident, $fbo: expr) => {{

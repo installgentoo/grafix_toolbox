@@ -4,26 +4,22 @@ pub trait TexSize: TrivialBound {
 	const TYPE: GLenum;
 	const SIZE: i32;
 }
-#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub struct RED;
+derive_common_VAL! { pub struct RED; }
 impl TexSize for RED {
 	const TYPE: GLenum = gl::RED;
 	const SIZE: i32 = 1;
 }
-#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub struct RG;
+derive_common_VAL! { pub struct RG; }
 impl TexSize for RG {
 	const TYPE: GLenum = gl::RG;
 	const SIZE: i32 = 2;
 }
-#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub struct RGB;
+derive_common_VAL! { pub struct RGB; }
 impl TexSize for RGB {
 	const TYPE: GLenum = gl::RGB;
 	const SIZE: i32 = 3;
 }
-#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub struct RGBA;
+derive_common_VAL! { pub struct RGBA; }
 impl TexSize for RGBA {
 	const TYPE: GLenum = gl::RGBA;
 	const SIZE: i32 = 4;

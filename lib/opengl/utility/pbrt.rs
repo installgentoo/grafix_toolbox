@@ -17,14 +17,14 @@ impl<T: Borrow<Environment>> From<T> for EnvTex {
 	}
 }
 
-#[derive(Default, Serialize, Deserialize)]
-pub struct Environment {
+derive_common_OBJ! {pub struct Environment {
 	specular: Vec<[fImage<RGB>; 6]>,
 	diffuse: [fImage<RGB>; 6],
-}
+}}
 impl Environment {
+	#[cfg(all(feature = "adv_fs", feature = "hdr"))]
 	pub fn new_cached(name: &str) -> Res<Self> {
-		let cache = &conc![name, ".hdr.z"];
+		let cache = &format!("{name}.hdr.z");
 		if let Ok(d) = FS::Load::Archive(cache) {
 			if let Ok(env) = SERDE::FromVec(&d) {
 				return Ok(env);
@@ -32,7 +32,7 @@ impl Environment {
 		}
 
 		let env: Res<_> = (|| {
-			let file = FS::Load::File(conc!["res/", name, ".hdr"])?;
+			let file = FS::Load::File(format!("res/{name}.hdr"))?;
 			let equirect = Tex2d::from(Image::<RGB, f32>::load(file)?);
 			let env = Self::new(equirect);
 			let _ = SERDE::ToVec(&env).map(|v| FS::Save::Archive((cache, v)));
@@ -40,6 +40,7 @@ impl Environment {
 		})();
 		env
 	}
+	#[cfg(feature = "adv_fs")]
 	pub fn lut_cached() -> Tex2d<RG, f16> {
 		let cache = "brdf_lut.pbrt.z";
 		if let Ok(d) = FS::Load::Archive(cache) {
@@ -95,9 +96,7 @@ impl Environment {
 				Skybox::Draw();
 				fImage::<RGB>::from(surf.tex)
 			})
-			.collect::<Vec<_>>()
-			.try_into()
-			.unwrap();
+			.collect_arr();
 		let cubemap = CubeTex::from(&color);
 
 		let diffuse: [_; 6] = VP_mats
@@ -110,9 +109,7 @@ impl Environment {
 				Skybox::Draw();
 				fImage::<RGB>::from(surf.tex)
 			})
-			.collect::<Vec<_>>()
-			.try_into()
-			.unwrap();
+			.collect_arr();
 
 		let mips = TexParam::mip_levels(cubemap.param.w);
 		let specular = vec![color]
@@ -132,15 +129,13 @@ impl Environment {
 								Skybox::Draw();
 								fImage::<RGB>::from(surf.tex)
 							})
-							.collect::<Vec<_>>()
-							.try_into()
-							.unwrap();
+							.collect_arr();
 						mip
 					})
-					.collect::<Vec<_>>()
+					.collect_vec()
 					.into_iter(),
 			)
-			.collect::<Vec<_>>();
+			.collect_vec();
 
 		Self { diffuse, specular }
 	}

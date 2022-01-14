@@ -8,7 +8,7 @@ pub struct Vao<I> {
 }
 impl<I: IdxType> Vao<I> {
 	pub fn new() -> Self {
-		Self { o: Object::new(), d: Dummy }
+		Self { o: Def(), d: Dummy }
 	}
 	pub fn obj(&self) -> u32 {
 		self.o.obj
@@ -16,17 +16,35 @@ impl<I: IdxType> Vao<I> {
 	pub fn Bind(&mut self) -> VaoBinding<I> {
 		VaoBinding::new(self)
 	}
-}
-impl<I: IdxType> Vao<I> {
 	pub fn BindIdxs(&mut self, o: &IdxArr<I>) {
 		GLCheck!(glVaoElementBuffer(self.obj(), o.obj));
-		idxcheck_map().insert(self.obj());
+		debug_assert!({
+			*Index::crossbindcheck_map().entry(self.obj()).or_default() = vec![o.obj];
+			true
+		});
 	}
 	pub fn AttribFmt<A: AttrType>(&mut self, o: &AttrArr<A>, args: impl AttrFmtArgs) {
 		let (idx, size, norm, stride, offset) = args.get();
-		ASSERT!(size > 0 && size < 5, "Attribute size {} isn't valid", size);
+		ASSERT!(size > 0 && size < 5, "Attribute size({size}) isn't valid");
 		let t_size = u32(type_size!(A));
 		GLCheck!(glVertexAttribFormat(self.obj(), o.obj, idx, size, A::TYPE, to_glbool(norm), stride, offset, t_size));
+		debug_assert!({
+			let attrs = Attribute::crossbindcheck_map().entry(self.obj()).or_default();
+			if attrs.len() < usize(idx + 1) {
+				attrs.resize(usize(idx + 1), u32::MAX);
+			}
+			attrs[usize(idx)] = o.obj;
+			true
+		});
+	}
+}
+impl<I> Drop for Vao<I> {
+	fn drop(&mut self) {
+		debug_assert!({
+			Index::crossbindcheck_map().remove(&self.o.obj);
+			Attribute::crossbindcheck_map().remove(&self.o.obj);
+			true
+		})
 	}
 }
 
@@ -40,16 +58,13 @@ impl<I: IdxType> VaoBinding<'_, I> {
 		Self { _b, d: Dummy }
 	}
 	pub fn Draw(&self, args: impl DrawArgs) {
-		ASSERT!(
-			idxcheck_map().get(VertArrObj::bound_obj()).is_some(),
-			"No Index buffer bound to VertArrObj {}",
-			VertArrObj::bound_obj()
-		);
-
+		Index::checkcrossbinds(VertArrObj::bound_obj());
+		Attribute::checkcrossbinds(VertArrObj::bound_obj());
 		let (num, offset, mode) = args.get();
 		GLCheck!(gl::DrawElements(mode, num, I::TYPE, (offset * type_size!(I)) as *const GLvoid));
 	}
 	pub fn DrawUnindexed(&self, args: impl DrawArgs) {
+		Attribute::checkcrossbinds(VertArrObj::bound_obj());
 		let (num, offset, mode) = args.get();
 		GLCheck!(gl::DrawArrays(mode, i32(offset), num));
 	}
@@ -57,20 +72,12 @@ impl<I: IdxType> VaoBinding<'_, I> {
 	where
 		i32: Cast<T>,
 	{
-		ASSERT!(
-			idxcheck_map().get(VertArrObj::bound_obj()).is_some(),
-			"No Index buffer bound to VertArrObj {}",
-			VertArrObj::bound_obj()
-		);
-
+		Index::checkcrossbinds(VertArrObj::bound_obj());
+		Attribute::checkcrossbinds(VertArrObj::bound_obj());
 		let (num, offset, mode) = args.get();
 		let offset = (offset * type_size!(I)) as *const GLvoid;
 		GLCheck!(gl::DrawElementsInstanced(mode, num, I::TYPE, offset, i32(n)));
 	}
-}
-
-pub fn idxcheck_map() -> &'static mut HashSet<u32> {
-	UnsafeOnce!(HashSet<u32>, { HashSet::new() })
 }
 
 #[allow(unused_imports)]

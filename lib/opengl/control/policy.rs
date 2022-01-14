@@ -18,8 +18,7 @@ pub trait Buffer: TrivialBound + State {
 	const TYPE: GLenum;
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub struct Attribute;
+derive_common_VAL! { pub struct Attribute; }
 impl State for Attribute {
 	m_STATE!();
 }
@@ -27,8 +26,7 @@ impl Buffer for Attribute {
 	const TYPE: GLenum = gl::ARRAY_BUFFER;
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub struct Index;
+derive_common_VAL! { pub struct Index; }
 impl State for Index {
 	m_STATE!();
 }

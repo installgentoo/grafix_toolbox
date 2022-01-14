@@ -50,11 +50,11 @@ macro_rules! PROFILER {
 				lock.insert(name, t.stop(name));
 			}
 			pub fn Print(name: Str) {
-				let t = EXPECT!(map().lock().unwrap().remove(name), "No timer '{}'", name);
+				let t = EXPECT!(map().lock().unwrap().remove(name), "No timer {name:?}");
 				print_impl(name, t);
 			}
 			pub fn PrintAll() {
-				let mut all: Vec<_> = map().lock().unwrap().drain().collect();
+				let mut all = map().lock().unwrap().drain().collect_vec();
 				all.sort_by(|(a, _), (b, _)| a.cmp(b));
 				all.into_iter().for_each(|(n, t)| print_impl(n, t));
 			}
@@ -65,21 +65,21 @@ macro_rules! PROFILER {
 					for step in &[(1_000_000_000, " s"), (1_000_000, " ms"), (1_000, " us")] {
 						let frame = i * step.0;
 						if t >= frame {
-							return conc!(&(f64(t) / f64(frame)).to_string(), step.1);
+							return format!("{:.3} {}", f64(t) / f64(frame), step.1);
 						}
 					}
-					return conc!(&(f64(t) / f64(i)).to_string(), " ns");
+					return format!("{:.3} ns", f64(t) / f64(i));
 				};
-				PRINT!("Timer '{}': {} |{}", name, format(), i);
+				PRINT!("Timer {name:?}: {} |{i}", format());
 			}
 			fn map() -> &'static mut Mutex<HashMap<Str, Timer>> {
 				static INIT: Once = Once::new();
 				static mut MAP: Option<Mutex<HashMap<&str, Timer>>> = None;
 				unsafe {
 					INIT.call_once(|| {
-						MAP = Some(Mutex::new(HashMap::new()));
+						MAP = Some(Def());
 					});
-					MAP.as_mut().unwrap()
+					MAP.as_mut().unwrap_unchecked()
 				}
 			}
 		}
@@ -100,21 +100,21 @@ impl GenericTimer {
 		use GenericTimer::*;
 		match self {
 			Done(done) => GenericTimer::Started(done.start()),
-			Started { .. } => ASSERT!(false, "Timer '{}' already started", _name),
+			Started { .. } => ASSERT!(false, "Timer {_name:?} already started"),
 		}
 	}
 	fn stop(self, _name: Str) -> Self {
 		use GenericTimer::*;
 		match self {
 			Started(started) => GenericTimer::Done(started.stop()),
-			Done { .. } => ASSERT!(false, "Timer '{}' not started", _name),
+			Done { .. } => ASSERT!(false, "Timer {_name:?} not started"),
 		}
 	}
 	fn get_res(self, _name: Str) -> (u128, u128) {
 		use GenericTimer::*;
 		match self {
 			Done(done) => done.get_res(),
-			Started(_) => ASSERT!(false, "Timer '{}' not stopped", _name),
+			Started(_) => ASSERT!(false, "Timer {_name:?} not stopped"),
 		}
 	}
 }

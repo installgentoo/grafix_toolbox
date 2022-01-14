@@ -29,7 +29,7 @@ impl GlfwWindow {
 		use glfw::{WindowHint::*, *};
 
 		let init_ctx: fn() -> Res<_> = || {
-			let mut ctx = Res(glfw::init(FAIL_ON_ERRORS)).map_err(|e| conc!("GLFW initialization failed, ", &e))?;
+			let mut ctx = Res(glfw::init(FAIL_ON_ERRORS)).map_err(|e| format!("GLFW initialization failed, {e}"))?; //TODO don't fail for empty clipbox
 
 			ctx.window_hint(ClientApi(ClientApiHint::OpenGl));
 			ctx.window_hint(ContextVersion(GL::unigl::GL_VERSION.0, GL::unigl::GL_VERSION.1));
@@ -58,7 +58,7 @@ impl GlfwWindow {
 		gl::load_with(|s| window.get_proc_address(s) as *const _);
 
 		let version = Res(unsafe { CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8) }.to_str())?;
-		PRINT!("Initialized OpenGL, {}", version);
+		PRINT!("Initialized OpenGL, {version}");
 		GL::macro_uses::gl_was_initialized(true);
 		if GL::unigl::IS_DEBUG {
 			GL::EnableDebugContext(GL::DebugLevel::All);
@@ -173,7 +173,7 @@ impl WindowSpec for GlfwWindow {
 			let add = |s, a| if s { a } else { Mod::empty() };
 			add(shift, Mod::SHIFT) | add(ctrl, Mod::CTRL) | add(alt, Mod::ALT) | add(win, Mod::WIN) | add(left, Mod::LEFT) | add(mid, Mod::MID) | add(right, Mod::RIGHT)
 		};
-		let mut events: Vec<Event> = glfw::flush_messages(events)
+		let mut events = glfw::flush_messages(events)
 			.filter_map(|(_, event)| match event {
 				glfw::WindowEvent::CursorPos(x, y) => {
 					let ((x, y), (w, h)) = ((2., 2.).mul((x, y)), Vec2(Self::_size()));
@@ -207,11 +207,11 @@ impl WindowSpec for GlfwWindow {
 					None
 				}
 				e => {
-					INFO!("Registered event not covered {:?}", e);
+					INFO!("Registered event not covered {e:?}");
 					None
 				}
 			})
-			.collect();
+			.collect_vec();
 		if *resized_hint {
 			*resized_hint = false;
 			let ((x, y), (w, h)) = ((2., 2.).mul(window.get_cursor_pos()), Vec2(Self::_size()));

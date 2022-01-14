@@ -9,9 +9,8 @@ macro_rules! UnsafeOnce {
 			} else {
 				S = Some($b);
 			}
-			S.as_mut()
+			S.as_mut().unwrap_unchecked()
 		}
-		.unwrap()
 	}};
 }
 
@@ -30,7 +29,7 @@ macro_rules! UnsafeLocal {
 				}
 				r = Some(f)
 			});
-			(*r.unwrap()).as_mut().unwrap()
+			(*r.unwrap_unchecked()).as_mut().unwrap_unchecked()
 		}
 	}};
 }
@@ -82,10 +81,10 @@ impl<T: Send + Sync> Clone for static_ptr<T> {
 
 #[macro_export]
 macro_rules! StaticPtr {
-	($n: expr) => {
+	($n: expr) => {{
 			unsafe { static_ptr::new($n) }
-	};
-	($($n: expr),+) => {
+	}};
+	($($n: expr),+) => {{
 			unsafe { ($(static_ptr::new($n),)+) }
-	};
+	}};
 }

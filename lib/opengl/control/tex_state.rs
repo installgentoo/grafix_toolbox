@@ -28,7 +28,7 @@ pub mod TexState {
 		for i in 0..*len {
 			let (unit, _, counter) = units.at_mut(i);
 			if *counter == 0 {
-				DEBUG!("Unbing GL {} {} from unit {}", type_name!(Texture<T>), *unit, i);
+				DEBUG!("Unbing GL {} {unit} from unit {i}", type_name!(Texture<T>));
 				*unit = 0;
 				if empty == npos {
 					empty = i;
@@ -38,9 +38,9 @@ pub mod TexState {
 			}
 		}
 
-		ASSERT!(empty != npos, "Ran out of GL texture units, {} available", len);
+		ASSERT!(empty != npos, "Ran out of GL texture units, {len} available");
 		if empty == npos {
-			FAIL!("Ran out of GL texture units({} available), returning rubbish", len);
+			FAIL!("Ran out of GL texture units({len} available), returning rubbish");
 			empty = 0;
 		}
 
@@ -85,14 +85,14 @@ pub mod TexState {
 		*counter += 1;
 		*unit = obj;
 		let u = empty;
-		DEBUG!("Binding GL {} {} to unit {}", type_name!(Texture<T>), obj, u);
+		DEBUG!("Binding GL {} {obj} to unit {u}", type_name!(Texture<T>));
 		GLCheck!(glBindTextureUnit(T::TYPE, u, obj));
 		if *samp != s {
 			*samp = s;
-			DEBUG!("Binding GL {} {} to unit {}", type_name!(SamplObj), s, u);
+			DEBUG!("Binding GL {} {s} to unit {u}", type_name!(SamplObj));
 			GLCheck!(gl::BindSampler(u, s));
 		}
-		DEBUG!("GL texture units: {:?}", units);
+		DEBUG!("GL texture units: {units:?}");
 		u
 	}
 	pub fn BindAny<T: TexType>(obj: u32, hint: u32) -> u32 {
@@ -130,9 +130,9 @@ pub mod TexState {
 		*counter += 1;
 		*unit = obj;
 		let u = empty;
-		DEBUG!("Binding GL {} {} to unit {}", type_name!(Texture<T>), obj, u);
+		DEBUG!("Binding GL {} {obj} to unit {u}", type_name!(Texture<T>));
 		GLCheck!(glBindTextureUnit(T::TYPE, u, obj));
-		DEBUG!("GL texture units: {:?}", units);
+		DEBUG!("GL texture units: {units:?}");
 		u
 	}
 	pub fn drop_tex(obj: u32) {
@@ -140,7 +140,7 @@ pub mod TexState {
 		for i in 0..*len {
 			let (unit, _, _counter) = units.at_mut(i);
 			if obj == *unit {
-				ASSERT!(*_counter == 0, "Leakage in GL texture {} binding", obj);
+				ASSERT!(*_counter == 0, "Leakage in GL texture {obj} binding");
 				*unit = 0;
 				if *at == i + 1 {
 					*at = i;

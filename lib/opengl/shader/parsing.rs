@@ -40,13 +40,13 @@ pub fn parse_shader_sources(filename: &str, text: &str) -> SourcePack {
 				}?;
 				let newlines = "\n".repeat(cur_row_number);
 				cur_row_number += body.lines().count();
-				let shader = Res(CString::new(conc![GL::unigl::GLSL_VERSION, header, &newlines, body]))?;
+				let shader = Res(CString::new([GL::unigl::GLSL_VERSION, header, &newlines, body].concat()))?;
 				Ok((name, shader))
 			})
 			.collect::<Res<_>>()
 	})();
 
-	OR_DEFAULT!(parsed, "Malformed .glsl file {}, row {}, {:?}", filename, cur_row_number)
+	OR_DEFAULT!(parsed, "Malformed .glsl file {filename}, row {cur_row_number}, {}")
 }
 
 pub fn print_shader_log(obj: u32) -> String {
@@ -61,7 +61,7 @@ pub fn print_shader_log(obj: u32) -> String {
 		let mut log: Vec<u8> = vec![0; usize(max_len)];
 		GLCheck!(f_prog(obj, max_len, ptr::null_mut(), log.as_mut_ptr() as *mut i8));
 		let l = log.pop();
-		if l.is_none() || l.unwrap() != 0 {
+		if l.is_none() || l.valid() != 0 {
 			return "Error copying error log".into();
 		}
 		log

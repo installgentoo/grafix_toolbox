@@ -9,11 +9,37 @@ pub trait State {
 	}
 	unsafe fn del(obj: &mut u32) {
 		gl::DeleteBuffers(1, obj);
+		debug_assert!({
+			Self::crossbindcheck_map().values_mut().for_each(|b| {
+				b.iter_mut().for_each(|o| {
+					if *o == *obj {
+						*o = 0;
+					}
+				})
+			});
+			true
+		});
 	}
+	fn crossbindcheck_map() -> &'static mut HashMap<u32, Vec<u32>> {
+		UnsafeOnce!(HashMap<u32, Vec<u32>>, { Def() })
+	}
+	fn checkcrossbinds(obj: &u32) {
+		debug_assert!({
+			if let Ok(_pos) = Self::crossbindcheck_map()
+				.get(obj)
+				.unwrap_or_else(|| ASSERT!(false, "No {} buffer bound to GL object {obj}", type_name!(Self)))
+				.binary_search(&0)
+			{
+				ASSERT!(false, "{} buffer bound to GL object {obj} at position {_pos} was invalidated", type_name!(Self));
+			}
+			true
+		});
+	}
+
 	fn Lock(obj: u32) {
 		debug_assert!({
 			let _tracked = *Self::tracked_obj();
-			ASSERT!(_tracked == 0, "Tried to bind GL {} object {} while {} ", type_name!(Self), obj, _tracked);
+			ASSERT!(_tracked == 0, "Tried to bind GL {} object {obj} while {_tracked} ", type_name!(Self));
 			*Self::tracked_obj() = obj;
 			true
 		});
@@ -28,13 +54,13 @@ pub trait State {
 		let mut obj = 0;
 		GLCheck!(Self::gen(&mut obj));
 		ASSERT!(obj != 0, "GL {} not initilized", type_name!(Self));
-		DEBUG!("Created GL {} obj {}", type_name!(Self), obj);
+		DEBUG!("Created GL {} obj {obj}", type_name!(Self));
 		obj
 	}
 	fn Bind(obj: u32) {
 		let bound_obj = Self::bound_obj();
 		if *bound_obj != obj {
-			DEBUG!("Binding GL {} obj {}", type_name!(Self), obj);
+			DEBUG!("Binding GL {} obj {obj}", type_name!(Self));
 			*bound_obj = obj;
 			GLCheck!(Self::bind(obj));
 		}
@@ -45,7 +71,7 @@ pub trait State {
 			*Self::bound_obj() = 0;
 		}
 		let mut obj = obj;
-		DEBUG!("Deleting GL {} obj {}", type_name!(Self), obj);
+		DEBUG!("Deleting GL {} obj {obj}", type_name!(Self));
 		GLCheck!(Self::del(&mut obj));
 	}
 }

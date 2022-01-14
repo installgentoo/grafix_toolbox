@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::glsl::*;
 use crate::uses::*;
 use GL::{mesh::Screen, shader::*, tex::*, Fbo, *};

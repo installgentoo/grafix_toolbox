@@ -24,21 +24,20 @@ macro_rules! impl_for_asref {
 			}
 		}
 	};
-}
-//TODO redo with specialization
+} //TODO redo with specialization
 
 #[macro_export]
 macro_rules! type_name {
-	($t: ty) => {
+	($t: ty) => {{
 		type_tools::short_type_name::<$t>()
-	};
+	}};
 }
 
 #[macro_export]
 macro_rules! type_size {
-	($t: ty) => {
+	($t: ty) => {{
 		std::mem::size_of::<$t>()
-	};
+	}};
 }
 
 pub fn short_type_name<T: ?Sized>() -> String {

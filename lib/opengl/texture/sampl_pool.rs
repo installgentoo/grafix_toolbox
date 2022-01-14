@@ -12,11 +12,11 @@ macro_rules! Sampler {
 
 impl Sampler {
 	pub fn pooled(id: u32, args: &[(GLenum, GLenum)]) -> Rc<Self> {
-		let p = UnsafeOnce!(HashMap<u32, Weak<Sampler>>, { HashMap::new() });
+		let p = UnsafeOnce!(HashMap<u32, Weak<Sampler>>, { Def() });
 
 		if let Some(w) = p.get(&id) {
 			if let Some(s) = w.upgrade() {
-				let _collision_map = UnsafeOnce!(HashMap<u32, Vec<(u32, u32)>>, { HashMap::new() });
+				let _collision_map = UnsafeOnce!(HashMap<u32, Vec<(u32, u32)>>, { Def() });
 				ASSERT!(_collision_map.entry(id).or_insert(args.to_vec()).iter().eq(args.iter()), "Sampler param collision");
 				return s;
 			}

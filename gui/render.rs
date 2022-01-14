@@ -66,7 +66,7 @@ impl<'l> RenderLock<'l> {
 	}
 	pub fn draw(&mut self, prim: impl DrawablePrimitive<'l>) {
 		let Self { r, n, clip, .. } = self;
-		prim.draw(*n, clip.last().unwrap(), r);
+		prim.draw(*n, clip.last().valid(), r);
 		*n += 1;
 	}
 	pub fn logic(&mut self, b_box: Crop, func: impl 'l + FnMut(&Event, bool, Vec2) -> EventReply, id: LogicId) {
@@ -75,7 +75,7 @@ impl<'l> RenderLock<'l> {
 	}
 	pub fn draw_with_logic(&mut self, prim: impl DrawablePrimitive<'l>, func: impl 'l + FnMut(&Event, bool, Vec2) -> EventReply, id: LogicId) {
 		let Self { r, n, clip, logics, .. } = self;
-		prim.draw(*n, clip.last().unwrap(), r);
+		prim.draw(*n, clip.last().valid(), r);
 		let (id, bound, func) = (id, LogicBound::Obj(*n), Box::new(func));
 		logics.push(LogicStorage { id, bound, func });
 		*n += 1;
@@ -135,7 +135,9 @@ impl Renderer {
 		RenderLock {
 			r: self,
 			clip: vec![((-L, -L), (L, L))],
-			..Def()
+			n: 0,
+			logics: vec![],
+			l: Dummy,
 		}
 	}
 	fn consume_events(&mut self, logics: Vec<LogicStorage>, events: &mut Vec<Event>) {
@@ -302,8 +304,7 @@ type ArrStorage<T> = Storage<spec::Attribute, T>;
 struct LogicStorage<'l> {
 	id: LogicId,
 	bound: LogicBound,
-	// TODO trait alias all
-	func: Box<dyn 'l + FnMut(&Event, bool, Vec2) -> EventReply>,
+	func: Box<dyn 'l + FnMut(&Event, bool, Vec2) -> EventReply>, // TODO trait alias all
 }
 enum LogicBound {
 	Crop(Crop),
