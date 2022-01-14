@@ -1,6 +1,6 @@
 [package]
 name = "grafix-toolbox"
-version = "0.8.3"
+version = "0.8.4"
 authors = ["Alexander Drozdoff"]
 edition = "2021"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
@@ -22,9 +22,12 @@ obj = ["tobj"]
 sdf = ["rusttype"]
 
 adv_img = ["basic_img", "avif", "jxl"]
-basic_img = ["image/gif", "image/jpeg", "image/png", "webp"]
+basic_img = ["gif", "jpg", "png", "webp"]
 avif = ["image/avif-decoder"]
+gif = ["image/gif"]
+jpg = ["image/jpeg"]
 jxl = ["jpegxl-rs"]
+png = ["image/png"]
 webp = ["libwebp-image"]
 
 gui = []
