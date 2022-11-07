@@ -14,10 +14,10 @@
 )]
 
 #[macro_use]
-mod lib;
+mod kit;
 pub mod glsl;
 
 #[cfg(feature = "gui")]
 pub mod gui;
 
-pub use lib::*;
+pub use kit::*;
