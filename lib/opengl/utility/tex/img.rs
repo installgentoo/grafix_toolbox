@@ -45,17 +45,11 @@ impl<S: TexSize> uImage<S> {
 		let mut img = {
 			let data = data.as_ref();
 			let img = Res(image::io::Reader::new(io::Cursor::new(data)).with_guessed_format())?;
-			let fmt = Res(img.format()).map_err(|_| "Not an image format"); // TODO CARGO.toml throw away libwebp_image and jpeg_xl when image gets gud
+			let fmt = Res(img.format()).map_err(|e| format!("Not an image format: {e:?}"));
 			match fmt {
 				#[cfg(feature = "webp")]
 				Ok(image::ImageFormat::WebP) => Res(libwebp_image::webp_load(img.into_inner()))?,
-				Ok(_) => img.decode().map_err(|_| "Cannot decode image")?,
-				#[cfg(feature = "jxl")]
-				Err(_) if data.starts_with(b"\xff\x0a") || data.starts_with(b"\x00\x00\x00\x0c\x4a\x58\x4c\x20\x0d\x0a\x87\x0a") => {
-					let decoder = Res(jpegxl_rs::decoder_builder().build())?;
-					use jpegxl_rs::image::ToDynamic;
-					Res(Res(decoder.decode(data))?.into_dynamic_image())?
-				}
+				Ok(_) => img.decode().map_err(|e| format!("Cannot decode image: {e:?}"))?,
 				Err(e) => return Err(e.into()),
 			}
 		};
@@ -94,10 +88,10 @@ impl<S: TexSize> uImage<S> {
 impl Image<RGB, f32> {
 	pub fn load(data: impl AsRef<[u8]>) -> Res<Self> {
 		let img = io::BufReader::new(io::Cursor::new(data.as_ref()));
-		let img = image::codecs::hdr::HdrDecoder::new(img).map_err(|_| "Cannot decode hdr image")?;
+		let img = image::codecs::hdr::HdrDecoder::new(img).map_err(|e| format!("Cannot decode hdr image: {e:?}"))?;
 		let m = img.metadata();
 		let (w, h) = (m.width, m.height);
-		let img = img.read_image_hdr().map_err(|_| "Cannot read hdr pixels")?;
+		let img = img.read_image_hdr().map_err(|e| format!("Cannot read hdr pixels: {e:?}"))?;
 		let data = img.chunks(usize(w)).rev().flat_map(|l| l.iter().flat_map(|image::Rgb(p)| p)).copied().collect_vec();
 		Ok(Self { w, h, data, s: Dummy })
 	}

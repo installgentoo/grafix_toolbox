@@ -93,32 +93,3 @@ impl<T> LastIdx for Vec<T> {
 		self.as_slice().last_idx()
 	}
 }
-
-pub trait RetainMut<T> {
-	fn keep_mut<F>(&mut self, filter: F)
-	where
-		F: FnMut(&mut T) -> bool; //TODO remove on retain_mut stabilization
-}
-impl<T> RetainMut<T> for Vec<T> {
-	fn keep_mut<F>(&mut self, mut filter: F)
-	where
-		F: FnMut(&mut T) -> bool,
-	{
-		let len = self.len();
-		let mut del = 0;
-		{
-			let v = &mut **self;
-
-			for i in 0..len {
-				if !filter(&mut v[i]) {
-					del += 1;
-				} else if del > 0 {
-					v.swap(i - del, i);
-				}
-			}
-		}
-		if del > 0 {
-			self.truncate(len - del);
-		}
-	}
-}

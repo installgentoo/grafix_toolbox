@@ -73,8 +73,8 @@ macro_rules! ERROR {
 macro_rules! ERROR_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
-		let bt = backtrace::Backtrace::new();
-		Logger::Log(["E| ", &format!($($t)+), &format!(" at {}:{}\n{bt:?}", file!(), line!())].concat());
+		let bt = std::backtrace::Backtrace::force_capture();
+		Logger::Log(["E| ", &format!($($t)+), &format!(" at {}:{}\n{bt}", file!(), line!())].concat());
 		panic!();
 	}};
 }

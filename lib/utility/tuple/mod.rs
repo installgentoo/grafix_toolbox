@@ -9,6 +9,6 @@ mod traits;
 pub use {
 	apply::*,
 	math::{TupleComparison, TupleMath, TupleSelf, TupleSigned},
-	ops::{Tuple2Geometry, TupleAllAny, TupleVecIdentity},
+	ops::{Tuple2Geometry, TupleAllAny, TupleIdentity},
 	swizzle::s::*,
 };

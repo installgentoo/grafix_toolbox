@@ -1,6 +1,6 @@
 [package]
 name = "grafix-toolbox"
-version = "0.8.4"
+version = "0.8.5"
 authors = ["Alexander Drozdoff"]
 edition = "2021"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
@@ -21,12 +21,10 @@ hdr = ["image/hdr"]
 obj = ["tobj"]
 sdf = ["rusttype"]
 
-adv_img = ["basic_img", "avif", "jxl"]
-basic_img = ["gif", "jpg", "png", "webp"]
+adv_img = ["gif", "jpg", "png", "webp", "avif"]
 avif = ["image/avif-decoder"]
 gif = ["image/gif"]
 jpg = ["image/jpeg"]
-jxl = ["jpegxl-rs"]
 png = ["image/png"]
 webp = ["libwebp-image"]
 
@@ -37,20 +35,18 @@ name = "grafix_toolbox"
 path = "./crate.rs"
 
 [dependencies]
-backtrace = "^0.3"
 bincode = { version = "^1", optional = true }
 bitflags = "^1"
 const_format = "^0.2"
 flume = "^0.10"
 gl = "^0.14"
-glfw = "^0.43"
-half = "^1"
-hashbrown = "^0.11"
-image = { version = "^0.23", default-features = false }
-libwebp-image = { version = "^0.2", optional = true }
-jpegxl-rs = { version = "^0.6", features = ["system-jxl"], optional = true }
-nalgebra = { version = "^0.30", features = ["std"], default-features = false }
-nalgebra-glm = "^0.16"
+glfw = { version = "^0.46", features = ["glfw-sys"], default-features = false }
+half = "^2"
+hashbrown = "^0.12"
+image = { version = "^0.24", default-features = false }
+libwebp-image = { version = "^0.3", optional = true }
+nalgebra = { version = "^0.31", features = ["std"], default-features = false }
+nalgebra-glm = "^0.17"
 num_cpus = "^1"
 rand = { version = "^0.8", optional = true }
 rand_xorshift = { version = "^0.3", optional = true }
@@ -60,5 +56,5 @@ serde_json = { version = "^1", optional = true }
 simdnoise = { version = "^3", optional = true }
 smol = "^1"
 tobj = { version = "^3", optional = true }
-trait-set = "^0.2"
-zstd = { version = "^0.9", optional = true }
+trait-set = "^0.3"
+zstd = { version = "^0.11", optional = true }

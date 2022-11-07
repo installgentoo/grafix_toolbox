@@ -1,7 +1,7 @@
 use super::{apply::*, ops::*, traits::*};
 use crate::uses::{ops::*, *};
 
-pub trait TupleMath<RA, A: TupleMathReq<A>>: TupleApply<RA, A, A, AR = Self> {
+pub trait TupleMath<RA, A: Math>: TupleApply<RA, A, R<A> = Self> {
 	fn clmp<LA>(self, l: LA, r: RA) -> Self
 	where
 		RA: Cast<LA>,
@@ -40,9 +40,9 @@ pub trait TupleMath<RA, A: TupleMathReq<A>>: TupleApply<RA, A, A, AR = Self> {
 		self.apply(r, |l, r| l.euc_mod(r))
 	}
 }
-impl<S: TupleApply<RA, A, A, AR = Self>, RA, A: TupleMathReq<A>> TupleMath<RA, A> for S {}
+impl<S: TupleApply<RA, A, R<A> = Self>, RA, A: Math> TupleMath<RA, A> for S {}
 
-pub trait TupleSelf<A: TupleMathReq<A>>: TupleTrans<A> + TupleMath<A, A> + TupleVecIdentity {
+pub trait TupleSelf<A: Math>: TupleMap<A, R<A> = Self> + TupleFold<A> + TupleMath<A, A> + TupleIdentity {
 	fn round(self) -> Self {
 		self.map(|v| v.round())
 	}
@@ -50,82 +50,51 @@ pub trait TupleSelf<A: TupleMathReq<A>>: TupleTrans<A> + TupleMath<A, A> + Tuple
 		self.map(|v| v.abs())
 	}
 	fn sgn(self) -> Self {
-		self.map(|v| A::to((v > A::to(0)) as i32) * A::to(2) - A::to(1))
+		self.map(|v| A::to((v >= Def()) as i32 * 2 - 1))
 	}
 	fn pow2(self) -> Self {
 		self.map(|v| v * v)
 	}
-	fn len(self) -> A {
+	fn mag(self) -> A {
 		self.pow2().fold(|l, r| l + r).root()
 	}
 	fn norm(self) -> Self {
-		let l = self.len();
+		let l = self.mag();
 		self.div(l).or_def(!l.is_zero())
 	}
 }
-impl<S: TupleTrans<A> + TupleTrans<A> + TupleMath<A, A> + TupleVecIdentity, A: TupleMathReq<A>> TupleSelf<A> for S {}
+impl<S: TupleMap<A, R<A> = Self> + TupleFold<A> + TupleMath<A, A> + TupleIdentity, A: Math> TupleSelf<A> for S {}
 
-pub trait TupleSigned<A: Neg<Output = A>>: TupleTrans<A> {
+pub trait TupleSigned<A: Neg<Output = A>>: TupleMap<A, R<A> = Self> {
 	fn neg(self) -> Self {
 		self.map(|v| -v)
 	}
 }
-impl<S: TupleTrans<A>, A: Neg<Output = A>> TupleSigned<A> for S {}
+impl<S: TupleMap<A, R<A> = Self>, A: Neg<Output = A>> TupleSigned<A> for S {}
 
-pub trait TupleComparison<RA, A>: TupleApply<RA, A, bool> {
-	type B;
-	fn ls(self, r: RA) -> Self::B;
-	fn gt(self, r: RA) -> Self::B;
-	fn le(self, r: RA) -> Self::B;
-	fn ge(self, r: RA) -> Self::B;
-	fn eps_eq(self, r: RA) -> Self::B;
-	fn eps_eq_c(self, r: RA, e: A) -> Self::B;
+pub trait TupleComparison<B, RA, A: EpsEq>: TupleApply<RA, A, R<bool> = B> {
+	fn ls(self, r: RA) -> B {
+		self.apply(r, |l, r| l < r)
+	}
+	fn gt(self, r: RA) -> B {
+		self.apply(r, |l, r| l > r)
+	}
+	fn le(self, r: RA) -> B {
+		self.apply(r, |l, r| l <= r)
+	}
+	fn ge(self, r: RA) -> B {
+		self.apply(r, |l, r| l >= r)
+	}
+	fn eps_eq(self, r: RA) -> B {
+		self.apply(r, |l, r| l.eps_eq(r))
+	}
+	fn trsh_eq(self, r: RA, e: A) -> B {
+		self.apply(r, |l, r| l.trsh_eq(r, &e))
+	}
 }
-macro_rules! impl_comparison {
-	() => {
-		fn ls(self, r: RA) -> Self::B {
-			self.apply(r, |l, r| l < r)
-		}
-		fn gt(self, r: RA) -> Self::B {
-			self.apply(r, |l, r| l > r)
-		}
-		fn le(self, r: RA) -> Self::B {
-			self.apply(r, |l, r| l <= r)
-		}
-		fn ge(self, r: RA) -> Self::B {
-			self.apply(r, |l, r| l >= r)
-		}
-		fn eps_eq(self, r: RA) -> Self::B {
-			self.apply(r, |l, r| l.eps_eq(r))
-		}
-		fn eps_eq_c(self, r: RA, e: A) -> Self::B {
-			self.apply(r, |l, r| l.eps_eq_c(r, &e))
-		}
-	};
-}
+impl<S: TupleApply<RA, A, R<bool> = (bool, bool)>, RA, A: EpsEq> TupleComparison<(bool, bool), RA, A> for S {}
+impl<S: TupleApply<RA, A, R<bool> = (bool, bool, bool)>, RA, A: EpsEq> TupleComparison<(bool, bool, bool), RA, A> for S {}
+impl<S: TupleApply<RA, A, R<bool> = (bool, bool, bool, bool)>, RA, A: EpsEq> TupleComparison<(bool, bool, bool, bool), RA, A> for S {}
+impl<const N: usize, S: TupleApply<RA, A, R<bool> = [bool; N]>, RA, A: EpsEq> TupleComparison<[bool; N], RA, A> for S {}
 
-impl<RA, A: EpsilonEq> TupleComparison<RA, A> for (A, A)
-where
-	Self: TupleApply<RA, A, bool, AR = vec2<bool>>,
-{
-	type B = vec2<bool>;
-	impl_comparison!();
-}
-
-impl<RA, A: EpsilonEq> TupleComparison<RA, A> for (A, A, A)
-where
-	Self: TupleApply<RA, A, bool, AR = vec3<bool>>,
-{
-	type B = vec3<bool>;
-	impl_comparison!();
-}
-
-impl<RA, A: EpsilonEq> TupleComparison<RA, A> for (A, A, A, A)
-where
-	Self: TupleApply<RA, A, bool, AR = vec4<bool>>,
-{
-	type B = vec4<bool>;
-	impl_comparison!();
-}
-
-trait_set! { pub trait TupleMathReq<A> = Cast<i32> + Cast<A> + Add<Output = A> + Sub<Output = A> + Mul<Output = A> + Div<Output = A> + Pow<A> + EucMod<A> + Precise + Round }
+trait_set! { pub trait Math = Cast<i32> + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> + Pow<Self> + EucMod<Self> + Precise + Round + Default }

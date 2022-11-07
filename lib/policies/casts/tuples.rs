@@ -32,3 +32,12 @@ where
 		(T1::to(a), T2::to(b), T3::to(c), T4::to(d))
 	}
 }
+
+impl<A, T, const N: usize> Cast<[A; N]> for [T; N]
+where
+	T: Cast<A>,
+{
+	fn to(a: [A; N]) -> Self {
+		a.map(|x| T::to(x))
+	}
+}

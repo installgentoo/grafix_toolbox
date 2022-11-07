@@ -13,7 +13,7 @@ impl Objects {
 	}
 	pub fn shrink(&mut self, to: u32) {
 		let Self { batches, objs, .. } = self;
-		batches.keep_mut(|b| !b.shrink_and_empty(objs, to));
+		batches.retain_mut(|b| !b.shrink_and_empty(objs, to));
 		objs.truncate(usize(to));
 	}
 	pub fn batch(&mut self) {
@@ -36,7 +36,7 @@ impl Objects {
 			})
 			.map(|(n, _)| n)
 		{
-			batches.keep_mut(|b| !b.shrink_and_empty(objs, u32(first_invalid)));
+			batches.retain_mut(|b| !b.shrink_and_empty(objs, u32(first_invalid)));
 
 			objs.iter().enumerate().skip(first_invalid).for_each(|(z, o)| {
 				let (z, o) = (u32(z), &o.o);

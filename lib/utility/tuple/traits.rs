@@ -1,36 +1,36 @@
 use crate::uses::*;
 
-pub trait EpsilonEq: Copy + cmp::PartialOrd {
+pub trait EpsEq: Copy + cmp::PartialOrd {
 	fn eps_eq(self, r: Self) -> bool {
 		self == r
 	}
-	fn eps_eq_c(self, r: Self, _: &Self) -> bool {
+	fn trsh_eq(self, r: Self, _: &Self) -> bool {
 		self == r
 	}
 }
-impl_trait_for!(EpsilonEq = bool, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
-impl EpsilonEq for f16 {
+impl_trait_for!(EpsEq = bool, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+impl EpsEq for f16 {
 	fn eps_eq(self, r: Self) -> bool {
-		self.eps_eq_c(r, &f16::EPSILON)
+		self.trsh_eq(r, &f16::EPSILON)
 	}
-	fn eps_eq_c(self, r: Self, e: &Self) -> bool {
+	fn trsh_eq(self, r: Self, e: &Self) -> bool {
 		let (l, r) = Vec2((self, r));
 		(l - r).abs() <= f32(*e)
 	}
 }
-impl EpsilonEq for f32 {
+impl EpsEq for f32 {
 	fn eps_eq(self, r: Self) -> bool {
-		self.eps_eq_c(r, &f32::EPSILON)
+		self.trsh_eq(r, &f32::EPSILON)
 	}
-	fn eps_eq_c(self, r: Self, e: &Self) -> bool {
+	fn trsh_eq(self, r: Self, e: &Self) -> bool {
 		(self - r).abs() <= *e
 	}
 }
-impl EpsilonEq for f64 {
+impl EpsEq for f64 {
 	fn eps_eq(self, r: Self) -> bool {
-		self.eps_eq_c(r, &f64::EPSILON)
+		self.trsh_eq(r, &f64::EPSILON)
 	}
-	fn eps_eq_c(self, r: Self, e: &Self) -> bool {
+	fn trsh_eq(self, r: Self, e: &Self) -> bool {
 		(self - r).abs() <= *e
 	}
 }

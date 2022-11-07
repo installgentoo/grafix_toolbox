@@ -1,62 +1,82 @@
 use crate::uses::*;
 
-pub trait TupleArg2<A> {
-	fn get2(self) -> (A, A);
+pub trait Tuple2<R> {
+	fn get(self) -> (R, R);
 }
-impl<A, A2, B2> TupleArg2<A> for (A2, B2)
+impl<R, A, B> Tuple2<R> for (A, B)
 where
-	(A, A): Cast<(A2, B2)>,
+	(R, R): Cast<(A, B)>,
 {
-	fn get2(self) -> (A, A) {
-		<(A, A)>::to(self)
+	fn get(self) -> (R, R) {
+		<_>::to(self)
 	}
 }
-impl<A, T: ToU32> TupleArg2<A> for T
+impl<R, T: ToU32> Tuple2<R> for T
 where
-	(A, A): Cast<(T, T)>,
+	(R, R): Cast<(T, T)>,
 {
-	fn get2(self) -> (A, A) {
-		<(A, A)>::to((self, self))
-	}
-}
-
-pub trait TupleArg3<A> {
-	fn get3(self) -> (A, A, A);
-}
-impl<A, A2, B2, C2> TupleArg3<A> for (A2, B2, C2)
-where
-	(A, A, A): Cast<(A2, B2, C2)>,
-{
-	fn get3(self) -> (A, A, A) {
-		<(A, A, A)>::to(self)
-	}
-}
-impl<A, T: ToU32> TupleArg3<A> for T
-where
-	(A, A, A): Cast<(T, T, T)>,
-{
-	fn get3(self) -> (A, A, A) {
-		<(A, A, A)>::to((self, self, self))
+	fn get(self) -> (R, R) {
+		<_>::to((self, self))
 	}
 }
 
-pub trait TupleArg4<A> {
-	fn get4(self) -> (A, A, A, A);
+pub trait Tuple3<R> {
+	fn get(self) -> (R, R, R);
 }
-impl<A, A2, B2, C2, D2> TupleArg4<A> for (A2, B2, C2, D2)
+impl<R, A, B, C> Tuple3<R> for (A, B, C)
 where
-	(A, A, A, A): Cast<(A2, B2, C2, D2)>,
+	(R, R, R): Cast<(A, B, C)>,
 {
-	fn get4(self) -> (A, A, A, A) {
-		<(A, A, A, A)>::to(self)
+	fn get(self) -> (R, R, R) {
+		<_>::to(self)
 	}
 }
-impl<A, T: ToU32> TupleArg4<A> for T
+impl<R, T: ToU32> Tuple3<R> for T
 where
-	(A, A, A, A): Cast<(T, T, T, T)>,
+	(R, R, R): Cast<(T, T, T)>,
 {
-	fn get4(self) -> (A, A, A, A) {
-		<(A, A, A, A)>::to((self, self, self, self))
+	fn get(self) -> (R, R, R) {
+		<_>::to((self, self, self))
+	}
+}
+
+pub trait Tuple4<R> {
+	fn get(self) -> (R, R, R, R);
+}
+impl<R, A, B, C, D> Tuple4<R> for (A, B, C, D)
+where
+	(R, R, R, R): Cast<(A, B, C, D)>,
+{
+	fn get(self) -> (R, R, R, R) {
+		<_>::to(self)
+	}
+}
+impl<R, T: ToU32> Tuple4<R> for T
+where
+	(R, R, R, R): Cast<(T, T, T, T)>,
+{
+	fn get(self) -> (R, R, R, R) {
+		<_>::to((self, self, self, self))
+	}
+}
+
+pub trait TupleA<R, const N: usize> {
+	fn get(self) -> [R; N];
+}
+impl<R, T, const N: usize> TupleA<R, N> for [T; N]
+where
+	[R; N]: Cast<[T; N]>,
+{
+	fn get(self) -> [R; N] {
+		<_>::to(self)
+	}
+}
+impl<R, T: ToU32, const N: usize> TupleA<R, N> for T
+where
+	R: Cast<T>,
+{
+	fn get(self) -> [R; N] {
+		[self; N].map(|x| R::to(x))
 	}
 }
 
