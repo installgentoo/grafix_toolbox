@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use super::*;
 
 pub fn fit_text(text: &str, t: &Theme, size: Vec2) -> (Vec2, f32) {
@@ -9,6 +10,58 @@ pub fn fit_text(text: &str, t: &Theme, size: Vec2) -> (Vec2, f32) {
 	} else {
 		((size.x(), size.y() - scale).mul(0.5), scale)
 	}
+}
+
+type LinesWraps = (Vec<Str>, Vec<u32>);
+
+pub fn parse_text(t: &str, f: &Font, s: f32, m: f32) -> LinesWraps {
+	parse_text_impl(t, f, s, m, false, |_| false)
+}
+pub fn parse_text_by(t: &str, f: &Font, s: f32, m: f32, sp: impl Fn(char) -> bool) -> LinesWraps {
+	parse_text_impl(t, f, s, m, true, sp)
+}
+fn parse_text_impl(text: &str, font: &Font, scale: f32, max_w: f32, split: bool, split_by: impl Fn(char) -> bool) -> LinesWraps {
+	if text.is_empty() {
+		return (vec![""], vec![1]);
+	}
+
+	let (mut lnum, mut lines, mut wraps) = (1, vec![], vec![]);
+
+	for mut l in text.lines() {
+		if l.is_empty() {
+			lines.push("");
+			wraps.push(lnum);
+			lnum += 1;
+		}
+		while !l.is_empty() {
+			let (head, tail) = {
+				let (_, (head, tail)) = Text::substr(l, font, scale, max_w);
+				match tail {
+					"" => (head, tail),
+					_ if l.len() == tail.len() => {
+						let second_char = l.char_indices().map(|(i, _)| i).nth(1).unwrap_or(l.len());
+						l.split_at(second_char)
+					}
+					_ if !split || tail.starts_with(&split_by) => (head, tail),
+					_ => {
+						/* Traditional   ^head.ends  V.map(|h| l[h..].char_indices().map(|(i, _)| h + i).nth(1)).flatten() */
+						let h = head.rfind(&split_by).unwrap_or(head.len());
+						if h > 0 {
+							l.split_at(h)
+						} else {
+							(head, tail)
+						}
+					}
+				}
+			};
+			let e = tail.is_empty();
+			lines.push(unsafe { mem::transmute(head) });
+			wraps.push(lnum.or_def(e));
+			lnum += u32(e);
+			l = tail;
+		}
+	}
+	(lines, wraps)
 }
 
 pub fn caret_x(text: &str, t: &Theme, scale: f32, at: usize, pad: f32) -> f32 {

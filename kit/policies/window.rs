@@ -1,5 +1,5 @@
-use crate::events::*;
-use crate::uses::{adapters::*, math::*, sync::*, *};
+use crate::event::*;
+use crate::uses::{math::*, sync::*, *};
 use std::{ffi::CStr, sync::mpsc::Receiver};
 
 pub trait WindowSpec {
@@ -65,7 +65,7 @@ impl GlfwWindow {
 		}
 
 		Self::set_size((w, h));
-		Ok(GlfwWindow {
+		Ok(Self {
 			window,
 			events,
 			resized_hint: true,
@@ -102,7 +102,6 @@ impl WindowSpec for GlfwWindow {
 		*Self::pixel()
 	}
 	unsafe fn clipboard(&self) -> String {
-		//TODO glfw-rs is broken
 		self.window.get_clipboard_string().unwrap_or_default()
 	}
 	fn set_clipboard(&mut self, s: &str) {
@@ -138,7 +137,8 @@ impl WindowSpec for GlfwWindow {
 					ctx.make_current();
 					ctx_lock.wait();
 					GL::macro_uses::gl_was_initialized(true);
-					Ok(f())
+					f();
+					Ok(())
 				})
 				.unwrap()
 		};
@@ -224,5 +224,27 @@ impl WindowSpec for GlfwWindow {
 	fn swap(&mut self) {
 		use glfw::*;
 		self.window.swap_buffers();
+	}
+}
+
+type WArgs = (i32, i32, u32, u32);
+pub trait WINSize {
+	fn get(self) -> WArgs;
+}
+impl<A, B, C, D> WINSize for (A, B, C, D)
+where
+	i32: Cast<A> + Cast<B>,
+	u32: Cast<C> + Cast<D>,
+{
+	fn get(self) -> WArgs {
+		<_>::to(self)
+	}
+}
+impl<A, B> WINSize for (A, B)
+where
+	u32: Cast<A> + Cast<B>,
+{
+	fn get(self) -> WArgs {
+		(0, 0, u32(self.0), u32(self.1))
 	}
 }

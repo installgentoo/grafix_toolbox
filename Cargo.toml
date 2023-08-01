@@ -1,6 +1,6 @@
 [package]
 name = "grafix-toolbox"
-version = "0.8.7"
+version = "0.8.8"
 authors = ["Alexander Drozdoff"]
 edition = "2021"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
@@ -26,7 +26,7 @@ avif = ["image/avif-decoder"]
 gif = ["image/gif"]
 jpg = ["image/jpeg"]
 png = ["image/png"]
-webp = ["libwebp-image"]
+webp = ["libwebp-image", "image/webp-encoder"]
 
 gui = []
 
@@ -36,17 +36,17 @@ path = "./crate.rs"
 
 [dependencies]
 bincode = { version = "^1", optional = true }
-bitflags = "^1"
+bitflags = "^2"
 const_format = "^0.2"
 flume = "^0.10"
 gl = "^0.14"
-glfw = { version = "^0.46", features = ["glfw-sys"], default-features = false }
+glfw = { version = "^0.52", features = ["glfw-sys"], default-features = false }
 half = "^2"
-hashbrown = "^0.12"
+hashbrown = "^0.14"
 image = { version = "^0.24", default-features = false }
 libwebp-image = { version = "^0.3", optional = true }
-nalgebra = { version = "^0.31", features = ["std"], default-features = false }
-nalgebra-glm = "^0.17"
+nalgebra = { version = "^0.32", features = ["std"], default-features = false }
+nalgebra-glm = "^0.18"
 num_cpus = "^1"
 rand = { version = "^0.8", optional = true }
 rand_xorshift = { version = "^0.3", optional = true }
@@ -55,6 +55,6 @@ serde = { version = "^1", features = ["derive"], optional = true }
 serde_json = { version = "^1", optional = true }
 simdnoise = { version = "^3", optional = true }
 smol = "^1"
-tobj = { version = "^3", optional = true }
+tobj = { version = "^4", optional = true }
 trait-set = "^0.3"
-zstd = { version = "^0.11", optional = true }
+zstd = { version = "^0.12", optional = true }

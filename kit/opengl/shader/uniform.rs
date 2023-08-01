@@ -4,7 +4,7 @@ use crate::uses::*;
 #[macro_export]
 macro_rules! Uniform {
 	($bind: ident, ($n: expr, $v: expr)) => {{
-		const _ID: (u32, &str) = crate::uses::GL::macro_uses::uniforms_use::id($n);
+		const _ID: (u32, &str) = $crate::uses::GL::macro_uses::uniforms_use::id($n);
 		let mut b = $bind;
 		b.Uniform(_ID, $v);
 		b

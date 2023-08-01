@@ -1,5 +1,5 @@
 use super::args::*;
-use crate::uses::{adapters::*, *};
+use crate::uses::*;
 use GL::{spec::*, unigl::*, window::*, Frame};
 
 impl Frame for Window {
@@ -14,13 +14,13 @@ impl Frame for Window {
 		GLCheck!(glClearFramebuff(0, gl::DEPTH, 0, &f32(d) as *const f32));
 	}
 	fn size(&self) -> uVec2 {
-		Window::_size()
+		Self::_size()
 	}
 	fn aspect(&self) -> Vec2 {
-		Window::_aspect()
+		Self::_aspect()
 	}
 	fn pixel(&self) -> Vec2 {
-		Window::_pixel()
+		Self::_pixel()
 	}
 	fn bind(&mut self) -> Binding<Framebuff> {
 		let (w, h) = self.size();

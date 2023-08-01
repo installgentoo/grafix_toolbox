@@ -1,70 +1,29 @@
 use crate::uses::*;
 
+macro_rules! array_recast {
+	($from: ty, $to: ty, $dim: literal) => {
+		impl Cast<$from> for $to {
+			fn to(v: $from) -> Self {
+				<[_; $dim]>::from(v).into()
+			}
+		}
+		impl Cast<$to> for $from {
+			fn to(v: $to) -> Self {
+				<[_; $dim]>::from(v).into()
+			}
+		}
+	};
+}
+
 macro_rules! impl_vec {
 	($t: ty) => {
-		impl Cast<glm::TVec2<$t>> for vec2<$t> {
-			fn to(v: glm::TVec2<$t>) -> Self {
-				unsafe { mem::transmute::<[_; 2], _>(v.into()) }
-			}
-		}
-		impl Cast<glm::TVec3<$t>> for vec3<$t> {
-			fn to(v: glm::TVec3<$t>) -> Self {
-				unsafe { mem::transmute::<[_; 3], _>(v.into()) }
-			}
-		}
-		impl Cast<glm::TVec4<$t>> for vec4<$t> {
-			fn to(v: glm::TVec4<$t>) -> Self {
-				unsafe { mem::transmute::<[_; 4], _>(v.into()) }
-			}
-		}
+		array_recast!(glm::TVec2<$t>, vec2<$t>, 2);
+		array_recast!(glm::TVec3<$t>, vec3<$t>, 3);
+		array_recast!(glm::TVec4<$t>, vec4<$t>, 4);
 
-		impl Cast<vec2<$t>> for glm::TVec2<$t> {
-			fn to(v: vec2<$t>) -> Self {
-				Self::from(<[_; 2]>::to(v))
-			}
-		}
-		impl Cast<vec3<$t>> for glm::TVec3<$t> {
-			fn to(v: vec3<$t>) -> Self {
-				Self::from(<[_; 3]>::to(v))
-			}
-		}
-		impl Cast<vec4<$t>> for glm::TVec4<$t> {
-			fn to(v: vec4<$t>) -> Self {
-				Self::from(<[_; 4]>::to(v))
-			}
-		}
-
-		impl Cast<na::Point2<$t>> for vec2<$t> {
-			fn to(v: na::Point2<$t>) -> Self {
-				unsafe { mem::transmute::<[_; 2], _>(v.into()) }
-			}
-		}
-		impl Cast<na::Point3<$t>> for vec3<$t> {
-			fn to(v: na::Point3<$t>) -> Self {
-				unsafe { mem::transmute::<[_; 3], _>(v.into()) }
-			}
-		}
-		impl Cast<na::Point4<$t>> for vec4<$t> {
-			fn to(v: na::Point4<$t>) -> Self {
-				unsafe { mem::transmute::<[_; 4], _>(v.into()) }
-			}
-		}
-
-		impl Cast<vec2<$t>> for na::Point2<$t> {
-			fn to(v: vec2<$t>) -> Self {
-				Self::from(<[_; 2]>::to(v))
-			}
-		}
-		impl Cast<vec3<$t>> for na::Point3<$t> {
-			fn to(v: vec3<$t>) -> Self {
-				Self::from(<[_; 3]>::to(v))
-			}
-		}
-		impl Cast<vec4<$t>> for na::Point4<$t> {
-			fn to(v: vec4<$t>) -> Self {
-				Self::from(<[_; 4]>::to(v))
-			}
-		}
+		array_recast!(na::Point2<$t>, vec2<$t>, 2);
+		array_recast!(na::Point3<$t>, vec3<$t>, 3);
+		array_recast!(na::Point4<$t>, vec4<$t>, 4);
 	};
 }
 impl_vec!(u8);
@@ -73,102 +32,43 @@ impl_vec!(u16);
 impl_vec!(i16);
 impl_vec!(u32);
 impl_vec!(i32);
+impl_vec!(u64);
+impl_vec!(i64);
+impl_vec!(u128);
+impl_vec!(i128);
 impl_vec!(f16);
 impl_vec!(f32);
+impl_vec!(f64);
+
+macro_rules! mat_recast {
+	($from: ty, $to: ty, $l: literal, $c: literal, $r: literal) => {
+		impl Cast<$to> for $from {
+			fn to(v: $to) -> Self {
+				let m: [_; $c] = v.into();
+				Self::from_column_slice(&m.map(Into::<[_; $r]>::into).concat())
+			}
+		}
+		impl Cast<$from> for $to {
+			fn to(v: $from) -> Self {
+				let m: [_; $l] = v.as_slice().try_into().unwrap();
+				let m: [[_; $r]; $c] = unsafe { mem::transmute(m) };
+				m.map(Into::into).into()
+			}
+		}
+	};
+}
 
 macro_rules! impl_mat {
 	($t: ty) => {
-		impl Cast<mat2<$t>> for na::Matrix2<$t> {
-			fn to(v: mat2<$t>) -> Self {
-				Self::from(unsafe { mem::transmute::<_, [[$t; 2]; 2]>(v) })
-			}
-		}
-		impl Cast<mat3<$t>> for na::Matrix3<$t> {
-			fn to(v: mat3<$t>) -> Self {
-				Self::from(unsafe { mem::transmute::<_, [[$t; 3]; 3]>(v) })
-			}
-		}
-		impl Cast<mat4<$t>> for na::Matrix4<$t> {
-			fn to(v: mat4<$t>) -> Self {
-				Self::from(unsafe { mem::transmute::<_, [[$t; 4]; 4]>(v) })
-			}
-		}
-		impl Cast<mat2x3<$t>> for na::Matrix2x3<$t> {
-			fn to(v: mat2x3<$t>) -> Self {
-				Self::from(unsafe { mem::transmute::<_, [[$t; 2]; 3]>(v) })
-			}
-		}
-		impl Cast<mat2x4<$t>> for na::Matrix2x4<$t> {
-			fn to(v: mat2x4<$t>) -> Self {
-				Self::from(unsafe { mem::transmute::<_, [[$t; 2]; 4]>(v) })
-			}
-		}
-		impl Cast<mat3x2<$t>> for na::Matrix3x2<$t> {
-			fn to(v: mat3x2<$t>) -> Self {
-				Self::from(unsafe { mem::transmute::<_, [[$t; 3]; 2]>(v) })
-			}
-		}
-		impl Cast<mat3x4<$t>> for na::Matrix3x4<$t> {
-			fn to(v: mat3x4<$t>) -> Self {
-				Self::from(unsafe { mem::transmute::<_, [[$t; 3]; 4]>(v) })
-			}
-		}
-		impl Cast<mat4x2<$t>> for na::Matrix4x2<$t> {
-			fn to(v: mat4x2<$t>) -> Self {
-				Self::from(unsafe { mem::transmute::<_, [[$t; 4]; 2]>(v) })
-			}
-		}
-		impl Cast<mat4x3<$t>> for na::Matrix4x3<$t> {
-			fn to(v: mat4x3<$t>) -> Self {
-				Self::from(unsafe { mem::transmute::<_, [[$t; 4]; 3]>(v) })
-			}
-		}
-
-		impl Cast<na::Matrix2<$t>> for mat2<$t> {
-			fn to(v: na::Matrix2<$t>) -> Self {
-				unsafe { mem::transmute::<[[$t; 2]; 2], _>(v.into()) }
-			}
-		}
-		impl Cast<na::Matrix3<$t>> for mat3<$t> {
-			fn to(v: na::Matrix3<$t>) -> Self {
-				unsafe { mem::transmute::<[[$t; 3]; 3], _>(v.into()) }
-			}
-		}
-		impl Cast<na::Matrix4<$t>> for mat4<$t> {
-			fn to(v: na::Matrix4<$t>) -> Self {
-				unsafe { mem::transmute::<[[$t; 4]; 4], _>(v.into()) }
-			}
-		}
-		impl Cast<na::Matrix2x3<$t>> for mat2x3<$t> {
-			fn to(v: na::Matrix2x3<$t>) -> Self {
-				unsafe { mem::transmute::<[[$t; 2]; 3], _>(v.into()) }
-			}
-		}
-		impl Cast<na::Matrix2x4<$t>> for mat2x4<$t> {
-			fn to(v: na::Matrix2x4<$t>) -> Self {
-				unsafe { mem::transmute::<[[$t; 2]; 4], _>(v.into()) }
-			}
-		}
-		impl Cast<na::Matrix3x2<$t>> for mat3x2<$t> {
-			fn to(v: na::Matrix3x2<$t>) -> Self {
-				unsafe { mem::transmute::<[[$t; 3]; 2], _>(v.into()) }
-			}
-		}
-		impl Cast<na::Matrix3x4<$t>> for mat3x4<$t> {
-			fn to(v: na::Matrix3x4<$t>) -> Self {
-				unsafe { mem::transmute::<[[$t; 3]; 4], _>(v.into()) }
-			}
-		}
-		impl Cast<na::Matrix4x2<$t>> for mat4x2<$t> {
-			fn to(v: na::Matrix4x2<$t>) -> Self {
-				unsafe { mem::transmute::<[[$t; 4]; 2], _>(v.into()) }
-			}
-		}
-		impl Cast<na::Matrix4x3<$t>> for mat4x3<$t> {
-			fn to(v: na::Matrix4x3<$t>) -> Self {
-				unsafe { mem::transmute::<[[$t; 4]; 3], _>(v.into()) }
-			}
-		}
+		mat_recast!(na::Matrix2<$t>, mat2<$t>, 4, 2, 2);
+		mat_recast!(na::Matrix3<$t>, mat3<$t>, 9, 3, 3);
+		mat_recast!(na::Matrix4<$t>, mat4<$t>, 16, 4, 4);
+		mat_recast!(na::Matrix2x3<$t>, mat3x2<$t>, 6, 3, 2);
+		mat_recast!(na::Matrix2x4<$t>, mat4x2<$t>, 8, 4, 2);
+		mat_recast!(na::Matrix3x2<$t>, mat2x3<$t>, 6, 2, 3);
+		mat_recast!(na::Matrix3x4<$t>, mat4x3<$t>, 12, 4, 3);
+		mat_recast!(na::Matrix4x2<$t>, mat2x4<$t>, 8, 2, 4);
+		mat_recast!(na::Matrix4x3<$t>, mat3x4<$t>, 12, 3, 4);
 	};
 }
 impl_mat!(u8);
@@ -177,5 +77,10 @@ impl_mat!(u16);
 impl_mat!(i16);
 impl_mat!(u32);
 impl_mat!(i32);
+impl_mat!(u64);
+impl_mat!(i64);
+impl_mat!(u128);
+impl_mat!(i128);
 impl_mat!(f16);
 impl_mat!(f32);
+impl_mat!(f64);

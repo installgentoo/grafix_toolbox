@@ -6,7 +6,7 @@ pub trait AllocArgs<T> {
 	fn geta(&self) -> Args;
 }
 impl<T> AllocArgs<T> for Args {
-	fn geta(&self) -> Args {
+	fn geta(&self) -> Self {
 		*self
 	}
 }
@@ -28,7 +28,7 @@ pub trait UpdateArgs<T> {
 	fn getu(&self) -> UArgs;
 }
 impl<T> UpdateArgs<T> for UArgs {
-	fn getu(&self) -> UArgs {
+	fn getu(&self) -> Self {
 		*self
 	}
 }

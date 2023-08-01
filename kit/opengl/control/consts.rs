@@ -4,7 +4,7 @@ macro_rules! CONST {
 	($n: ident, $t: ty) => {
 		pub fn $n() -> $t {
 			static mut DONE: bool = false;
-			static mut RES: $t = <$t>::ZERO;
+			static mut RES: $t = 0 as $t;
 			unsafe {
 				if DONE == true {
 				} else {
@@ -18,44 +18,20 @@ macro_rules! CONST {
 }
 
 pub trait Get {
-	const ZERO: Self;
 	fn get(_: GLenum) -> Self;
 }
-impl Get for GLbool {
-	const ZERO: Self = 0;
-	fn get(p: GLenum) -> Self {
-		let mut r = Self::ZERO;
-		GLCheck!(gl::GetBooleanv(p, &mut r));
-		r
-	}
+macro_rules! impl_get {
+	($t: ty, $f: ident) => {
+		impl Get for $t {
+			fn get(p: GLenum) -> Self {
+				let mut r = Def();
+				GLCheck!(gl::$f(p, &mut r));
+				r
+			}
+		}
+	};
 }
-impl Get for i32 {
-	const ZERO: Self = 0;
-	fn get(p: GLenum) -> Self {
-		let mut r = Self::ZERO;
-		GLCheck!(gl::GetIntegerv(p, &mut r));
-		r
-	}
-}
-impl Get for GLenum {
-	const ZERO: Self = 0;
-	fn get(_: GLenum) -> Self {
-		unreachable!("No such GL function");
-	}
-}
-impl Get for f32 {
-	const ZERO: Self = 0.;
-	fn get(p: GLenum) -> Self {
-		let mut r = Self::ZERO;
-		GLCheck!(gl::GetFloatv(p, &mut r));
-		r
-	}
-}
-impl Get for f64 {
-	const ZERO: Self = 0.;
-	fn get(p: GLenum) -> Self {
-		let mut r = Self::ZERO;
-		GLCheck!(gl::GetDoublev(p, &mut r));
-		r
-	}
-}
+impl_get!(GLbool, GetBooleanv);
+impl_get!(i32, GetIntegerv);
+impl_get!(f32, GetFloatv);
+impl_get!(f64, GetDoublev);

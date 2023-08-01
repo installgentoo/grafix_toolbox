@@ -92,13 +92,13 @@ where
 impl<A, const N: usize> TupleMap<A> for [A; N] {
 	type R<B> = [B; N];
 	fn map<B, F: Fn(A) -> B>(self, op: F) -> Self::R<B> {
-		self.map(|x| op(x))
+		self.map(op)
 	}
 }
 impl<A, const N: usize> TupleFold<A> for [A; N] {
 	fn fold<F: Fn(A, A) -> A>(self, op: F) -> A {
 		let mut i = self.into_iter();
 		let h = i.next().unwrap();
-		i.fold(h, |l, r| op(l, r))
+		i.fold(h, op)
 	}
 }

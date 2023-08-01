@@ -27,16 +27,16 @@ pub fn states_map() -> &'static mut HashMap<usize, (bool, bool)> {
 }
 
 macro_rules! FUNC {
-	($m: ident, $n: ident, $($t: ident),+) => {
+	($m: ident, $n: ident, $($t: ty),+) => {
 pub struct $n;
 #[allow(unused_parens)]
 impl $n {
 	fn state() -> &'static mut ($($t),+) {
-		static mut STATE: ($($t),+) = ($($t::ZERO),+);
+		static mut STATE: ($($t),+) = ($(0 as $t),+);
 		unsafe { &mut STATE }
 	}
 	fn saved_state() -> &'static mut ($($t),+) {
-		static mut STATE: ($($t),+) = ($($t::ZERO),+);
+		static mut STATE: ($($t),+) = ($(0 as $t),+);
 		unsafe { &mut STATE }
 	}
 

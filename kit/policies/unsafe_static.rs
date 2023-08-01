@@ -60,14 +60,13 @@ pub struct static_ptr<T: Send + Sync> {
 	ptr: usize,
 }
 impl<T: Send + Sync> static_ptr<T> {
-	pub unsafe fn new(t: &T) -> Self {
+	pub unsafe fn new(t: &mut T) -> Self {
 		let ptr = t as *const T as usize;
 		Self { ptr, t: Dummy }
 	}
 	pub fn get(&self) -> &'static T {
 		unsafe { &*(self.ptr as *const T) }
 	}
-	#[allow(unused_mut)]
 	pub fn get_mut(&mut self) -> &'static mut T {
 		unsafe { &mut *(self.ptr as *mut T) }
 	}

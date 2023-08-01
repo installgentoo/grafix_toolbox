@@ -1,4 +1,4 @@
-use super::{args::*, object::*, parsing::*, policy::*, state::*, types::*, uniforms::*};
+use super::{args::*, object::*, parsing::*, policy::*, state::*, types::*, uniform::*};
 use crate::uses::{asyn::*, *};
 use std::ffi::CString;
 
@@ -6,7 +6,7 @@ use std::ffi::CString;
 macro_rules! SHADER {
 	($n: ident, $($body: expr),+) => {
 		#[allow(non_upper_case_globals)]
-		pub const $n: crate::uses::GL::macro_uses::InlineShader = crate::uses::GL::macro_uses::InlineShader(stringify!($n), const_format::concatcp!(crate::uses::GL::unigl::GLSL_VERSION, $($body,)+));
+		pub const $n: $crate::uses::GL::macro_uses::InlineShader = $crate::uses::GL::macro_uses::InlineShader(stringify!($n), const_format::concatcp!($crate::uses::GL::unigl::GLSL_VERSION, $($body,)+));
 	};
 }
 
@@ -17,10 +17,10 @@ pub struct Shader {
 	tex_cache: HashMap<i32, i32>,
 }
 impl Shader {
-	pub fn pure(args: impl PureShdTypeArgs) -> Shader {
+	pub fn pure(args: impl PureShdTypeArgs) -> Self {
 		Self::new(args).unwrap()
 	}
-	pub fn new(args: impl ShdTypeArgs) -> Res<Shader> {
+	pub fn new(args: impl ShdTypeArgs) -> Res<Self> {
 		let (program, name) = ShaderManager::compile(args.get())?;
 
 		Ok(Self {
@@ -76,9 +76,9 @@ impl Drop for ShaderBinding<'_> {
 }
 
 enum ShaderType {
-	VERTEX = 0,
-	FRAGMENT = 1,
-	GEOMETRY = 2,
+	vertex = 0,
+	fragment = 1,
+	geometry = 2,
 }
 const SHD_DEFS: [(GLenum, &str); 3] = [(gl::VERTEX_SHADER, "vertex"), (gl::FRAGMENT_SHADER, "pixel"), (gl::GEOMETRY_SHADER, "geometry")];
 
@@ -118,18 +118,14 @@ impl ShaderManager {
 				return Ok(*found);
 			}
 
-			task::block_on(async move {
-				let mut s = vec![];
-				//TODO ASYNC CLOSURES
-				for t in loading.drain(..) {
-					s.push(t.await)
-				}
-				s
-			})
-			.into_iter()
-			.flatten()
-			.for_each(|(name, body)| {
-				sources.insert(name.clone().into(), body).map(|_| WARN!("Shader source {name:?} was already loaded"));
+			task::block_on(async {
+				stream::iter(loading.drain(..))
+					.then(|t| t)
+					.for_each(|p| {
+						p.into_iter()
+							.for_each(|(name, body)| sources.insert(name.clone().into(), body).map(|_| WARN!("Shader source {name:?} was already loaded")).sink())
+					})
+					.await
 			});
 
 			let (typ, type_name) = SHD_DEFS[typ as usize];
@@ -154,11 +150,11 @@ impl ShaderManager {
 		use ShaderType::*;
 		let (name, objects) = if let Some(geom) = geom {
 			let n = format!("v:{vert}|g:{geom}|p:{pix}");
-			let o = vec![(vert, VERTEX), (geom, GEOMETRY), (pix, FRAGMENT)];
+			let o = vec![(vert, vertex), (geom, geometry), (pix, fragment)];
 			(n, o)
 		} else {
 			let n = format!("v:{vert}|p:{pix}");
-			let o = vec![(vert, VERTEX), (pix, FRAGMENT)];
+			let o = vec![(vert, vertex), (pix, fragment)];
 			(n, o)
 		};
 
@@ -193,9 +189,9 @@ impl ShaderManager {
 	}
 }
 
-impl Into<CowStr> for InlineShader {
-	fn into(self) -> CowStr {
-		let InlineShader(v, v_t) = self;
+impl From<InlineShader> for CowStr {
+	fn from(v: InlineShader) -> Self {
+		let InlineShader(v, v_t) = v;
 		ShaderManager::inline_source(v, v_t);
 		v.into()
 	}

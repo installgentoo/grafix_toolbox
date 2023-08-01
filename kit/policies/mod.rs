@@ -8,11 +8,10 @@ pub mod type_tools;
 #[macro_use]
 mod logging_def;
 
-pub mod adapters;
 pub mod casts;
 pub mod chksum;
-pub mod events;
-pub mod files;
+pub mod event;
+pub mod file;
 pub mod logging;
 pub mod math;
 pub mod rand;

@@ -5,7 +5,7 @@ pub type Res<T> = Result<T, String>;
 pub type Str = &'static str;
 
 pub fn lambda<'a, T: Fn(A) -> R + 'a, A, R>(f: T) -> Box<dyn Fn(A) -> R + 'a> {
-	Box::new(f)
+	Box(f)
 }
 
 pub trait UnwrapValid<T> {
@@ -49,6 +49,19 @@ macro_rules! map_enum {
 
 pub fn Def<T: Default>() -> T {
 	Default::default()
+}
+
+pub fn Box<T>(v: T) -> Box<T> {
+	Box::new(v)
+}
+
+pub trait OptionSink {
+	fn sink(self);
+}
+impl<T> OptionSink for Option<T> {
+	fn sink(self) {
+		let _ = self;
+	}
 }
 
 pub trait OrAssignment {

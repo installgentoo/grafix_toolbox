@@ -71,12 +71,12 @@ impl Rect {
 		let b1 = (self.x, self.y);
 		(b1, b1.sum((self.w, self.h)))
 	}
-	fn intersects(&self, r: &Rect) -> bool {
+	fn intersects(&self, r: &Self) -> bool {
 		let (b1, b2) = self.bb();
 		let (r_b1, r_b2) = r.bb();
 		!(b2.le(r_b1).any() || b1.ge(r_b2).any())
 	}
-	fn contains(&self, r: &Rect) -> bool {
+	fn contains(&self, r: &Self) -> bool {
 		let (b1, b2) = self.bb();
 		let (r_b1, r_b2) = r.bb();
 		!(r_b1.ls(b1).any() || r_b2.gt(b2).any())

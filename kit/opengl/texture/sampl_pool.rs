@@ -4,7 +4,7 @@ use crate::uses::*;
 #[macro_export]
 macro_rules! Sampler {
 ($(($n: expr, $v: expr)),+) => {{
-	use crate::uses::GL::{macro_uses::sampler_use::id, gl::*};
+	use $crate::uses::GL::{macro_uses::sampler_use::id, gl::*};
 	const _ID: u32 = id(&[$($n, $v),+]);
 	Sampler::pooled(_ID, &[$(($n, $v)),+])
 }};

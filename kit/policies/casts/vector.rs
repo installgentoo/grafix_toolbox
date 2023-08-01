@@ -19,23 +19,26 @@ impl<T: Copy> Cast<&[T]> for vec4<T> {
 	}
 }
 
+macro_rules! array_recast {
+	($to: ty, $t: ty, $dim: literal) => {
+		impl Cast<$to> for [$t; $dim] {
+			fn to(v: $to) -> Self {
+				v.into()
+			}
+		}
+		impl Cast<[$t; $dim]> for $to {
+			fn to(v: [$t; $dim]) -> Self {
+				v.into()
+			}
+		}
+	};
+}
+
 macro_rules! impl_transmute {
 	($t: ty) => {
-		impl Cast<vec2<$t>> for [$t; 2] {
-			fn to(v: vec2<$t>) -> Self {
-				unsafe { mem::transmute(v) }
-			}
-		}
-		impl Cast<vec3<$t>> for [$t; 3] {
-			fn to(v: vec3<$t>) -> Self {
-				unsafe { mem::transmute(v) }
-			}
-		}
-		impl Cast<vec4<$t>> for [$t; 4] {
-			fn to(v: vec4<$t>) -> Self {
-				unsafe { mem::transmute(v) }
-			}
-		}
+		array_recast!(vec2<$t>, $t, 2);
+		array_recast!(vec3<$t>, $t, 3);
+		array_recast!(vec4<$t>, $t, 4);
 	};
 }
 impl_transmute!(u8);
@@ -44,5 +47,10 @@ impl_transmute!(u16);
 impl_transmute!(i16);
 impl_transmute!(u32);
 impl_transmute!(i32);
+impl_transmute!(u64);
+impl_transmute!(i64);
+impl_transmute!(u128);
+impl_transmute!(i128);
 impl_transmute!(f16);
 impl_transmute!(f32);
+impl_transmute!(f64);

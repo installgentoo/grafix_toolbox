@@ -1,4 +1,4 @@
-use super::super::shader::uniforms::*;
+use super::super::shader::uniform::*;
 use crate::uses::*;
 use GL::{tex::*, Fbo};
 

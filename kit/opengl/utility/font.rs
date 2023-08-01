@@ -38,7 +38,7 @@ impl Font {
 		})
 	}
 	pub fn kern(&self, l: char, r: char) -> f32 {
-		if self.kerning.len() == 0 {
+		if self.kerning.is_empty() {
 			return 0.;
 		}
 		(|| Some(*self.kerning.get(&l)?.get(&r)?))().unwrap_or(0.)
@@ -56,7 +56,7 @@ impl Font {
 
 		let font: Res<_> = (|| {
 			let file = FS::Load::File(format!("res/{name}.ttf"))?;
-			let font = Font::new(file, alphabet)?;
+			let font = Self::new(file, alphabet)?;
 			let _ = SERDE::ToVec(&font).map(|v| FS::Save::Archive((cache, v)));
 			Ok(font)
 		})();
@@ -108,7 +108,7 @@ impl Font {
 					};
 					let (w, h, data) = {
 						let mut data = vec![0; w * h];
-						g.draw(|x, y, v| data[w * (b + usize(y)) + b + usize(x)] = u8(v * 255.));
+						g.draw(|x, y, v| data[w * (b + usize(y)) + b + usize(x)] = u8((v * 255.).min(255.)));
 						let sdf = sdf.generate(Tex2d::<RED, u8>::new((w, h), &data), supersample, border * 2);
 						let p = sdf.param;
 						(p.w, p.h, sdf.Save::<RED, u8>(0))

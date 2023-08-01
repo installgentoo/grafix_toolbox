@@ -50,7 +50,7 @@ impl<S: TexSize> uImage<S> {
 				#[cfg(feature = "webp")]
 				Ok(image::ImageFormat::WebP) => Res(libwebp_image::webp_load(img.into_inner()))?,
 				Ok(_) => img.decode().map_err(|e| format!("Cannot decode image: {e:?}"))?,
-				Err(e) => return Err(e.into()),
+				Err(e) => return Err(e),
 			}
 		};
 		image::imageops::flip_vertical_in_place(&mut img);

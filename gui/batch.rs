@@ -7,7 +7,7 @@ struct Obj {
 }
 #[derive(Default)]
 pub struct Batch {
-	pub idx_range: (u32, u32),
+	pub idx_range: usVec2,
 	pub xyzw: Vec<f16>,
 	pub uv: Vec<f16>,
 	pub rgba: Vec<u8>,

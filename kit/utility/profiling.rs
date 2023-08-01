@@ -1,4 +1,3 @@
-#![allow(clippy::mut_mutex_lock)]
 use crate::uses::{sync::*, time::*, GL, *};
 
 #[cfg(not(feature = "profiling"))]
@@ -36,10 +35,6 @@ macro_rules! PROFILER {
 			use GenericTimer as Timer;
 
 			pub fn Start(name: Str) {
-				static INIT: Once = Once::new();
-				INIT.call_once(move || {
-					logging::Logger::AddPostmortem(PrintAll);
-				});
 				let mut lock = map().lock().unwrap();
 				let t = lock.remove(name).unwrap_or_else(Timer::new::<$t>);
 				lock.insert(name, t.start(name));
@@ -73,13 +68,13 @@ macro_rules! PROFILER {
 				PRINT!("Timer {name:?}: {} |{i}", format());
 			}
 			fn map() -> &'static mut Mutex<HashMap<Str, Timer>> {
-				static INIT: Once = Once::new();
-				static mut MAP: Option<Mutex<HashMap<&str, Timer>>> = None;
+				static mut MAP: OnceLock<Mutex<HashMap<&str, Timer>>> = OnceLock::new();
 				unsafe {
-					INIT.call_once(|| {
-						MAP = Some(Def());
+					MAP.get_or_init(|| {
+						logging::Logger::AddPostmortem(PrintAll);
+						Def()
 					});
-					MAP.as_mut().unwrap_unchecked()
+					MAP.get_mut().unwrap()
 				}
 			}
 		}
@@ -94,19 +89,19 @@ enum GenericTimer {
 }
 impl GenericTimer {
 	fn new<T: New>() -> Self {
-		GenericTimer::Done(T::boxed_new())
+		Self::Done(T::boxed_new())
 	}
 	fn start(self, _name: Str) -> Self {
 		use GenericTimer::*;
 		match self {
-			Done(done) => GenericTimer::Started(done.start()),
+			Done(done) => Started(done.start()),
 			Started { .. } => ASSERT!(false, "Timer {_name:?} already started"),
 		}
 	}
 	fn stop(self, _name: Str) -> Self {
 		use GenericTimer::*;
 		match self {
-			Started(started) => GenericTimer::Done(started.stop()),
+			Started(started) => Done(started.stop()),
 			Done { .. } => ASSERT!(false, "Timer {_name:?} not started"),
 		}
 	}
@@ -141,7 +136,7 @@ struct GLTimer {
 impl Start for GLTimer {
 	fn start(self: Box<Self>) -> Started {
 		GLCheck!(gl::BeginQuery(gl::TIME_ELAPSED, self.o.obj));
-		Box::new(*self)
+		Box(*self)
 	}
 	fn get_res(self: Box<Self>) -> (u128, u128) {
 		let _ = mem::ManuallyDrop::new(self.o);
@@ -154,7 +149,7 @@ impl Stop for GLTimer {
 		let mut res = 0;
 		GLCheck!(gl::GetQueryObjecti64v(self.o.obj, gl::QUERY_RESULT, &mut res));
 		let Self { o, total, iters } = *self;
-		Box::new(Self {
+		Box(Self {
 			o,
 			total: total + res,
 			iters: iters + 1,
@@ -163,7 +158,7 @@ impl Stop for GLTimer {
 }
 impl New for GLTimer {
 	fn boxed_new() -> Done {
-		Box::new(Self::default())
+		Box(Self::default())
 	}
 }
 
@@ -175,7 +170,7 @@ struct CPUTimerStopped {
 impl Start for CPUTimerStopped {
 	fn start(self: Box<Self>) -> Started {
 		let Self { total, iters } = *self;
-		Box::new(CPUTimerStarted {
+		Box(CPUTimerStarted {
 			total,
 			iters,
 			stamp: Instant::now(),
@@ -193,7 +188,7 @@ struct CPUTimerStarted {
 impl Stop for CPUTimerStarted {
 	fn stop(self: Box<Self>) -> Done {
 		let Self { total, iters, stamp } = *self;
-		Box::new(CPUTimerStopped {
+		Box(CPUTimerStopped {
 			total: total + stamp.elapsed(),
 			iters: iters + 1,
 		})
@@ -201,6 +196,6 @@ impl Stop for CPUTimerStarted {
 }
 impl New for CPUTimerStopped {
 	fn boxed_new() -> Done {
-		Box::new(Self::default())
+		Box(Self::default())
 	}
 }

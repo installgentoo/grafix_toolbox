@@ -14,7 +14,7 @@ pub fn gl_was_initialized(set: bool) -> bool {
 #[macro_export]
 macro_rules! GLCheck {
 	($fun: expr) => {{
-		ASSERT!(crate::uses::GL::macro_uses::gl_was_initialized(false), "Opengl wasn't initialized on this thread");
+		ASSERT!($crate::uses::GL::macro_uses::gl_was_initialized(false), "Opengl wasn't initialized on this thread");
 
 		fn code_to_error(code: gl::types::GLenum) -> String {
 			match code {

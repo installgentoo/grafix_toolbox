@@ -65,7 +65,7 @@ impl<I: IdxType, C: AttrType, T: AttrType, N: AttrType> AnyMesh for Mesh<I, C, T
 		self.vao.Bind().Draw(self.draw);
 	}
 	fn to_trait(self) -> Box<dyn AnyMesh> {
-		Box::new(self)
+		Box(self)
 	}
 }
 pub struct Mesh<I, C, T, N> {

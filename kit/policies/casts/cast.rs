@@ -1,13 +1,13 @@
 #[cfg(debug_assertions)]
 macro_rules! cast {
-	($v: expr, $t: ident) => {{
-		$t::try_from($v).unwrap_or_else(|_| ASSERT!(false, "Error casting {} to {}", $v, stringify!($t)))
+	($v: expr, $t: ty) => {{
+		<$t>::try_from($v).unwrap_or_else(|_| ASSERT!(false, "Error casting {} to {}", $v, stringify!($t)))
 	}};
 }
 
 #[cfg(not(debug_assertions))]
 macro_rules! cast {
-	($v: expr, $t: ident) => {{
+	($v: ident, $t: ty) => {{
 		$v as $t
 	}};
 }

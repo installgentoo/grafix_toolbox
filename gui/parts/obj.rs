@@ -42,15 +42,15 @@ impl Base {
 }
 
 bitflags! {
-#[derive(Default)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct State: u32 {
 	const RESIZED = 0x1;
 	const TYPE = 0x2;
 	const XYZW = 0x10;
 	const RGBA = 0x20;
 	const UV = 0x40;
-	const MISMATCH = Self::TYPE.bits | Self::XYZW.bits | Self::RGBA.bits | Self::UV.bits | Self::RESIZED.bits;
-	const FULL = Self::XYZW.bits | Self::RGBA.bits | Self::UV.bits | Self::RESIZED.bits;
+	const MISMATCH = Self::TYPE.bits() | Self::XYZW.bits() | Self::RGBA.bits() | Self::UV.bits() | Self::RESIZED.bits();
+	const FULL = Self::XYZW.bits() | Self::RGBA.bits() | Self::UV.bits() | Self::RESIZED.bits();
 }
 }
 

@@ -17,7 +17,7 @@ impl<'a> Text<'_, 'a> {
 	pub fn substr(text: &'a str, font: &Font, scale: f32, max_width: f32) -> (Vec2, (&'a str, &'a str)) {
 		let (size, i) = text
 			.char_indices()
-			.scan((-font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char), |(x, last_c), (i, c)| {
+			.scan((-0.5 * font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char), |(x, last_c), (i, c)| {
 				*x += font.kern(*last_c, c);
 				*last_c = c;
 				let ch = font.char(c);
@@ -35,7 +35,7 @@ impl<'a> Text<'_, 'a> {
 	pub fn adv_at(text: &str, font: &Font, scale: f32, at_glyph: usize) -> f32 {
 		text.chars()
 			.take(at_glyph)
-			.scan((-font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char), |(x, last_c), c| {
+			.scan((0., 0 as char), |(x, last_c), c| {
 				*x += font.kern(*last_c, c);
 				*last_c = c;
 				Some(*x).map(|r| {
@@ -46,22 +46,18 @@ impl<'a> Text<'_, 'a> {
 			.last()
 			.map_or(0., |x| x * scale)
 	}
-	#[allow(clippy::redundant_closure)]
 	pub fn char_at(text: &str, font: &Font, scale: f32, at_glyph: usize) -> Glyph {
-		text.chars().take(at_glyph + 1).last().map_or_else(
-			|| Def(),
-			|c| {
-				let Glyph { adv, coord, uv } = *font.char(c);
-				let coord = coord.mul(scale);
-				Glyph { adv: adv * scale, coord, uv }
-			},
-		)
+		text.chars().take(at_glyph + 1).last().map_or_else(Glyph::default, |c| {
+			let Glyph { adv, coord, uv } = *font.char(c);
+			let coord = coord.mul(scale);
+			Glyph { adv: adv * scale, coord, uv }
+		})
 	}
 	fn size_and_len(text: &'a str, font: &Font, scale: f32) -> (Vec2, u32) {
 		let mut len = 0;
 		let size = text
 			.chars()
-			.scan((-font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char), |(x, last_c), c| {
+			.scan((-0.5 * font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char), |(x, last_c), c| {
 				*x += font.kern(*last_c, c);
 				*last_c = c;
 				let ch = font.char(c);
@@ -127,7 +123,7 @@ impl Object for TextImpl {
 		if state.contains(State::XYZW) {
 			let (aspect, s) = (aspect, *scale);
 
-			let (mut x, mut last_c) = (-font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char);
+			let (mut x, mut last_c) = (-0.5 * font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char);
 			for c in text.chars() {
 				x += font.kern(last_c, c);
 				last_c = c;

@@ -4,63 +4,38 @@ pub trait TexSize: TrivialBound {
 	const TYPE: GLenum;
 	const SIZE: i32;
 }
-derive_common_VAL! { pub struct RED; }
-impl TexSize for RED {
-	const TYPE: GLenum = gl::RED;
-	const SIZE: i32 = 1;
+macro_rules! impl_size {
+	($t: ident, $s: literal) => {
+		derive_common_VAL! { pub struct $t; }
+		impl TexSize for $t {
+			const TYPE: GLenum = gl::$t;
+			const SIZE: i32 = $s;
+		}
+	};
 }
-derive_common_VAL! { pub struct RG; }
-impl TexSize for RG {
-	const TYPE: GLenum = gl::RG;
-	const SIZE: i32 = 2;
-}
-derive_common_VAL! { pub struct RGB; }
-impl TexSize for RGB {
-	const TYPE: GLenum = gl::RGB;
-	const SIZE: i32 = 3;
-}
-derive_common_VAL! { pub struct RGBA; }
-impl TexSize for RGBA {
-	const TYPE: GLenum = gl::RGBA;
-	const SIZE: i32 = 4;
-}
+impl_size!(RED, 1);
+impl_size!(RG, 2);
+impl_size!(RGB, 3);
+impl_size!(RGBA, 4);
 
 pub trait TexFmt: TrivialBound {
 	const TYPE: GLenum;
-	const ZERO: Self;
 }
-impl TexFmt for i8 {
-	const TYPE: GLenum = gl::BYTE;
-	const ZERO: Self = 0;
+macro_rules! impl_fmt {
+	($t: ty, $g: ident) => {
+		impl TexFmt for $t {
+			const TYPE: GLenum = gl::$g;
+		}
+	};
 }
-impl TexFmt for u8 {
-	const TYPE: GLenum = gl::UNSIGNED_BYTE;
-	const ZERO: Self = 0;
-}
-impl TexFmt for i16 {
-	const TYPE: GLenum = gl::SHORT;
-	const ZERO: Self = 0;
-}
-impl TexFmt for u16 {
-	const TYPE: GLenum = gl::UNSIGNED_SHORT;
-	const ZERO: Self = 0;
-}
-impl TexFmt for i32 {
-	const TYPE: GLenum = gl::INT;
-	const ZERO: Self = 0;
-}
-impl TexFmt for u32 {
-	const TYPE: GLenum = gl::UNSIGNED_INT;
-	const ZERO: Self = 0;
-}
-impl TexFmt for f16 {
-	const TYPE: GLenum = gl::HALF_FLOAT;
-	const ZERO: Self = f16::from_bits(0);
-}
-impl TexFmt for f32 {
-	const TYPE: GLenum = gl::FLOAT;
-	const ZERO: Self = 0.;
-}
+impl_fmt!(i8, BYTE);
+impl_fmt!(u8, UNSIGNED_BYTE);
+impl_fmt!(i16, SHORT);
+impl_fmt!(u16, UNSIGNED_SHORT);
+impl_fmt!(i32, INT);
+impl_fmt!(u32, UNSIGNED_INT);
+impl_fmt!(f16, HALF_FLOAT);
+impl_fmt!(f32, FLOAT);
 
 pub fn get_internal_fmt<S: TexSize, F: TexFmt>() -> GLenum {
 	match S::TYPE {

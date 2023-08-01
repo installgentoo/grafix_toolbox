@@ -173,6 +173,7 @@ euc_mod!(f64);
 pub trait Precise {
 	fn mix(self, a: f32, r: Self) -> Self;
 	fn root(self) -> Self;
+	#[allow(clippy::wrong_self_convention)]
 	fn is_zero(self) -> bool;
 }
 macro_rules! sqrt {

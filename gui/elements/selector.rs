@@ -23,7 +23,7 @@ impl Selector {
 
 		if !*open {
 			choices.clear();
-			let mut pressed = StaticPtr!(&button.pressed);
+			let mut pressed = StaticPtr!(&mut button.pressed);
 			if button.draw(r, t, pos, size, text) {
 				*pressed.get_mut() = false;
 				*open = true;
@@ -49,7 +49,7 @@ impl Selector {
 					*editing = false;
 				}
 			} else {
-				*open &= r.hovers_in((pos, pos.sum(size.mul((1, options.len() + 1)))))
+				*open &= r.hovers_in(pos, size.mul((1, options.len() + 1)))
 			}
 
 			*editing |= r.focused(LUID(line_edit));

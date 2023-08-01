@@ -10,7 +10,7 @@ pub struct Model {
 }
 #[cfg(feature = "obj")]
 impl Model {
-	pub fn load_models(file: &str, scale: f32) -> Res<Vec<Model>> {
+	pub fn load_models(file: &str, scale: f32) -> Res<Vec<Self>> {
 		let file = &format!("res/{file}.obj");
 		let (models, _) = tobj::load_obj(
 			file,
@@ -49,7 +49,7 @@ impl Model {
 				let d: Vec3 = max.sub(min);
 				let (center, scale) = (max.sum(min).div(2), (1., 1., 1.).div(d.x().max(d.y()).max(d.z())).mul(scale));
 				let xyz = xyz.chunks(3).flat_map(|s| <[_; 3]>::to((Vec3(s)).sub(center).mul(scale)).to_vec()).collect_vec();
-				Model { idxs, xyz, uv, norm }
+				Self { idxs, xyz, uv, norm }
 			})
 			.collect();
 		Ok(models)
@@ -63,8 +63,8 @@ impl Model {
 			}
 		}
 
-		let model: Res<Model> = (|| {
-			let m = Model::load_models(name, 1.)?.into_iter().next().ok_or("Empty models file")?;
+		let model: Res<Self> = (|| {
+			let m = Self::load_models(name, 1.)?.into_iter().next().ok_or("Empty models file")?;
 			let _ = SERDE::ToVec(&m).map(|v| FS::Save::Archive((cache, v)));
 			Ok(m)
 		})();
@@ -138,7 +138,7 @@ mod serde {
 	impl<'de> Deserialize<'de> for Model {
 		fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
 			struct V;
-			impl Visitor<'_> for V {
+			impl de::Visitor<'_> for V {
 				type Value = Model;
 
 				fn expecting(&self, formatter: &mut Formatter) -> FmtRes {

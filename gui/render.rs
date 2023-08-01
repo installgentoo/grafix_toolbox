@@ -1,10 +1,10 @@
 use super::{objects::*, parts::*};
-use crate::events::*;
+use crate::event::*;
 use crate::uses::{math::*, *};
 use GL::{spec, Frame, Vao, RGB, RGBA};
 
 macro_rules! DRAW {
-	($t: ty, $draw_spec: tt) => {
+	($t: ty, $draw_spec: ident) => {
 		impl<'l> DrawablePrimitive<'l> for $t {
 			fn draw(self, obj_n: u32, clip: &Crop, r: &mut Renderer) {
 				use ObjStore::$draw_spec as object;
@@ -53,16 +53,11 @@ pub struct RenderLock<'l> {
 	l: Dummy<&'l Primitive>,
 }
 impl<'l> RenderLock<'l> {
-	pub fn clip(&mut self, pos: Vec2, size: Vec2) {
+	pub fn clip(&mut self, pos: Vec2, size: Vec2) -> ClipLock<'l> {
 		let Self { clip, .. } = self;
 		let is_neg = size.ls((0, 0));
 		clip.push((pos.sum(size.mul(is_neg)), pos.sum(size.abs())));
-	}
-	pub fn unclip(&mut self) {
-		let Self { clip, .. } = self;
-		if clip.len() > 1 {
-			clip.pop();
-		}
+		ClipLock::new(self)
 	}
 	pub fn draw(&mut self, prim: impl DrawablePrimitive<'l>) {
 		let Self { r, n, clip, .. } = self;
@@ -80,8 +75,8 @@ impl<'l> RenderLock<'l> {
 		logics.push(LogicStorage { id, bound, func });
 		*n += 1;
 	}
-	pub fn hovers_in(&mut self, b_box: Crop) -> bool {
-		contains(b_box, self.r.mouse_pos)
+	pub fn hovers_in(&mut self, pos: Vec2, size: Vec2) -> bool {
+		contains((pos, pos.sum(size)), self.r.mouse_pos)
 	}
 	pub fn hovered(&mut self) -> bool {
 		let Self { r, n, .. } = self;
@@ -89,7 +84,7 @@ impl<'l> RenderLock<'l> {
 			return false;
 		}
 		let b_box = r.objs.get(*n - 1).o.obj().base().bound_box();
-		self.hovers_in(b_box)
+		contains(b_box, self.r.mouse_pos)
 	}
 	pub fn focused(&self, l: LogicId) -> bool {
 		l == self.r.focus
@@ -317,4 +312,23 @@ type LogicId = usize;
 
 fn contains((b1, b2): Crop, p: Vec2) -> bool {
 	!(p.ls(b1).any() || p.gt(b2).any())
+}
+
+pub struct ClipLock<'l> {
+	r: Dummy<&'l u32>,
+	ptr: usize,
+}
+impl<'l> ClipLock<'l> {
+	pub fn new(r: &RenderLock<'l>) -> Self {
+		let ptr = r as *const RenderLock as usize;
+		Self { r: Dummy, ptr }
+	}
+}
+impl Drop for ClipLock<'_> {
+	fn drop(&mut self) {
+		let clip = &mut unsafe { &mut *(self.ptr as *mut RenderLock) }.clip;
+		if clip.len() > 1 {
+			clip.pop();
+		}
+	}
 }

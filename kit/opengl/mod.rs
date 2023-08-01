@@ -29,7 +29,7 @@ pub mod opengl {
 	pub use tex::*;
 	pub use types::*;
 	pub mod macro_uses {
-		pub use super::super::{error_check::gl_was_initialized, shader::uniforms::uniforms_use, shader::InlineShader, texture::sampler_use};
+		pub use super::super::{error_check::gl_was_initialized, shader::uniform::uniforms_use, shader::InlineShader, texture::sampler_use};
 	}
 	pub mod bind {
 		use super::super::*;

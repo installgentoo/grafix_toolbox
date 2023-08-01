@@ -7,7 +7,7 @@ macro_rules! impl_trait_for {
 
 #[macro_export]
 macro_rules! impl_for_asref {
-	($t: tt, $met: tt, $ret: ty) => {
+	($t: ident, $met: ident, $ret: ty) => {
 		impl<T, const L: usize> $t<T> for [T; L] {
 			fn $met(&self) -> $ret {
 				(&self[..]).$met()

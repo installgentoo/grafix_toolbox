@@ -15,9 +15,9 @@ impl<S, F> PartialEq for VTex2d<S, F> {
 impl<S, F> Eq for VTex2d<S, F> {}
 impl<S, F> Clone for VTex2d<S, F> {
 	fn clone(&self) -> Self {
-		let VTex2d { region, tex } = self;
+		let Self { region, tex } = self;
 		let (region, tex) = (*region, tex.clone());
-		VTex2d { region, tex }
+		Self { region, tex }
 	}
 }
 

@@ -46,8 +46,8 @@ pub struct Tex<S, F, T: TexType> {
 	s: Dummy<S>,
 	f: Dummy<F>,
 }
-macro_rules! tex_decl {
-	($t: ty, $arg_n: tt, $arg_u: tt) => {
+macro_rules! impl_tex {
+	($t: ty, $arg_n: ident, $arg_u: ident) => {
 		impl<S: TexSize, F: TexFmt> Tex<S, F, $t> {
 			pub fn new(args_n: impl $arg_n, args_u: impl $arg_u<F>) -> Self {
 				let mut tex = Self::new_empty(args_n);
@@ -88,7 +88,6 @@ macro_rules! tex_decl {
 			pub fn Update(&mut self, args: impl $arg_u<F>) {
 				self.UpdateCustom::<S, F, _>(args);
 			}
-			#[allow(unused_variables)]
 			pub fn UpdateCustom<RS: TexSize, RF: TexFmt, T: $arg_u<RF>>(&mut self, args: T) {
 				let mip_size = |lvl, len| {
 					ASSERT!(
@@ -133,7 +132,7 @@ impl<S, F, T: TexType> Tex<S, F, T> {
 	pub fn Save<RS: TexSize, RF: TexFmt>(&self, lvl: u32) -> Vec<RF> {
 		ASSERT!(T::TYPE != gl::TEXTURE_CUBE_MAP && T::TYPE != gl::TEXTURE_CUBE_MAP_ARRAY, "unimpl");
 		let size = self.param.size(lvl) * usize(RS::SIZE);
-		let v = vec![RF::ZERO; size];
+		let v = vec![Def(); size];
 		let size = i32(size * type_size!(RF));
 		GL::PixelStorePack::Set(1);
 		GLCheck!(glGetTexture(T::TYPE, self.tex.obj, i32(lvl), RS::TYPE, RF::TYPE, size, v.as_ptr() as *mut GLvoid));
@@ -146,13 +145,13 @@ impl<S, F, T: TexType> Tex<S, F, T> {
 		b
 	}
 }
-tex_decl!(GL_TEXTURE_1D, NewArgs1, UpdArgs1);
-tex_decl!(GL_TEXTURE_2D, NewArgs2, UpdArgs2);
-tex_decl!(GL_TEXTURE_3D, NewArgs3, UpdArgs3);
-tex_decl!(GL_TEXTURE_1D_ARRAY, NewArgs2, UpdArgs2);
-tex_decl!(GL_TEXTURE_2D_ARRAY, NewArgs3, UpdArgs3);
-tex_decl!(GL_TEXTURE_CUBE_MAP, NewArgs2, UpdArgs3);
-tex_decl!(GL_TEXTURE_CUBE_MAP_ARRAY, NewArgs3, UpdArgs3);
+impl_tex!(GL_TEXTURE_1D, NewArgs1, UpdArgs1);
+impl_tex!(GL_TEXTURE_2D, NewArgs2, UpdArgs2);
+impl_tex!(GL_TEXTURE_3D, NewArgs3, UpdArgs3);
+impl_tex!(GL_TEXTURE_1D_ARRAY, NewArgs2, UpdArgs2);
+impl_tex!(GL_TEXTURE_2D_ARRAY, NewArgs3, UpdArgs3);
+impl_tex!(GL_TEXTURE_CUBE_MAP, NewArgs2, UpdArgs3);
+impl_tex!(GL_TEXTURE_CUBE_MAP_ARRAY, NewArgs3, UpdArgs3);
 
 pub struct TextureBinding<'l, T> {
 	t: Dummy<&'l T>,

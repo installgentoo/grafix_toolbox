@@ -21,7 +21,7 @@ impl<S: TexSize, F: TexFmt> Serialize for Image<S, F> {
 impl<'de, S: TexSize, F: TexFmt> Deserialize<'de> for Image<S, F> {
 	fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
 		struct V<S, F>(Dummy<S>, Dummy<F>);
-		impl<S: TexSize, F: TexFmt> Visitor<'_> for V<S, F> {
+		impl<S: TexSize, F: TexFmt> de::Visitor<'_> for V<S, F> {
 			type Value = Image<S, F>;
 
 			fn expecting(&self, formatter: &mut Formatter) -> FmtRes {

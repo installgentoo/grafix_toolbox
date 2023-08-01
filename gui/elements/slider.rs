@@ -17,7 +17,7 @@ impl Slider {
 		let id = LUID(self);
 		let Self { pip_pos } = self;
 
-		let p = *pip_pos * (1. - pip_size);
+		let p = *pip_pos;
 		r.draw_with_logic(
 			Rect { pos, size, color: t.fg },
 			move |e, focused, mouse_pos| {
@@ -38,7 +38,7 @@ impl Slider {
 		);
 
 		r.draw(Rect {
-			pos: pos.sum(Vec2((!vert, vert)).mul(size).mul(p)),
+			pos: pos.sum(Vec2((!vert, vert)).mul(size).mul(p * (1. - pip_size))),
 			size: size.mul((if !vert { pip_size } else { 1. }, if vert { pip_size } else { 1. })),
 			color: t.highlight,
 		});

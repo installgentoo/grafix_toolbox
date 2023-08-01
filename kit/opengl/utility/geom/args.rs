@@ -32,7 +32,7 @@ where
 {
 	fn getp(self) -> M4 {
 		let (at, from, up) = vec3::<V3>::to(vec3::<Vec3>::to(self));
-		glm::look_at(&at, &from, &up) //TODO HUH?
+		glm::look_at(&at, &from, &up)
 	}
 }
 impl<AT, FROM> PosArgs for (AT, FROM)

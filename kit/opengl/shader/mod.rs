@@ -1,7 +1,7 @@
 #[macro_use]
 pub mod shader;
 #[macro_use]
-pub mod uniforms;
+pub mod uniform;
 
 mod args;
 mod parsing;

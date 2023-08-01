@@ -1,4 +1,4 @@
-use crate::uses::asyn::{pre::*, *};
+use crate::uses::asyn::*;
 use crate::uses::*;
 use path::PathBuf;
 
@@ -6,17 +6,14 @@ pub mod Save {
 	use super::*;
 
 	pub fn Write(p: impl Into<PathBuf>, data: impl Into<Vec<u8>>) {
-		let sender = setup_impl();
-		sender.send((p.into(), MessageType::Write, data.into())).unwrap();
+		sender().send((p.into(), MessageType::Write, data.into())).expect(FAILED_WRITE);
 	}
 	pub fn Append(p: impl Into<PathBuf>, data: impl Into<Vec<u8>>) {
-		let sender = setup_impl();
-		sender.send((p.into(), MessageType::Append, data.into())).unwrap();
+		sender().send((p.into(), MessageType::Append, data.into())).expect(FAILED_WRITE);
 	}
 	pub fn Archive(args: impl CompressArgs) {
 		let (p, data, level) = args.get();
-		let sender = setup_impl();
-		sender.send((p, MessageType::ComprW(level), data)).unwrap();
+		sender().send((p, MessageType::ComprW(level), data)).expect(FAILED_WRITE);
 	}
 
 	type Args = (PathBuf, Vec<u8>, i32);
@@ -44,13 +41,12 @@ pub mod Save {
 		Close,
 	}
 	type Message = (PathBuf, MessageType, Vec<u8>);
-	fn setup_impl() -> &'static Sender<Message> {
-		static INIT: Once = Once::new();
-		static mut SENDER: Option<Sender<Message>> = None;
-		INIT.call_once(move || {
-			let (sender, reciever): (Sender<Message>, Receiver<Message>) = chan::unbounded();
+	fn sender() -> &'static Sender<Message> {
+		static SENDER: OnceLock<Sender<Message>> = OnceLock::new();
+		SENDER.get_or_init(move || {
+			let (sn, rx): (Sender<Message>, Receiver<Message>) = chan::unbounded();
 			let handle = task::spawn(async move {
-				while let Ok(msg) = reciever.recv_async().await {
+				while let Ok(msg) = rx.recv_async().await {
 					let disk = task::spawn(async move {
 						use MessageType::*;
 						let (name, operation, data) = msg;
@@ -67,7 +63,7 @@ pub mod Save {
 								data
 							};
 
-							let _ = OR_DEFAULT!(file.write_all(&data).await);
+							let _ = file.write_all(&data).await;
 							EXPECT!(file.sync_all().await);
 						} else {
 							FAIL!(fmt_err(file, &name));
@@ -81,14 +77,12 @@ pub mod Save {
 			});
 
 			logging::Logger::AddPostmortem(move || {
-				setup_impl().send((Def(), MessageType::Close, vec![])).unwrap();
-				task::block_on(async move { handle.await });
+				sender().send((Def(), MessageType::Close, vec![])).expect("E| Failed to close write");
+				task::block_on(handle);
 			});
 
-			unsafe { SENDER = Some(sender) };
-		});
-
-		unsafe { &SENDER }.as_ref().unwrap_or_else(|| ASSERT!(false, "File loader failed"))
+			sn
+		})
 	}
 }
 
@@ -133,7 +127,7 @@ macro_rules! LOADER {
 					match self {
 						Done(vec) => Some(vec),
 						Loading(handle) => {
-							let res = task::block_on(async move { task::poll_once(handle).await })?;
+							let res = task::block_on(task::poll_once(handle))?;
 							*self = Done(OR_DEFAULT!(res));
 							self.if_ready()
 						}
@@ -143,7 +137,7 @@ macro_rules! LOADER {
 					match self {
 						Done(vec) => Ok(vec),
 						Loading(handle) => {
-							let res = task::block_on(async move { handle.await });
+							let res = task::block_on(handle);
 							*self = Done(res?);
 							self.check()
 						}
@@ -153,7 +147,7 @@ macro_rules! LOADER {
 					match self {
 						Done(vec) => vec,
 						Loading(handle) => {
-							let res = task::block_on(async move { handle.await });
+							let res = task::block_on(handle);
 							*self = Done(OR_DEFAULT!(res));
 							self.get()
 						}
@@ -162,7 +156,7 @@ macro_rules! LOADER {
 				pub fn take(self) -> $ret {
 					match self {
 						Done(vec) => vec,
-						Loading(handle) => OR_DEFAULT!(task::block_on(async move { handle.await })),
+						Loading(handle) => OR_DEFAULT!(task::block_on(handle)),
 					}
 				}
 			}
@@ -204,6 +198,8 @@ pub async fn read_text(p: impl AsRef<Path>) -> Res<String> {
 fn fmt_err<T>(r: Result<T, impl std::fmt::Display>, p: &Path) -> Res<T> {
 	r.map_err(|e| format!("Could not open file {p:?} - {e}"))
 }
+
+const FAILED_WRITE: Str = "E| Failed to send write";
 
 #[cfg(not(feature = "zstd"))]
 mod zstd {

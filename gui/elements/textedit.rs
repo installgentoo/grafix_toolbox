@@ -23,7 +23,7 @@ impl TextEdit {
 		if self.text.changed() || scale != self.scale || size != self.size {
 			let linenum_bar_w = |l| (font.char('0').adv * scale * (f32(l).max(1.).log10() + 1.)).min(size.x());
 			let offset = (linenum_bar_w(self.text.lines().count()), 0.);
-			let (lines, wraps) = parse_text(&self.text, font, scale, size.sub(offset).x() - SCR_PAD);
+			let (lines, wraps) = util::parse_text_by(&self.text, font, scale, size.sub(offset).x() - SCR_PAD, char::is_whitespace);
 			self.select = util::move_caret(&lines, self.select, (0, 0), true);
 			self.caret = util::move_caret(&lines, self.caret, (0, 0), true);
 
@@ -48,21 +48,27 @@ impl TextEdit {
 		} = self;
 		*changes = None;
 
-		r.clip(pos, size);
+		let whole_text_h = scale * f32(lines.len());
+		let (p, vis_range) = {
+			let start_at = scrollbar.pip_pos;
+			let win_h = size.y();
+
+			let len = lines.len();
+			let start = (1. - start_at) * (whole_text_h - win_h);
+			let vis_range = (start, win_h).mul(len).div(whole_text_h).fmax(0).sum((0, 1)).fmin(len);
+			let line_pos = move |n| win_h + start - scale * f32(n + 1);
+			let p = move |x, n| pos.sum((x, line_pos(n)));
+			(p, vis_range)
+		};
+		let (start, len) = ulVec2(vis_range); // TODO weird caret scroll.
+
+		let _c = r.clip(pos, size);
 
 		r.draw(Rect {
 			pos: offset.sum(pos),
 			size: size.sub((offset.x() + SCR_PAD, 0.)).fmax(0.),
 			color: t.bg,
 		});
-
-		let len = isize(lines.len());
-		let whole_text_h = scale * f32(len);
-		let start = (1. - scrollbar.pip_pos) * (whole_text_h - size.y());
-		let line_pos = |n| start + size.y() - scale * f32(n + 1);
-		let vis_range = move || (start, size.y()).mul(len).div(whole_text_h).fmax(0).sum((0, 1)).fmin(len);
-		let (start, len) = ulVec2(vis_range());
-		let p = |x, n| pos.sum((x, line_pos(n)));
 
 		if caret != select {
 			let (beg, end) = caret_range(lines, *caret, *select);
@@ -123,7 +129,7 @@ impl TextEdit {
 			}
 		});
 
-		let mut pip_pos = StaticPtr!(&scrollbar.pip_pos);
+		let mut pip_pos = StaticPtr!(&mut scrollbar.pip_pos);
 		r.logic(
 			(pos, pos.sum(size)),
 			move |e, focused, mouse_pos| {
@@ -136,7 +142,7 @@ impl TextEdit {
 				let clampx = |c| util::clamp(lines, c);
 				let setx = |c, o| util::move_caret(lines, c, (o, 0), true);
 				let sety = |c, o| util::move_caret(lines, c, (0, o), false);
-				let click = |p| util::caret_to_cursor(lines, vis_range(), t, scale, pos.sum((offset.x(), size.y())), p);
+				let click = |p| util::caret_to_cursor(lines, vis_range, t, scale, pos.sum((offset.x(), size.y())), p);
 				let move_pip = |v: f32| (*pip + v).clamp(0., 1.);
 				let set_screen = |c: &Caret, at: f32| 1. - (f32(c.y()) / f32(lines.len() - len) - at).or_def(whole_text_h > size.y()).clamp(0., 1.);
 				let center_pip = |c: &Caret| set_screen(c, f32(len) * scale / whole_text_h * 0.5);
@@ -343,7 +349,6 @@ impl TextEdit {
 			let visible_h = size.y() / whole_text_h;
 			scrollbar.draw(r, t, pos.sum((size.x() - SCR_PAD, 0.)), (SCR_PAD, size.y()), visible_h);
 		}
-		r.unclip();
 	}
 }
 
@@ -405,35 +410,6 @@ fn caret_range(lines: &[&str], caret: Caret, select: Caret) -> (Caret, Caret) {
 	(beg, end)
 }
 
-fn parse_text(text: &str, font: &Font, scale: f32, max_w: f32) -> (Vec<Str>, Vec<u32>) {
-	let (mut lnum, mut lines, mut wraps) = (1, vec![], vec![]);
-	for mut l in text.lines() {
-		if l.is_empty() {
-			lines.push("");
-			wraps.push(lnum);
-			lnum += 1;
-		}
-		while !l.is_empty() {
-			let last_len = l.len();
-			let (head, tail) = {
-				let (_, (head, tail)) = Text::substr(l, font, scale, max_w);
-				if tail.len() != last_len {
-					(head, tail)
-				} else {
-					let (first_char, _) = l.char_indices().nth(1).unwrap_or_else(|| (l.len(), ' '));
-					l.split_at(first_char)
-				}
-			};
-			let e = tail.is_empty();
-			lines.push(unsafe { mem::transmute(head) });
-			wraps.push(lnum.or_def(e));
-			lnum += u32(e);
-			l = tail;
-		}
-	}
-	(lines, wraps)
-}
-
 trait HistoryPushArgs {
 	fn get(self) -> Vec<Change>;
 }
@@ -443,7 +419,7 @@ impl<const L: usize> HistoryPushArgs for [Change; L] {
 	}
 }
 impl HistoryPushArgs for Change {
-	fn get(self) -> Vec<Change> {
+	fn get(self) -> Vec<Self> {
 		vec![self]
 	}
 }

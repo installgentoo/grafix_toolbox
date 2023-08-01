@@ -19,15 +19,8 @@ impl Layout {
 			*size = size.clmp((0., 0.), ru.mul(2).sub(CRN_PAD));
 			*pos = pos.clmp(lb.sum((0, CRN_PAD)), ru.sub(*size).sub((CRN_PAD, 0)));
 		}
-		{
-			let size = size.sub((0, TOP_PAD));
-			r.clip(*pos, size);
-			r.draw(Rect { pos: *pos, size, color: t.bg });
-			content(r, (*pos, size));
-		}
 
-		r.unclip();
-		r.clip(pos.sub((0, CRN_PAD)), size.sum(CRN_PAD));
+		let layout = (*pos, size.sub((0, TOP_PAD)));
 
 		let mut _pos = StaticPtr!(pos);
 		r.draw_with_logic(
@@ -70,6 +63,10 @@ impl Layout {
 			},
 			id + 1,
 		);
-		r.unclip();
+
+		let (pos, size) = layout;
+		let _c = r.clip(pos, size);
+		r.draw(Rect { pos, size, color: t.bg });
+		content(r, layout);
 	}
 }

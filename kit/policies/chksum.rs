@@ -61,7 +61,6 @@ pub const fn const_fnv1_u32(s: &[u32]) -> u32 {
 #[macro_export]
 macro_rules! ID {
 	($n: expr) => {{
-		#[allow(non_upper_case_consts)]
 		const ID: u32 = chksum::const_fnv1($n.as_bytes());
 		ASSERT!(chksum::collision_map().entry(ID).or_insert($n.into()) == $n, "Unifrom collision at entry {}", $n);
 		ID

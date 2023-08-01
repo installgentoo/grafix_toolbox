@@ -1,5 +1,5 @@
 use super::{batch::*, parts::*};
-use crate::uses::{GL::tex::*, GL::VaoBinding, *};
+use crate::uses::{math::*, GL::tex::*, GL::VaoBinding, *};
 
 #[derive(Default)]
 pub struct Objects {
@@ -64,6 +64,7 @@ impl Objects {
 		&mut self, aspect: Vec2, idxs: &mut Vec<u16>, xyzw: &mut Vec<f16>, rgba: &mut Vec<u8>, uv: &mut Vec<f16>,
 	) -> (Option<usize>, Option<usize>, Option<usize>, Option<usize>) {
 		let Self { batches, objs, .. } = self;
+		const MAXIDX: usize = u16::MAX as usize;
 
 		batches
 			.iter_mut()
@@ -72,9 +73,13 @@ impl Objects {
 				state |= s;
 
 				if state.contains(State::RESIZED) {
-					flush.0.get_or_insert(usize(idx_start));
+					flush.0.get_or_insert(idx_start);
 					let mut indices = b.typ(objs).obj().gen_idxs(usVec2((batch_start, batch_size)));
-					b.idx_range = (idx_start, u32(indices.len()));
+					if idx_start + indices.len() > MAXIDX {
+						WARN!("GUI batch too saturated with polygons, dropping some");
+						indices.truncate(MAXIDX - idx_start);
+					}
+					b.idx_range = usVec2((idx_start, indices.len()));
 					idxs.truncate(usize(idx_start));
 					idxs.append(&mut indices);
 				}
@@ -96,17 +101,17 @@ impl Objects {
 				update(state.contains(State::RGBA), ordered, 4, rgba, batch_start, &b.rgba, &mut flush.2);
 				update(state.contains(State::UV), ordered, 2, uv, batch_start, &b.uv, &mut flush.3);
 
-				(flush, state, b.idx_range.0 + b.idx_range.1, batch_start + usize(batch_size))
+				(flush, state, ulVec2(b.idx_range).fold(|l, r| l + r).min(MAXIDX), batch_start + usize(batch_size))
 			})
 			.0
 	}
 	pub fn draw_opaque_batches(&self, v: &VaoBinding<u16>) {
 		let Self { batches, objs, first_transparent } = self;
-		batches.iter().take(*first_transparent).for_each(|b| b.typ(objs).obj().batch_draw(v, usVec2(b.idx_range)));
+		batches.iter().take(*first_transparent).for_each(|b| b.typ(objs).obj().batch_draw(v, b.idx_range));
 	}
 	pub fn draw_transparent_batches(&self, v: &VaoBinding<u16>) {
 		let Self { batches, objs, first_transparent } = self;
-		batches.iter().skip(*first_transparent).for_each(|b| b.typ(objs).obj().batch_draw(v, usVec2(b.idx_range)));
+		batches.iter().skip(*first_transparent).for_each(|b| b.typ(objs).obj().batch_draw(v, b.idx_range));
 	}
 }
 
@@ -136,7 +141,7 @@ impl ObjStore {
 			Text(r) => r,
 		}
 	}
-	pub fn batchable(&self, r: &ObjStore) -> bool {
+	pub fn batchable(&self, r: &Self) -> bool {
 		match (self, r) {
 			(Rect(l), Rect(r)) => l.batchable(r),
 			(ImgRGB(l), ImgRGB(r)) => l.batchable(r),

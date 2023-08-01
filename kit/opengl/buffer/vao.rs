@@ -1,4 +1,4 @@
-use super::{buffer::*, format::*, object::*, policy::*, types::*, universion::*, vao_args::*};
+use super::{buffer::*, format::*, object::*, policy::*, state::*, types::*, universion::*, vao_args::*};
 use crate::uses::*;
 
 #[derive(Default)]
@@ -79,6 +79,3 @@ impl<I: IdxType> VaoBinding<'_, I> {
 		GLCheck!(gl::DrawElementsInstanced(mode, num, I::TYPE, offset, i32(n)));
 	}
 }
-
-#[allow(unused_imports)]
-use super::state::*;

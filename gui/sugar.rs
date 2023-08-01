@@ -35,41 +35,23 @@ impl Renderer {
 pub trait GuiStorage {
 	fn storage(id: u32) -> &'static mut Self;
 }
-impl GuiStorage for Button {
-	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, Button>, { Def() }).entry(id).or_default()
-	}
+macro_rules! storage {
+	($t: ty) => {
+		impl GuiStorage for $t {
+			fn storage(id: u32) -> &'static mut Self {
+				UnsafeOnce!(HashMap<u32, $t>, { Def() }).entry(id).or_default()
+			}
+		}
+	};
 }
-impl GuiStorage for Label {
-	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, Label>, { Def() }).entry(id).or_default()
-	}
-}
-impl GuiStorage for Layout {
-	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, Layout>, { Def() }).entry(id).or_default()
-	}
-}
-impl GuiStorage for LineEdit {
-	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, LineEdit>, { Def() }).entry(id).or_default()
-	}
-}
-impl GuiStorage for Selector {
-	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, Selector>, { Def() }).entry(id).or_default()
-	}
-}
-impl GuiStorage for Slider {
-	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, Slider>, { Def() }).entry(id).or_default()
-	}
-}
-impl GuiStorage for TextEdit {
-	fn storage(id: u32) -> &'static mut Self {
-		UnsafeOnce!(HashMap<u32, TextEdit>, { Def() }).entry(id).or_default()
-	}
-}
+storage!(Button);
+storage!(HyperText);
+storage!(Label);
+storage!(Layout);
+storage!(LineEdit);
+storage!(Selector);
+storage!(Slider);
+storage!(TextEdit);
 
 impl<'l> RenderLock<'l> {
 	pub fn Button(&mut self, id: u32, pos: Vec2, size: Vec2, text: &str) -> bool {
@@ -79,6 +61,10 @@ impl<'l> RenderLock<'l> {
 	pub fn Label(&mut self, id: u32, pos: Vec2, size: Vec2, text: &str) {
 		check_borrow(id);
 		Label::storage(id).draw(self, t(), pos, size, text)
+	}
+	pub fn HyperText(&mut self, id: u32, pos: Vec2, size: Vec2, scale: f32, db: &HyperDB) {
+		check_borrow(id);
+		HyperText::storage(id).draw(self, t(), pos, size, scale, db)
 	}
 	pub fn Layout(&mut self, id: u32, content: impl FnOnce(&mut RenderLock<'l>, Crop)) {
 		check_borrow(id);

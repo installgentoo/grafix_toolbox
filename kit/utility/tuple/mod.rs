@@ -1,4 +1,3 @@
-#![allow(clippy::len_without_is_empty, clippy::wrong_self_convention)]
 mod apply;
 mod args;
 mod math;

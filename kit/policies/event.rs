@@ -21,6 +21,7 @@ pub enum EventReply {
 }
 
 bitflags! {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Mod: u32 {
 	const PRESS = 0x1;
 	const REPEAT = 0x2;
