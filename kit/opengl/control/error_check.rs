@@ -7,7 +7,7 @@ macro_rules! GLCheck {
 }
 
 pub fn gl_was_initialized(set: bool) -> bool {
-	*UnsafeLocal!(bool, { set })
+	*LocalStatic!(bool, { set })
 }
 
 #[cfg(debug_assertions)]

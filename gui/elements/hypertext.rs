@@ -2,11 +2,11 @@ use super::*;
 
 const SPLIT: fn(char) -> bool = char::is_whitespace;
 
-type Popup = Option<(Vec2, String)>;
+type Popup = Option<(Vec2, Box<str>)>;
 #[derive(Default, Debug)]
 struct HyperKey {
 	val: Popup,
-	trie: HashMap<String, Self>,
+	trie: HashMap<Box<str>, Self>,
 }
 #[derive(Default)]
 pub struct HyperDB {
@@ -14,13 +14,14 @@ pub struct HyperDB {
 	max_breaks: usize,
 }
 impl HyperDB {
-	pub fn new(f: &Font, scale: f32, pairs: impl iter::IntoIterator<Item = (String, String)>) -> Self {
+	pub fn new(f: &Font, scale: f32, pairs: impl iter::IntoIterator<Item = (impl ToString, impl ToString)>) -> Self {
 		const MAX_RATIO: f32 = 10.;
 		const PADDING: f32 = 0.1;
 
 		let mut max_breaks = 0;
 		let mut keys: HyperKey = Def();
 		pairs.into_iter().for_each(|(k, v)| {
+			let (k, v) = (k.to_string(), v.to_string());
 			max_breaks = max_breaks.max(k.chars().filter(|c| SPLIT(*c)).count());
 			let (w, h) = v.lines().fold((0., 0.), |(x, y), l| {
 				let (w, h) = Text::size(l, f, scale);
@@ -34,15 +35,15 @@ impl HyperDB {
 				(s * 1.2, s)
 			};
 
-			let val = &mut k.split(SPLIT).fold(&mut keys, |t, k| t.trie.entry(k.to_lowercase()).or_default()).val;
-			*val = Some((s.sum(PADDING * scale).fmin((2, 1.5)), v));
+			let val = &mut k.split(SPLIT).fold(&mut keys, |t, k| t.trie.entry(k.to_lowercase().into()).or_default()).val;
+			*val = Some((s.sum(PADDING * scale).fmin((2, 1.5)), v.into()));
 		});
 		Self { keys, max_breaks }
 	}
 	fn get<'a>(&self, keys: impl iter::Iterator<Item = &'a str>) -> Option<(usize, Vec2, &str)> {
 		let mut trie = &self.keys.trie;
 		for (n, k) in keys.enumerate() {
-			if let Some(k) = trie.get(&k.to_lowercase()) {
+			if let Some(k) = trie.get(&*k.to_lowercase()) {
 				if let Some((s, l)) = k.val.as_ref() {
 					return Some((n, *s, l));
 				}
@@ -59,7 +60,7 @@ impl HyperDB {
 pub struct HyperText {
 	size: Vec2,
 	scale: f32,
-	lines: Vec<Str>,
+	lines: Vec<STR>,
 	hovered: bool,
 	scrollbar: Slider,
 	popup: Option<(usize, Vec2, Box<Self>)>,

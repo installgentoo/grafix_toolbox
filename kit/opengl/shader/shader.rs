@@ -12,15 +12,15 @@ macro_rules! SHADER {
 
 pub struct Shader {
 	program: Object<ShdProg>,
-	name: String,
+	name: Box<str>,
 	uniforms: HashMap<u32, i32>,
 	tex_cache: HashMap<i32, i32>,
 }
 impl Shader {
-	pub fn pure(args: impl PureShdTypeArgs) -> Self {
+	pub fn pure<'a>(args: impl PureShaderArgs<'a>) -> Self {
 		Self::new(args).unwrap()
 	}
-	pub fn new(args: impl ShdTypeArgs) -> Res<Self> {
+	pub fn new<'a>(args: impl ShaderArgs<'a>) -> Res<Self> {
 		let (program, name) = ShaderManager::compile(args.get())?;
 
 		Ok(Self {
@@ -42,12 +42,11 @@ impl<'l> ShaderBinding<'l> {
 		ShdProg::Lock(o.program.obj);
 		ShdProg::Bind(o.program.obj);
 		Self { shd: o }
-	}
-	//TODO uniform blocks
-	pub fn Uniform(&mut self, (id, name): (u32, Str), args: impl UniformArgs) {
+	} //TODO uniform blocks
+	pub fn Uniform(&mut self, (id, name): (u32, &str), args: impl UniformArgs) {
 		ASSERT!(crate::uses::GL::macro_uses::uniforms_use::id(name).0 == id, "Use Uniforms!() macro to set uniforms");
 		let addr = if let Some(found) = self.shd.uniforms.get(&id) {
-			let _collision_map = UnsafeOnce!(HashMap<u32, String>, { Def() });
+			let _collision_map = LocalStatic!(HashMap<u32, String>, { Def() });
 			ASSERT!(_collision_map.entry(id).or_insert(name.into()) == name, "Unifrom collision at entry {name}");
 			*found
 		} else {
@@ -84,25 +83,24 @@ const SHD_DEFS: [(GLenum, &str); 3] = [(gl::VERTEX_SHADER, "vertex"), (gl::FRAGM
 
 #[derive(Default)]
 pub struct ShaderManager {
-	objects: HashMap<CowStr, u32>,
-	sources: HashMap<CowStr, CString>,
+	objects: HashMap<Box<str>, u32>,
+	sources: HashMap<Box<str>, CString>,
 	loading: Vec<Task<SourcePack>>,
 }
 impl ShaderManager {
-	pub fn LoadSources(filename: impl Into<CowStr>) {
+	pub fn LoadSources(filename: impl ToString) {
 		let m = Self::get();
-		let name = filename.into();
+		let name = filename.to_string();
 		m.loading.push(task::spawn(async move {
-			let data = OR_DEFAULT!(FS::read_text(name.as_ref()).await);
+			let data = OR_DEFAULT!(FS::read_text(&name).await);
 			parse_shader_sources(&name, &data)
 		}));
 	}
-	pub fn ForceSource(name: impl Into<CowStr>, source: String) {
-		let name = name.into();
+	pub fn ForceSource(name: impl ToString, source: impl ToString) {
+		let name = name.to_string().into();
 		let m = Self::get();
-		m.sources
-			.insert(name.clone(), CString::new(source).unwrap())
-			.map(|_| m.objects.remove(&name).map(|o| GLCheck!(gl::DeleteShader(o))));
+		m.objects.remove(&name).map(|o| GLCheck!(gl::DeleteShader(o)));
+		m.sources.insert(name, CString::new(source.to_string()).unwrap());
 	}
 	pub fn ClearSources() {
 		let m = Self::get();
@@ -110,11 +108,11 @@ impl ShaderManager {
 		m.objects.clear();
 	}
 
-	fn compile((vert, geom, pix): CompileArgs) -> Res<(Object<ShdProg>, String)> {
+	fn compile((vert, geom, pix): CompileArgs) -> Res<(Object<ShdProg>, Box<str>)> {
 		let m = Self::get();
-		let get_object = |(name, typ): (CowStr, _)| {
+		let get_object = |(name, typ): (C<'_>, _)| {
 			let Self { objects, sources, loading } = m;
-			if let Some(found) = objects.get(&name) {
+			if let Some(found) = objects.get(&*name) {
 				return Ok(*found);
 			}
 
@@ -123,12 +121,12 @@ impl ShaderManager {
 					.then(|t| t)
 					.for_each(|p| {
 						p.into_iter()
-							.for_each(|(name, body)| sources.insert(name.clone().into(), body).map(|_| WARN!("Shader source {name:?} was already loaded")).sink())
+							.for_each(|(name, body)| sources.insert(name.clone(), body).map(|_| WARN!("Shader source {name:?} was already loaded")).sink())
 					})
 					.await
 			});
 
-			let (typ, type_name) = SHD_DEFS[typ as usize];
+			let (name, (typ, type_name)) = (name.into_owned().into_boxed_str(), SHD_DEFS[typ as usize]);
 			let source = Res(sources.get(&name)).map_err(|_| format!("No {type_name} shader {name:?} in loaded sources"))?;
 
 			let obj = GLCheck!(gl::CreateShader(typ));
@@ -172,10 +170,10 @@ impl ShaderManager {
 			return Err(format!("Error linking program {name:?}, {obj}\n{}", print_shader_log(obj)));
 		}
 
-		Ok((prog, name))
+		Ok((prog, name.into()))
 	}
 
-	fn inline_source(name: Str, source: Str) {
+	fn inline_source(name: &str, source: &str) {
 		let m = Self::get();
 		if let Some(_found) = m.sources.get(name) {
 			ASSERT!(*_found == CString::new(source).unwrap(), "Shader {name:?} already exists",);
@@ -185,15 +183,15 @@ impl ShaderManager {
 	}
 
 	fn get() -> &'static mut Self {
-		UnsafeOnce!(ShaderManager, { Def() })
+		LocalStatic!(ShaderManager, { Def() })
 	}
 }
 
-impl From<InlineShader> for CowStr {
+impl<'a> From<InlineShader> for C<'a> {
 	fn from(v: InlineShader) -> Self {
 		let InlineShader(v, v_t) = v;
 		ShaderManager::inline_source(v, v_t);
 		v.into()
 	}
 }
-pub struct InlineShader(pub Str, pub Str);
+pub struct InlineShader(pub STR, pub STR);

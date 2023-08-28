@@ -21,7 +21,7 @@ pub trait State {
 		});
 	}
 	fn crossbindcheck_map() -> &'static mut HashMap<u32, Vec<u32>> {
-		UnsafeOnce!(HashMap<u32, Vec<u32>>, { Def() })
+		LocalStatic!(HashMap<u32, Vec<u32>>, { Def() })
 	}
 	fn checkcrossbinds(obj: &u32) {
 		debug_assert!({

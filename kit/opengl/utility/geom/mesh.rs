@@ -8,7 +8,7 @@ pub mod Screen {
 		_xyuv: AttrArr<i8>,
 	}
 	pub fn Draw() {
-		UnsafeLocal!(ManuallyDrop<Model>, {
+		LocalStatic!(ManuallyDrop<Model>, {
 			#[rustfmt::skip]
 			let _xyuv = AttrArr::new([ -1, -1, 0, 0,  3, -1, 2, 0,  -1, 3, 0, 2 ]);
 			let mut vao = Vao::new();
@@ -34,7 +34,7 @@ pub mod Skybox {
 		_xyz: AttrArr<i8>,
 	}
 	pub fn Draw() {
-		UnsafeLocal!(ManuallyDrop<Model>, {
+		LocalStatic!(ManuallyDrop<Model>, {
 			#[rustfmt::skip]
 			let _idx = IdxArr::new([ 0, 1, 3,  3, 1, 2,
 									 4, 5, 7,  7, 5, 6,

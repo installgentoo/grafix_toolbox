@@ -23,7 +23,7 @@ APPLICATOR!(UnpackTuple4, t0, t1, t2, t3, t4);
 APPLICATOR!(UnpackTuple5, t0, t1, t2, t3, t4, t5);
 
 pub fn states_map() -> &'static mut HashMap<usize, (bool, bool)> {
-	UnsafeOnce!(HashMap<usize, (bool, bool)>, { Def() })
+	LocalStatic!(HashMap<usize, (bool, bool)>, { Def() })
 }
 
 macro_rules! FUNC {
@@ -95,7 +95,7 @@ pub trait State {
 }
 
 pub fn overflow_map() -> &'static mut HashMap<GLenum, i32> {
-	UnsafeOnce!(HashMap<GLenum, i32>, { Def() })
+	LocalStatic!(HashMap<GLenum, i32>, { Def() })
 }
 
 macro_rules! SWITCH {

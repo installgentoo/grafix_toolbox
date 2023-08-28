@@ -198,7 +198,7 @@ SHADER!(
 	}"
 );
 
-const TRANSFORM: Str = r"
+const TRANSFORM: STR = r"
 	const float PI_2 = 3.14159265358979323846 * 2;
 
 	float RadicalInverse_VdC(uint bits) {

@@ -49,7 +49,7 @@ impl<S: TexSize> Object for Sprite9Impl<S> {
 		write_sprite9((aspect, pos, size, (c, c), crop, (u1, v2, u2, v1), color), range);
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = UnsafeOnce!(Shader, { Shader::pure((gui__pos_col_tex_vs, gui__col_tex_ps)) });
+		let s = LocalStatic!(Shader, { Shader::pure((gui__pos_col_tex_vs, gui__col_tex_ps)) });
 
 		let t = unsafe { &*self.tex }.tex.Bind(sampler());
 		let _ = Uniforms!(s, ("src", &t));

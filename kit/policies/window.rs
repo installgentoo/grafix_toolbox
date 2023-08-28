@@ -25,7 +25,7 @@ pub struct GlfwWindow {
 	resized_hint: bool,
 }
 impl GlfwWindow {
-	pub fn get(args: impl WINSize, title: Str) -> Res<Self> {
+	pub fn get(args: impl WINSize, title: &str) -> Res<Self> {
 		use glfw::{WindowHint::*, *};
 
 		let init_ctx: fn() -> Res<_> = || {

@@ -1,20 +1,22 @@
-use crate::uses::*;
-
-pub type CompileArgs = (CowStr, Option<CowStr>, CowStr);
-pub trait ShdTypeArgs {
-	fn get(self) -> CompileArgs;
+pub type CompileArgs<'a> = (C<'a>, Option<C<'a>>, C<'a>);
+pub trait ShaderArgs<'a> {
+	fn get(self) -> CompileArgs<'a>;
 }
-impl<V: Into<CowStr>, P: Into<CowStr>> ShdTypeArgs for (V, P) {
-	fn get(self) -> CompileArgs {
-		(self.0.into(), None, self.1.into())
+impl<'a, V: Into<C<'a>>, P: Into<C<'a>>> ShaderArgs<'a> for (V, P) {
+	fn get(self) -> CompileArgs<'a> {
+		let (v, p) = self;
+		(v.into(), None, p.into())
 	}
 }
-impl<V: Into<CowStr>, G: Into<CowStr>, P: Into<CowStr>> ShdTypeArgs for (V, G, P) {
-	fn get(self) -> CompileArgs {
-		(self.0.into(), Some(self.1.into()), self.2.into())
+impl<'a, V: Into<C<'a>>, G: Into<C<'a>>, P: Into<C<'a>>> ShaderArgs<'a> for (V, G, P) {
+	fn get(self) -> CompileArgs<'a> {
+		let (v, g, p) = self;
+		(v.into(), Some(g.into()), p.into())
 	}
 }
 
-pub trait PureShdTypeArgs: ShdTypeArgs {}
-impl_trait_for!(PureShdTypeArgs = (I, I), (I, I, I));
+pub trait PureShaderArgs<'a>: ShaderArgs<'a> {}
+impl_trait_for!(PureShaderArgs<'_> = (I, I), (I, I, I));
+
 type I = super::InlineShader;
+pub type C<'a> = std::borrow::Cow<'a, str>;

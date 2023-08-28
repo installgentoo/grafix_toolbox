@@ -75,7 +75,7 @@ impl<'a> Text<'_, 'a> {
 	#[inline(always)]
 	pub fn compare(&self, crop: &Crop, r: &TextImpl) -> State {
 		let &Self { pos, scale, color, text, font } = self;
-		let text = text != r.text;
+		let text = *text != *r.text;
 		let xyzw = (State::XYZW | State::UV).or_def(pos != r.base.pos || scale != r.scale || *crop != r.base.crop || text);
 		let rgba = State::RGBA.or_def(color != r.base.color);
 		let ord = State::MISMATCH.or_def(text && !ptr::eq(font, r.font));
@@ -98,7 +98,7 @@ pub struct TextImpl {
 	base: Base,
 	scale: f32,
 	len: u32,
-	text: String,
+	text: Box<str>,
 	font: &'static Font,
 }
 impl TextImpl {
@@ -162,7 +162,7 @@ impl Object for TextImpl {
 		}
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = UnsafeOnce!(Shader, { Shader::pure((gui__pos_col_tex_vs, gui_sdftext_ps)) });
+		let s = LocalStatic!(Shader, { Shader::pure((gui__pos_col_tex_vs, gui_sdftext_ps)) });
 
 		let t = self.font.tex().Bind(sampler());
 		let _ = Uniforms!(s, ("tex", &t));

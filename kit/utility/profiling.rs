@@ -34,17 +34,17 @@ macro_rules! PROFILER {
 			use super::*;
 			use GenericTimer as Timer;
 
-			pub fn Start(name: Str) {
+			pub fn Start(name: STR) {
 				let mut lock = map().lock().unwrap();
 				let t = lock.remove(name).unwrap_or_else(Timer::new::<$t>);
 				lock.insert(name, t.start(name));
 			}
-			pub fn Stop(name: Str) {
+			pub fn Stop(name: STR) {
 				let mut lock = map().lock().unwrap();
 				let t = lock.remove(name).unwrap_or_else(Timer::new::<$t>);
 				lock.insert(name, t.stop(name));
 			}
-			pub fn Print(name: Str) {
+			pub fn Print(name: &str) {
 				let t = EXPECT!(map().lock().unwrap().remove(name), "No timer {name:?}");
 				print_impl(name, t);
 			}
@@ -54,7 +54,7 @@ macro_rules! PROFILER {
 				all.into_iter().for_each(|(n, t)| print_impl(n, t));
 			}
 
-			fn print_impl(name: Str, t: Timer) {
+			fn print_impl(name: &str, t: Timer) {
 				let (t, i) = t.get_res(name);
 				let format = move || {
 					for step in &[(1_000_000_000, " s"), (1_000_000, " ms"), (1_000, " us")] {
@@ -67,7 +67,7 @@ macro_rules! PROFILER {
 				};
 				PRINT!("Timer {name:?}: {} |{i}", format());
 			}
-			fn map() -> &'static mut Mutex<HashMap<Str, Timer>> {
+			fn map() -> &'static mut Mutex<HashMap<STR, Timer>> {
 				static mut MAP: OnceLock<Mutex<HashMap<&str, Timer>>> = OnceLock::new();
 				unsafe {
 					MAP.get_or_init(|| {
@@ -91,21 +91,21 @@ impl GenericTimer {
 	fn new<T: New>() -> Self {
 		Self::Done(T::boxed_new())
 	}
-	fn start(self, _name: Str) -> Self {
+	fn start(self, _name: &str) -> Self {
 		use GenericTimer::*;
 		match self {
 			Done(done) => Started(done.start()),
 			Started { .. } => ASSERT!(false, "Timer {_name:?} already started"),
 		}
 	}
-	fn stop(self, _name: Str) -> Self {
+	fn stop(self, _name: &str) -> Self {
 		use GenericTimer::*;
 		match self {
 			Started(started) => Done(started.stop()),
 			Done { .. } => ASSERT!(false, "Timer {_name:?} not started"),
 		}
 	}
-	fn get_res(self, _name: Str) -> (u128, u128) {
+	fn get_res(self, _name: &str) -> (u128, u128) {
 		use GenericTimer::*;
 		match self {
 			Done(done) => done.get_res(),

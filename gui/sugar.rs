@@ -39,7 +39,7 @@ macro_rules! storage {
 	($t: ty) => {
 		impl GuiStorage for $t {
 			fn storage(id: u32) -> &'static mut Self {
-				UnsafeOnce!(HashMap<u32, $t>, { Def() }).entry(id).or_default()
+				LazyStatic!(HashMap<u32, $t>, { Def() }).entry(id).or_default()
 			}
 		}
 	};
@@ -56,7 +56,7 @@ storage!(TextEdit);
 impl<'l> RenderLock<'l> {
 	pub fn Button(&mut self, id: u32, pos: Vec2, size: Vec2, text: &str) -> bool {
 		check_borrow(id);
-		Button::storage(id).draw(self, t(), pos, size, text)
+		Button::storage(id).draw(self, t(), pos, size, text) // TODO store in the renderlock
 	}
 	pub fn Label(&mut self, id: u32, pos: Vec2, size: Vec2, text: &str) {
 		check_borrow(id);
@@ -107,7 +107,7 @@ impl<'l> RenderLock<'l> {
 }
 
 pub fn borrow_map() -> &'static mut HashSet<u32> {
-	UnsafeOnce!(HashSet<u32>, { Def() })
+	LazyStatic!(HashSet<u32>, { Def() })
 }
 fn check_borrow(id: u32) {
 	ASSERT!(
@@ -119,11 +119,11 @@ fn check_borrow(id: u32) {
 }
 
 fn clip_store() -> &'static mut (String, bool) {
-	UnsafeOnce!((String, bool), { ("".into(), false) })
+	LazyStatic!((String, bool), { ("".into(), false) })
 }
 
 fn theme() -> &'static mut Theme {
-	UnsafeOnce!(Theme, { Def() })
+	LazyStatic!(Theme, { Def() })
 }
 fn t() -> &'static Theme {
 	let t = theme();

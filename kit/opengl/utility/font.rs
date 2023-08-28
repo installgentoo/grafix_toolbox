@@ -23,7 +23,7 @@ pub struct Font {
 }
 impl Font {
 	pub fn tex(&self) -> &Tex2d<RED, u8> {
-		self.tex.as_ref().unwrap_or_else(|| UnsafeOnce!(Tex2d<RED, u8>, { Def() }))
+		self.tex.as_ref().unwrap_or_else(|| LocalStatic!(Tex2d<RED, u8>, { Def() }))
 	}
 	pub fn char(&self, c: char) -> &Glyph {
 		let g = &self.glyphs;

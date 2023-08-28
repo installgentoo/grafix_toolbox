@@ -5,11 +5,11 @@ pub struct TextEdit {
 	offset: Vec2,
 	size: Vec2,
 	scale: f32,
-	lines: Vec<Str>,
+	lines: Vec<STR>,
 	wraps: Vec<u32>,
 	select: Caret,
 	caret: Caret,
-	changes: Option<(Vec<Str>, Vec<String>)>,
+	changes: Option<(Vec<STR>, Vec<Box<str>>)>,
 	history: History,
 	scrollbar: Slider,
 	pub text: CachedStr,
@@ -240,7 +240,7 @@ impl TextEdit {
 								let drained = text.str().drain(b..e);
 								let drained: String = drained.collect();
 								RenderLock::set_clipboard(&drained);
-								history.push(Delete(drained, b, beg));
+								history.push(Delete(drained.into(), b, beg));
 								*caret = beg;
 								*select = *caret;
 								*pip = adj_edge(caret);
@@ -266,7 +266,7 @@ impl TextEdit {
 							let end = end.or_val(beg != end, setx(end, 1));
 							let (b, e) = range(beg, end, text);
 							let drained = text.str().drain(b..e);
-							history.push(Delete(drained.collect(), b, beg));
+							history.push(Delete(drained.collect::<String>().into(), b, beg));
 							*caret = beg;
 							*select = *caret;
 							*pip = adj_edge(caret);
@@ -276,7 +276,7 @@ impl TextEdit {
 							let beg = beg.or_val(beg != end, setx(beg, -1));
 							let (b, e) = range(beg, end, text);
 							let drained = text.str().drain(b..e);
-							history.push(Delete(drained.collect(), b, end));
+							history.push(Delete(drained.collect::<String>().into(), b, end));
 							*caret = beg;
 							*select = *caret;
 							*pip = adj_edge(caret);
@@ -329,7 +329,7 @@ impl TextEdit {
 						line_cache.push([lines[beg.y()], &ins].concat());
 						lines[beg.y()] = line_cache.last().unwrap();
 
-						history.push(Insert(ins, b, beg));
+						history.push(Insert(ins.into(), b, beg));
 						*caret = beg.sum((1, 0));
 						*select = *caret;
 						*pip = adj_edge(caret);
@@ -359,14 +359,14 @@ struct History {
 }
 #[derive(Clone)]
 enum Change {
-	Insert(String, usize, Caret),
-	Delete(String, usize, Caret),
+	Insert(Box<str>, usize, Caret),
+	Delete(Box<str>, usize, Caret),
 }
 impl Change {
 	fn invert(self) -> Self {
 		match self {
-			Insert(String, usize, at) => Delete(String, usize, at),
-			Delete(String, usize, at) => Insert(String, usize, at),
+			Insert(string, usize, at) => Delete(string, usize, at),
+			Delete(string, usize, at) => Insert(string, usize, at),
 		}
 	}
 }

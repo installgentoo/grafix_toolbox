@@ -12,7 +12,7 @@ pub fn fit_text(text: &str, t: &Theme, size: Vec2) -> (Vec2, f32) {
 	}
 }
 
-type LinesWraps = (Vec<Str>, Vec<u32>);
+type LinesWraps = (Vec<STR>, Vec<u32>);
 
 pub fn parse_text(t: &str, f: &Font, s: f32, m: f32) -> LinesWraps {
 	parse_text_impl(t, f, s, m, false, |_| false)

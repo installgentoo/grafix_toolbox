@@ -1,8 +1,7 @@
 use crate::uses::{ops::*, *};
 
-pub type CowStr = std::borrow::Cow<'static, str>;
 pub type Res<T> = Result<T, String>;
-pub type Str = &'static str;
+pub type STR = &'static str;
 
 pub fn lambda<'a, T: Fn(A) -> R + 'a, A, R>(f: T) -> Box<dyn Fn(A) -> R + 'a> {
 	Box(f)

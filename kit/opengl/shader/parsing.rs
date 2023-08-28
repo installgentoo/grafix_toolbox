@@ -41,9 +41,9 @@ pub fn parse_shader_sources(filename: &str, text: &str) -> SourcePack {
 				let newlines = "\n".repeat(cur_row_number);
 				cur_row_number += body.lines().count();
 				let shader = Res(CString::new([GL::unigl::GLSL_VERSION, header, &newlines, body].concat()))?;
-				Ok((name, shader))
+				Ok((name.into(), shader))
 			})
-			.collect::<Res<_>>()
+			.collect()
 	})();
 
 	OR_DEFAULT!(parsed, "Malformed .glsl file {filename}, row {cur_row_number}, {}")
@@ -70,4 +70,4 @@ pub fn print_shader_log(obj: u32) -> String {
 	String::from_utf8_lossy(&log).into()
 }
 
-pub type SourcePack = Vec<(String, CString)>;
+pub type SourcePack = Vec<(Box<str>, CString)>;

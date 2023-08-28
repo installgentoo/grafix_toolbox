@@ -44,14 +44,9 @@ impl<S: TexSize> uImage<S> {
 	pub fn load(data: impl AsRef<[u8]>) -> Res<Self> {
 		let mut img = {
 			let data = data.as_ref();
-			let img = Res(image::io::Reader::new(io::Cursor::new(data)).with_guessed_format())?;
-			let fmt = Res(img.format()).map_err(|e| format!("Not an image format: {e:?}"));
-			match fmt {
-				#[cfg(feature = "webp")]
-				Ok(image::ImageFormat::WebP) => Res(libwebp_image::webp_load(img.into_inner()))?,
-				Ok(_) => img.decode().map_err(|e| format!("Cannot decode image: {e:?}"))?,
-				Err(e) => return Err(e),
-			}
+			Res(image::io::Reader::new(io::Cursor::new(data)).with_guessed_format())?
+				.decode()
+				.map_err(|e| format!("Cannot decode image: {e:?}"))?
 		};
 		image::imageops::flip_vertical_in_place(&mut img);
 		let ((w, h), data): (_, Vec<_>) = match S::TYPE {

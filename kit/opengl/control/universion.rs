@@ -2,11 +2,11 @@
 use crate::uses::*;
 
 #[cfg(not(feature = "gl45"))]
-pub const GL_VERSION: (u32, u32, Str) = (3, 3, "330");
+pub const GL_VERSION: (u32, u32, STR) = (3, 3, "330");
 #[cfg(feature = "gl45")]
-pub const GL_VERSION: (u32, u32, Str) = (4, 5, "450");
+pub const GL_VERSION: (u32, u32, STR) = (4, 5, "450");
 
-pub const GLSL_VERSION: Str = const_format::concatcp!("#version ", GL_VERSION.2, " core\n");
+pub const GLSL_VERSION: STR = const_format::concatcp!("#version ", GL_VERSION.2, " core\n");
 
 #[cfg(not(debug_assertions))]
 pub const IS_DEBUG: bool = false;

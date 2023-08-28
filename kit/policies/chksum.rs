@@ -68,5 +68,5 @@ macro_rules! ID {
 }
 
 pub fn collision_map() -> &'static mut HashMap<u32, String> {
-	UnsafeOnce!(HashMap<u32, String>, { Def() })
+	LazyStatic!(HashMap<u32, String>, { Def() })
 }

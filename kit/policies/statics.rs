@@ -1,7 +1,5 @@
-use crate::uses::*;
-
 #[macro_export]
-macro_rules! UnsafeOnce {
+macro_rules! LazyStatic {
 	($t: ty, $b: block) => {{
 		static mut S: Option<$t> = None;
 		unsafe {
@@ -15,54 +13,24 @@ macro_rules! UnsafeOnce {
 }
 
 #[macro_export]
-macro_rules! UnsafeLocal {
+macro_rules! LocalStatic {
 	($t: ty, $b: block) => {{
-		use std::cell::UnsafeCell;
-		thread_local!(static S: UnsafeCell<Option<$t>> = UnsafeCell::new(None));
-		let mut r = None;
-		unsafe {
-			S.with(|f| {
-				let f = f.get();
-				if (*f).is_some() {
-				} else {
-					*f = Some($b);
-				}
-				r = Some(f)
-			});
-			(*r.unwrap_unchecked()).as_mut().unwrap_unchecked()
-		}
+		use std::{mem::*, cell::*};
+		thread_local!(static S: OnceCell<ManuallyDrop<UnsafeCell<$t>>> = Default::default());
+		let r = S.with(|f| f.get_or_init(|| ManuallyDrop::new(UnsafeCell::new($b))).get());
+		unsafe { &mut *r }
 	}};
-}
-
-#[macro_export]
-macro_rules! FnStatic {
-	($n: ident: $t: ty, $b: block) => {
-		fn $n() -> &'static mut $t {
-			UnsafeOnce!($t, { Def() })
-		}
-		*$n() = $b;
-	};
-}
-
-#[macro_export]
-macro_rules! FnLocal {
-	($n: ident: $t: ty, $b: block) => {
-		fn $n() -> &'static mut $t {
-			UnsafeLocal!($t, { Def() })
-		}
-		*$n() = $b;
-	};
 }
 
 #[derive(Debug)]
 pub struct static_ptr<T: Send + Sync> {
-	t: Dummy<T>,
+	t: std::marker::PhantomData<T>,
 	ptr: usize,
 }
 impl<T: Send + Sync> static_ptr<T> {
 	pub unsafe fn new(t: &mut T) -> Self {
 		let ptr = t as *const T as usize;
-		Self { ptr, t: Dummy }
+		Self { ptr, t: std::marker::PhantomData }
 	}
 	pub fn get(&self) -> &'static T {
 		unsafe { &*(self.ptr as *const T) }
@@ -74,7 +42,10 @@ impl<T: Send + Sync> static_ptr<T> {
 impl<T: Send + Sync> Copy for static_ptr<T> {}
 impl<T: Send + Sync> Clone for static_ptr<T> {
 	fn clone(&self) -> Self {
-		Self { ptr: self.ptr, t: Dummy }
+		Self {
+			ptr: self.ptr,
+			t: std::marker::PhantomData,
+		}
 	}
 }
 

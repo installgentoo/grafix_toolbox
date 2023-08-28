@@ -199,7 +199,7 @@ fn fmt_err<T>(r: Result<T, impl std::fmt::Display>, p: &Path) -> Res<T> {
 	r.map_err(|e| format!("Could not open file {p:?} - {e}"))
 }
 
-const FAILED_WRITE: Str = "E| Failed to send write";
+const FAILED_WRITE: STR = "E| Failed to send write";
 
 #[cfg(not(feature = "zstd"))]
 mod zstd {

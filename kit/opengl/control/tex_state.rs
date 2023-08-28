@@ -11,7 +11,7 @@ pub mod TexState {
 	use super::*;
 
 	fn bound_units() -> &'static mut Units {
-		UnsafeOnce!(Units, {
+		LocalStatic!(Units, {
 			let len = u32(GL::MAX_TEXTURE_IMAGE_UNITS().min(GL::MAX_COMBINED_TEXTURE_IMAGE_UNITS()));
 			Units {
 				at: 0,

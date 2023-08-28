@@ -15,7 +15,7 @@ impl Utf8Len for &str {
 
 pub trait CountItems<T: Eq + hash::Hash>: Sized + Iterator<Item = T> {
 	fn map_count(self) -> HashMap<T, usize> {
-		let mut map = HashMap::<_, usize>::new();
+		let mut map = HashMap::new();
 		for i in self {
 			*map.entry(i).or_default() += 1;
 		}
@@ -23,6 +23,7 @@ pub trait CountItems<T: Eq + hash::Hash>: Sized + Iterator<Item = T> {
 	}
 }
 impl<T: Eq + hash::Hash, V: Sized + Iterator<Item = T>> CountItems<T> for V {}
+
 pub trait CollectVec<T>: Sized + Iterator<Item = T> {
 	fn collect_vec(self) -> Vec<T> {
 		self.collect()

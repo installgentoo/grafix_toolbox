@@ -2,7 +2,7 @@
 pub mod derives;
 
 #[macro_use]
-pub mod unsafe_static;
+pub mod statics;
 #[macro_use]
 pub mod type_tools;
 #[macro_use]

@@ -3,10 +3,10 @@ use crate::uses::{math::*, GL::buffer::*, *};
 
 #[derive(Debug, Default, Clone)]
 pub struct Model {
-	idxs: Vec<u32>,
-	xyz: Vec<f32>,
-	uv: Vec<f16>,
-	norm: Vec<f16>,
+	idxs: Box<[u32]>,
+	xyz: Box<[f32]>,
+	uv: Box<[f16]>,
+	norm: Box<[f16]>,
 }
 #[cfg(feature = "obj")]
 impl Model {
@@ -27,7 +27,7 @@ impl Model {
 			.map(|m| {
 				let m = m.mesh;
 				let (idxs, xyz, uv, mut norm) = (
-					m.indices,
+					m.indices.into(),
 					m.positions,
 					m.texcoords.into_iter().map(f16).collect(),
 					m.normals.iter().map(|&v| f16(v)).collect_vec(),
@@ -49,7 +49,12 @@ impl Model {
 				let d: Vec3 = max.sub(min);
 				let (center, scale) = (max.sum(min).div(2), (1., 1., 1.).div(d.x().max(d.y()).max(d.z())).mul(scale));
 				let xyz = xyz.chunks(3).flat_map(|s| <[_; 3]>::to((Vec3(s)).sub(center).mul(scale)).to_vec()).collect_vec();
-				Self { idxs, xyz, uv, norm }
+				Self {
+					idxs,
+					xyz: xyz.into(),
+					uv,
+					norm: norm.into(),
+				}
 			})
 			.collect();
 		Ok(models)
@@ -170,10 +175,10 @@ impl Model {
 		let il = 24 + usize::from_le_bytes(v[0..8].try_into().valid());
 		let cl = il + usize::from_le_bytes(v[8..16].try_into().valid());
 		let tl = cl + usize::from_le_bytes(v[16..24].try_into().valid());
-		let idxs = unsafe { v[24..il].align_to() }.1.to_vec();
-		let xyz = unsafe { v[il..cl].align_to() }.1.to_vec();
-		let uv = unsafe { v[cl..tl].align_to() }.1.to_vec();
-		let norm = unsafe { v[tl..].align_to() }.1.to_vec();
+		let idxs = unsafe { v[24..il].align_to() }.1.into();
+		let xyz = unsafe { v[il..cl].align_to() }.1.into();
+		let uv = unsafe { v[cl..tl].align_to() }.1.into();
+		let norm = unsafe { v[tl..].align_to() }.1.into();
 		Self { idxs, xyz, uv, norm }
 	}
 }

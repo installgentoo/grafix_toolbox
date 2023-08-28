@@ -8,7 +8,7 @@ mod utility;
 pub mod uses {
 	pub use hashbrown::{HashMap, HashSet};
 	pub use std::borrow::{self, Borrow, ToOwned};
-	pub use std::cell::{Cell, RefCell, UnsafeCell};
+	pub use std::cell::{Cell, OnceCell, RefCell, UnsafeCell};
 	pub use std::collections::{BTreeMap, BTreeSet, VecDeque};
 	pub use std::marker::PhantomData as Dummy;
 	pub use std::{char, cmp, fmt, fmt::Debug, hash, mem, ops, path, path::Path, ptr, rc::Rc, rc::Weak, slice, time};
@@ -59,7 +59,7 @@ pub mod uses {
 	pub mod math {
 		pub use super::super::utility::tuple::*;
 	}
-	pub use super::policies::{casts::*, derives::TrivialBound, math::*, rand, type_tools, unsafe_static::*};
+	pub use super::policies::{casts::*, derives::TrivialBound, math::*, rand, statics::*, type_tools};
 	pub use super::utility::{cached::Cached, cached_str::CachedStr, coroutine as coro, ext::*, prefetch, slicing};
 	pub use super::{GL, GL::types::*};
 	pub use {bitflags::bitflags, const_format, num_cpus, trait_set::trait_set}; //TODO replace with trait aliases
