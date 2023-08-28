@@ -151,7 +151,7 @@ impl<T> FiberRes<T> {
 impl<T> Drop for FiberRes<T> {
 	fn drop(&mut self) {
 		if !self.ptr.is_null() {
-			unsafe { Box::from_raw(self.ptr) };
+			let _ = unsafe { Box::from_raw(self.ptr) };
 		}
 	}
 }
