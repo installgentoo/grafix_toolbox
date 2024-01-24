@@ -1,4 +1,5 @@
-use crate::uses::{GL::tex::*, *};
+use crate::{lib::*, GL::tex::*};
+use std::borrow::Borrow;
 
 impl<S: TexSize, F: TexFmt, RS, RF> From<&Tex2d<RS, RF>> for Image<S, F> {
 	fn from(tex: &Tex2d<RS, RF>) -> Self {

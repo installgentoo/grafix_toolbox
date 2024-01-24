@@ -1,4 +1,4 @@
-use crate::uses::*;
+use crate::{lib::*, GL};
 
 pub trait State {
 	fn bound_obj() -> &'static mut u32;
@@ -21,7 +21,7 @@ pub trait State {
 		});
 	}
 	fn crossbindcheck_map() -> &'static mut HashMap<u32, Vec<u32>> {
-		LocalStatic!(HashMap<u32, Vec<u32>>, { Def() })
+		LocalStatic!(HashMap<u32, Vec<u32>>)
 	}
 	fn checkcrossbinds(obj: &u32) {
 		debug_assert!({

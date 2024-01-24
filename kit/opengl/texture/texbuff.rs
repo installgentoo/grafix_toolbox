@@ -1,5 +1,4 @@
-use super::{format::*, object::*, policy::*, state::*, tex_state::*, tex_type::*, universion::*};
-use crate::uses::*;
+use super::{format::*, tex_type::*, *};
 
 pub struct TexBuffer<'a, S, F, B: State> {
 	tex: Object<Texture<GL_TEXTURE_BUFFER>>,

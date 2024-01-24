@@ -1,8 +1,8 @@
 use super::obj::*;
 use super::sprite::{gui__pos_col_tex_vs, sampler};
 use super::sprite9::{sprite9_idxs, write_sprite9};
-use crate::uses::{math::*, *};
-use GL::{atlas::VTex2d, shader::*, VaoBinding, RGBA};
+use crate::GL::{atlas::VTex2d, shader::*, VaoBinding, RGBA};
+use crate::{lib::*, math::*};
 
 pub struct Frame9<'r> {
 	pub pos: Vec2,

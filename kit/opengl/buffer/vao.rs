@@ -1,5 +1,4 @@
-use super::{buffer::*, format::*, object::*, policy::*, state::*, types::*, universion::*, vao_args::*};
-use crate::uses::*;
+use super::{format::*, vao_args::*, *};
 
 #[derive(Default)]
 pub struct Vao<I> {

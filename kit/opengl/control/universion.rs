@@ -1,12 +1,12 @@
 #![allow(dead_code, clippy::too_many_arguments)]
-use crate::uses::*;
+use crate::lib::*;
 
 #[cfg(not(feature = "gl45"))]
-pub const GL_VERSION: (u32, u32, STR) = (3, 3, "330");
+pub const GL_VERSION: (u32, u32, STR) = (3, 3, "#version 330 core\n");
 #[cfg(feature = "gl45")]
-pub const GL_VERSION: (u32, u32, STR) = (4, 5, "450");
+pub const GL_VERSION: (u32, u32, STR) = (4, 5, "#version 450 core\n");
 
-pub const GLSL_VERSION: STR = const_format::concatcp!("#version ", GL_VERSION.2, " core\n");
+pub const GLSL_VERSION: STR = GL_VERSION.2;
 
 #[cfg(not(debug_assertions))]
 pub const IS_DEBUG: bool = false;

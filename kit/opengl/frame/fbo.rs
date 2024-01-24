@@ -1,6 +1,4 @@
-use super::args::*;
-use crate::uses::*;
-use GL::{fbo::*, spec::*, tex::*};
+use super::{GL::tex::*, *};
 
 pub struct Fbo<S, F> {
 	pub fb: Framebuffer,

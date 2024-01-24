@@ -1,5 +1,5 @@
 use super::img::*;
-use crate::uses::{GL::tex::*, SERDE::uses::*, *};
+use crate::{lib::*, ser::*, GL::tex::*};
 
 impl<S: TexSize, F: TexFmt> Serialize for Tex2d<S, F> {
 	fn serialize<SE: Serializer>(&self, serializer: SE) -> Result<SE::Ok, SE::Error> {
@@ -24,7 +24,7 @@ impl<'de, S: TexSize, F: TexFmt> Deserialize<'de> for Image<S, F> {
 		impl<S: TexSize, F: TexFmt> de::Visitor<'_> for V<S, F> {
 			type Value = Image<S, F>;
 
-			fn expecting(&self, formatter: &mut Formatter) -> FmtRes {
+			fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
 				formatter.write_str("Image bytes")
 			}
 			fn visit_bytes<E: de::Error>(self, v: &[u8]) -> Result<Self::Value, E> {

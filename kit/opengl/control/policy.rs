@@ -1,5 +1,5 @@
 use super::{state::*, tex_state::*, universion::*};
-use crate::uses::*;
+use crate::lib::*;
 
 macro_rules! m_STATE {
 	() => {

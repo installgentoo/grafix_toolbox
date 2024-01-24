@@ -1,5 +1,5 @@
-use crate::{glsl::*, uses::math::*, uses::*};
-use GL::{fbo::*, mesh::*, shader::*, tex::*};
+use crate::GL::{fbo::*, mesh::*, shader::*, tex::*};
+use crate::{glsl::*, lib::*, math::*};
 
 pub fn pyramid(img: impl Into<Tex2d<RGBA, f32>>) -> Vec<Tex2d<RGBA, f32>> {
 	let img = img.into();

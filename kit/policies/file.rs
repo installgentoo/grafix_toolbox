@@ -1,6 +1,5 @@
-use crate::uses::asyn::*;
-use crate::uses::*;
-use path::PathBuf;
+use crate::{asyn::*, lib::*};
+use std::path::{Path, PathBuf};
 
 pub mod Save {
 	use super::*;
@@ -44,7 +43,7 @@ pub mod Save {
 	fn sender() -> &'static Sender<Message> {
 		static SENDER: OnceLock<Sender<Message>> = OnceLock::new();
 		SENDER.get_or_init(move || {
-			let (sn, rx): (Sender<Message>, Receiver<Message>) = chan::unbounded();
+			let (sn, rx) = chan::unbounded::<Message>();
 			let handle = task::spawn(async move {
 				while let Ok(msg) = rx.recv_async().await {
 					let disk = task::spawn(async move {
@@ -76,7 +75,7 @@ pub mod Save {
 				}
 			});
 
-			logging::Logger::AddPostmortem(move || {
+			logging::Logger::add_postmortem(move || {
 				sender().send((Def(), MessageType::Close, vec![])).expect("E| Failed to close write");
 				task::block_on(handle);
 			});
@@ -107,92 +106,102 @@ pub mod Load {
 	}
 }
 
-pub mod Preload {
+pub mod Lazy {
 	use super::*;
-	pub use Archive::load as Archive;
-	pub use File::load as File;
-	pub use Text::load as Text;
+	pub fn File(p: impl Into<PathBuf>) -> impl Stream<Item = Vec<u8>> {
+		lazy_read(p, read_file)
+	}
+	pub fn Text(p: impl Into<PathBuf>) -> impl Stream<Item = String> {
+		lazy_read(p, read_text)
+	}
+	pub fn Archive(p: impl Into<PathBuf>) -> impl Stream<Item = Vec<u8>> {
+		let p = p.into();
+		lazy_read(p.clone(), read_file).map(move |data| OR_DEFAULT!(zstd::stream::decode_all(&data[..]), "Failed to decode archive {p:?}: {}"))
+	}
 }
-macro_rules! LOADER {
-	($type: ident, $ret: ty, $a: ident, $b: block) => {
-		pub mod $type {
-			use {super::*, Resource::*};
-			#[derive(Debug)]
-			pub enum Resource {
-				Loading(Task<Res<$ret>>),
-				Done($ret),
-			}
-			impl Resource {
-				pub fn if_ready(&mut self) -> Option<&mut $ret> {
-					match self {
-						Done(vec) => Some(vec),
-						Loading(handle) => {
-							let res = task::block_on(task::poll_once(handle))?;
-							*self = Done(OR_DEFAULT!(res));
-							self.if_ready()
-						}
-					}
-				}
-				pub fn check(&mut self) -> Res<&mut $ret> {
-					match self {
-						Done(vec) => Ok(vec),
-						Loading(handle) => {
-							let res = task::block_on(handle);
-							*self = Done(res?);
-							self.check()
-						}
-					}
-				}
-				pub fn get(&mut self) -> &mut $ret {
-					match self {
-						Done(vec) => vec,
-						Loading(handle) => {
-							let res = task::block_on(handle);
-							*self = Done(OR_DEFAULT!(res));
-							self.get()
-						}
-					}
-				}
-				pub fn take(self) -> $ret {
-					match self {
-						Done(vec) => vec,
-						Loading(handle) => OR_DEFAULT!(task::block_on(handle)),
-					}
-				}
-			}
-			pub fn load(p: impl Into<PathBuf>) -> $type::Resource {
-				let $a = p.into();
-				Resource::Loading(task::spawn(async move { Res($b) }))
-			}
-		}
-	};
-}
-LOADER!(File, Vec<u8>, s, { read_file(&s).await });
-LOADER!(Text, String, s, { read_text(&s).await });
-LOADER!(Archive, Vec<u8>, s, {
-	let data = Res(read_file(&s).await)?;
-	zstd::stream::decode_all(&data[..])
-});
 
-pub async fn read_file(p: impl AsRef<Path>) -> Res<Vec<u8>> {
+pub mod Watch {
+	use super::*;
+	pub fn File(p: impl Into<PathBuf>) -> impl Stream<Item = Vec<u8>> {
+		watch_file(p, read_file)
+	}
+	pub fn Text(p: impl Into<PathBuf>) -> impl Stream<Item = String> {
+		watch_file(p, read_text)
+	}
+	pub fn Archive(p: impl Into<PathBuf>) -> impl Stream<Item = Vec<u8>> {
+		let p = p.into();
+		watch_file(p.clone(), read_file).map(move |data| OR_DEFAULT!(zstd::stream::decode_all(&data[..]), "Failed to decode archive {p:?}: {}"))
+	}
+}
+
+fn lazy_read<T: Default, F: Future<Output = Res<T>>>(p: impl Into<PathBuf>, loader: impl FnOnce(PathBuf) -> F) -> impl Stream<Item = T> {
+	stream::once_future(async move {
+		let p = p.into();
+		let file = loader(p).await.map_err(|e| FAIL!(e));
+		file.unwrap_or_else(|e| {
+			FAIL!(e);
+			Def()
+		})
+	})
+}
+
+fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<PathBuf>, loader: impl FnOnce(PathBuf) -> F + Clone) -> impl Stream<Item = T> {
+	let (sn, rx) = chan::bounded::<()>(1);
+	let p = p.into();
+
+	stream::unfold(None, move |w| {
+		let (p, l, _sn, rx) = (p.clone(), loader.clone(), sn.clone(), rx.clone());
+		async move {
+			if let Some(_w) = w {
+				rx.recv_async().await.ok().sink();
+			}
+
+			let w = {
+				#[cfg(feature = "fsnotify")]
+				{
+					use notify::*;
+					let p = p.clone();
+					let mut w = {
+						let p = p.clone();
+						Res(recommended_watcher(move |r| match r {
+							Ok(_) => _sn.try_send(()).ok().sink(),
+							Err(e) => FAIL!("File {p:?}: {e}"),
+						}))
+					}
+					.map_err(|e| FAIL!("Watch {p:?}: {e}"))
+					.ok();
+
+					w.as_mut().map(|w| w.watch(&p, RecursiveMode::NonRecursive).unwrap_or_else(|_| FAIL!("Cannot watch {p:?}")));
+					Some(w)
+				}
+				#[cfg(not(feature = "fsnotify"))]
+				{
+					FAIL!("Enable fsnotify feature to watch files");
+					Some(())
+				}
+			};
+
+			let file = l(p).await.map_err(|e| FAIL!(e));
+			file.ok().map(move |f| (f, w))
+		}
+	})
+}
+
+async fn read_file(p: PathBuf) -> Res<Vec<u8>> {
 	async fn read(p: &Path) -> Res<Vec<u8>> {
-		let mut f = Res(fs::File::open(p).await)?;
-		let mut b = vec![];
+		let (mut f, mut b) = (Res(fs::File::open(p).await)?, vec![]);
 		Res(f.read_to_end(&mut b).await)?;
 		Ok(b)
 	}
-	let p = p.as_ref();
-	fmt_err(read(p).await, p)
+	fmt_err(read(&p).await, &p)
 }
-pub async fn read_text(p: impl AsRef<Path>) -> Res<String> {
+async fn read_text(p: PathBuf) -> Res<String> {
 	async fn read(p: &Path) -> Res<String> {
-		let mut f = Res(fs::File::open(p).await)?;
-		let mut b = String::new();
+		let (mut f, mut b) = (Res(fs::File::open(p).await)?, String::new());
 		Res(f.read_to_string(&mut b).await)?;
 		Ok(b)
 	}
-	let p = p.as_ref();
-	fmt_err(read(p).await, p)
+	fmt_err(read(&p).await, &p)
 }
 
 fn fmt_err<T>(r: Result<T, impl std::fmt::Display>, p: &Path) -> Res<T> {

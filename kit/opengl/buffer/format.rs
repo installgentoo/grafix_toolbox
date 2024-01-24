@@ -1,4 +1,4 @@
-use crate::uses::*;
+use crate::lib::*;
 
 macro_rules! impl_type {
 	($t: ty, $for: ty, $f: ident) => {

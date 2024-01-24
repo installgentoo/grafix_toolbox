@@ -1,5 +1,4 @@
-use super::{args::*, object::*, policy::*, texture::*, types::*, universion::*};
-use crate::uses::*;
+use super::{super::texture::*, *};
 
 pub type Framebuffer = Object<Framebuff>;
 pub type Renderbuffer = Object<Renderbuff>;
@@ -16,7 +15,7 @@ impl Framebuffer {
 	}
 	pub fn Clear(&self, typ: GLenum, args: impl ClearArgs) {
 		let (attach, c) = args.get();
-		GLCheck!(glClearFramebuff(self.obj, typ, attach, c.as_ptr() as *const f32));
+		GLCheck!(glClearFramebuff(self.obj, typ, attach, c.as_ptr()));
 	}
 }
 

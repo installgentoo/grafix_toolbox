@@ -9,11 +9,11 @@ macro_rules! LOGGER {
 macro_rules! EXPECT {
 	($e: expr) => {{
 		use logging::UniformUnwrap;
-		$e.uni_or_else(|_e| ASSERT!(false, "{}", _e))
+		$e.uni_or_else(|_e| ERROR!("{}", _e))
 	}};
 	($e: expr, $($t: tt)+) => {{
 		use logging::UniformUnwrap;
-		$e.uni_or_else(|e| { PRINT!(e); ASSERT!(false, $($t)+) })
+		$e.uni_or_else(|e| { PRINT!(e); ERROR!($($t)+) })
 	}};
 }
 
@@ -59,7 +59,7 @@ macro_rules! ASSERT {
 macro_rules! ASSERT_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
-		Logger::Log(Level::PRINT, ["A| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"].concat());
+		Logger::log(Level::PRINT, ["A| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"].concat());
 		panic!();
 	}};
 }
@@ -75,7 +75,7 @@ macro_rules! ERROR_IMPL {
 	($($t: tt)+) => {{
 		let bt = std::backtrace::Backtrace::force_capture();
 		use logging::*;
-		Logger::Log(Level::PRINT, ["E| ", &format!($($t)+), &format!(" at {}:{}\n{bt}", file!(), line!())].concat());
+		Logger::log(Level::PRINT, [&format!("E| BACKTRACE\n{bt}  ↑\nE| "), &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"].concat());
 		panic!();
 	}};
 }
@@ -101,7 +101,7 @@ macro_rules! WARN {
 macro_rules! WARN_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
-		Logger::Log(Level::WARNING, ["W| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"].concat());
+		Logger::log(Level::WARNING, ["W| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"].concat());
 	}};
 }
 
@@ -115,7 +115,7 @@ macro_rules! INFO {
 macro_rules! INFO_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
-		Logger::Log(Level::INFO, ["I| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"].concat());
+		Logger::log(Level::INFO, ["I| ", &format!($($t)+), " at ", file!(), ":", &line!().to_string(), "\n"].concat());
 	}};
 }
 
@@ -135,7 +135,7 @@ macro_rules! DEBUG {
 macro_rules! DEBUG_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
-		Logger::Log(Level::DEBUG, ["D| ", &format!($($t)+), "\n"].concat());
+		Logger::log(Level::DEBUG, ["D| ", &format!($($t)+), "\n"].concat());
 	}};
 }
 
@@ -151,6 +151,6 @@ macro_rules! PRINT_IMPL {
 		let mut msg = format!($($t)+);
 		msg.push('\n');
 		use logging::*;
-		Logger::Log(Level::PRINT, msg);
+		Logger::log(Level::PRINT, msg);
 	}};
 }

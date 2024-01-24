@@ -1,4 +1,4 @@
-use crate::uses::*;
+use crate::lib::*;
 
 macro_rules! CONST {
 	($n: ident, $t: ty) => {

@@ -1,4 +1,4 @@
-use crate::uses::*;
+use crate::lib::*;
 
 type Args = (i32, [f32; 4]);
 pub trait ClearArgs {

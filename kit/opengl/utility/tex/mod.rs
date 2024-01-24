@@ -1,3 +1,5 @@
+pub use {animation::*, atlas::*, img::*, vtex::*};
+
 mod animation;
 mod atlas;
 mod atlas_pack;
@@ -7,5 +9,3 @@ mod vtex;
 
 #[cfg(feature = "adv_fs")]
 mod serialize;
-
-pub use {animation::*, atlas::*, img::*, vtex::*};

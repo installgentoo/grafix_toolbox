@@ -1,5 +1,4 @@
-use super::{object::*, state::*, types::*};
-use crate::uses::*;
+use super::*;
 
 type Args = (*const GLvoid, usize, GLenum);
 pub trait AllocArgs<T> {

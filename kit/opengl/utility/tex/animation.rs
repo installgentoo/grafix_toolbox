@@ -1,8 +1,8 @@
-use crate::uses::{math::*, slicing::*, *};
-use GL::{atlas::*, tex::*};
+use crate::GL::{atlas::*, tex::*};
+use crate::{lib::*, math::*, slicing::*, FS};
 
 pub struct Animation<'a, S: TexSize> {
-	frames: Vec<((f32, f32), AtlasTex2d<'a, S>)>,
+	frames: Vec<((f32, f32), VTex2dEntry<'a, S>)>,
 	c: usize,
 	a: Dummy<&'a u32>,
 }

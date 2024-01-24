@@ -1,6 +1,6 @@
 [package]
 name = "grafix-toolbox"
-version = "0.8.10"
+version = "0.8.11"
 authors = ["Alexander Drozdoff"]
 edition = "2021"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
@@ -13,8 +13,9 @@ default = ["gl45"]
 gl45 = []
 profiling = []
 
-adv_fs = ["bincode", "serde", "serde_json", "half/serde", "hashbrown/serde", "zstd"]
-rng = ["rand", "rand_xorshift", "simdnoise"]
+adv_fs = ["bincode", "serde", "serde_json", "half/serde", "zstd"]
+rng = ["fastrand", "simdnoise"]
+fsnotify = ["notify"]
 
 adv_cg = ["hdr", "obj", "sdf"]
 hdr = ["image/hdr"]
@@ -38,23 +39,20 @@ path = "./crate.rs"
 bincode = { version = "^1", optional = true }
 bitflags = "^2"
 const_format = "^0.2"
+crossbeam-channel = "^0.5"
 flume = "^0.11"
+fastrand = { version = "^2", optional = true }
 gl = "^0.14"
-glfw = { version = "^0.52", features = ["glfw-sys"], default-features = false }
+glfw = { version = "^0.54", features = ["glfw-sys"], default-features = false }
 half = "^2"
-hashbrown = "^0.14"
 image = { version = "^0.24", default-features = false }
-libwebp-image = { version = "^0.3", optional = true }
 nalgebra = { version = "^0.32", features = ["std"], default-features = false }
-nalgebra-glm = "^0.18"
+notify = { version = "^6", optional = true }
 num_cpus = "^1"
-rand = { version = "^0.8", optional = true }
-rand_xorshift = { version = "^0.3", optional = true }
 rusttype = { version = "^0.9", optional = true }
 serde = { version = "^1", features = ["derive"], optional = true }
 serde_json = { version = "^1", optional = true }
 simdnoise = { version = "^3", optional = true }
-smol = "^1"
+smol = "^2"
 tobj = { version = "^4", optional = true }
-trait-set = "^0.3"
-zstd = { version = "^0.12", optional = true }
+zstd = { version = "^0.13", optional = true }

@@ -22,7 +22,7 @@ impl Layout {
 
 		let layout = (*pos, size.sub((0, TOP_PAD)));
 
-		let mut _pos = StaticPtr!(pos);
+		let mut _pos = typed_ptr!(pos);
 		r.draw_with_logic(
 			Rect {
 				pos: pos.sum((0, size.y() - TOP_PAD)),

@@ -1,4 +1,4 @@
-use crate::uses::{GL::Frame, *};
+use crate::{lib::*, GL::Frame};
 
 pub trait CameraArgs {
 	fn get(self) -> M4;
@@ -14,7 +14,7 @@ where
 {
 	fn get(self) -> M4 {
 		let ((x, y), (fov, far)) = (self.0.aspect(), Vec2(self.1));
-		glm::perspective(y / x, fov.to_radians(), 0.01, far)
+		la::perspective(y / x, fov.to_radians(), 0.01, far)
 	}
 }
 
@@ -32,7 +32,7 @@ where
 {
 	fn getp(self) -> M4 {
 		let (at, from, up) = vec3::<V3>::to(vec3::<Vec3>::to(self));
-		glm::look_at(&at, &from, &up)
+		la::look_at(at, from, up)
 	}
 }
 impl<AT, FROM> PosArgs for (AT, FROM)
@@ -44,4 +44,4 @@ where
 		(self.0, self.1, (0., 1., 0.)).getp()
 	}
 }
-use glm::{Mat4 as M4, Vec3 as V3};
+use la::{Mat4 as M4, Vec3 as V3};

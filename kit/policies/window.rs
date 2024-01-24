@@ -1,6 +1,4 @@
-use crate::event::*;
-use crate::uses::{math::*, sync::*, *};
-use std::{ffi::CStr, sync::mpsc::Receiver};
+use crate::{event::*, lib::*, math::*, sync::*, GL};
 
 pub trait WindowSpec {
 	fn _size() -> uVec2;
@@ -11,17 +9,16 @@ pub trait WindowSpec {
 	fn set_clipboard(&mut self, str: &str);
 	fn resize(&mut self, size: uVec2);
 
-	fn spawn_offhand_gl(&mut self, _: impl OffhandFunc) -> JoinHandle<Res<()>>;
+	fn spawn_offhand_gl(&mut self, _: impl FnOnce() + SendStat) -> JoinHandle<()>;
 	fn poll_events(&mut self) -> Vec<Event>;
 	fn swap(&mut self);
 }
-trait_set! { pub trait OffhandFunc = 'static + Send + FnOnce() }
 
 pub type Window = GlfwWindow;
 
 pub struct GlfwWindow {
-	window: glfw::Window,
-	events: Receiver<(f64, glfw::WindowEvent)>,
+	window: glfw::PWindow,
+	events: glfw::GlfwReceiver<(f64, glfw::WindowEvent)>,
 	resized_hint: bool,
 }
 impl GlfwWindow {
@@ -29,7 +26,7 @@ impl GlfwWindow {
 		use glfw::{WindowHint::*, *};
 
 		let init_ctx: fn() -> Res<_> = || {
-			let mut ctx = Res(glfw::init(FAIL_ON_ERRORS)).map_err(|e| format!("GLFW initialization failed, {e}"))?; //TODO don't fail for empty clipbox
+			let mut ctx = Res(glfw::init(|e, d| ERROR!("{e}: {d}"))).map_err(|e| format!("GLFW initialization failed, {e}"))?; //TODO don't fail for empty clipbox
 
 			ctx.window_hint(ClientApi(ClientApiHint::OpenGl));
 			ctx.window_hint(ContextVersion(GL::unigl::GL_VERSION.0, GL::unigl::GL_VERSION.1));
@@ -57,7 +54,7 @@ impl GlfwWindow {
 
 		gl::load_with(|s| window.get_proc_address(s) as *const _);
 
-		let version = Res(unsafe { CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8) }.to_str())?;
+		let version = Res(unsafe { std::ffi::CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8) }.to_str())?;
 		PRINT!("Initialized OpenGL, {version}");
 		GL::macro_uses::gl_was_initialized(true);
 		if GL::unigl::IS_DEBUG {
@@ -113,32 +110,34 @@ impl WindowSpec for GlfwWindow {
 		self.window.set_size(w, h);
 		self.resized_hint = true;
 	}
-	fn spawn_offhand_gl(&mut self, f: impl OffhandFunc) -> JoinHandle<Res<()>> {
+	fn spawn_offhand_gl(&mut self, f: impl FnOnce() + SendStat) -> JoinHandle<()> {
 		use glfw::{WindowHint::*, *};
-		let ctx = &mut self.window as *mut _ as usize;
 		let ctx_lock = Arc::new(Barrier::new(2));
+		let ctx = &mut *self.window as *mut Window as usize;
+		make_context_current(None);
 		let ret = {
-			let ctx_lock = ctx_lock.clone();
 			thread::Builder::new()
 				.name("gl_offhand".into())
-				.spawn(move || {
-					let mut ctx = {
-						let ctx = unsafe { &mut *(ctx as *mut glfw::Window) };
-						ctx.make_current();
-						ctx.glfw.window_hint(Visible(false));
-						match ctx.create_shared(1, 1, "offhand_dummy", WindowMode::Windowed) {
-							None => {
-								ctx_lock.wait();
-								return Err("Failed to create offhand context.".into());
+				.spawn({
+					let l = ctx_lock.clone();
+					move || {
+						let mut ctx = {
+							let ctx = unsafe { &mut *(ctx as *mut Window) };
+							ctx.make_current();
+							ctx.glfw.window_hint(Visible(false));
+							if let Some((w, _)) = ctx.create_shared(1, 1, "offhand_dummy", WindowMode::Windowed) {
+								w
+							} else {
+								l.wait();
+								FAIL!("Failed to create offhand context.");
+								return;
 							}
-							Some((w, _)) => w,
-						}
-					};
-					ctx.make_current();
-					ctx_lock.wait();
-					GL::macro_uses::gl_was_initialized(true);
-					f();
-					Ok(())
+						};
+						ctx.make_current();
+						l.wait();
+						GL::macro_uses::gl_was_initialized(true);
+						f();
+					}
 				})
 				.unwrap()
 		};

@@ -1,12 +1,13 @@
-use super::{args::*, object::*, parsing::*, policy::*, state::*, types::*, uniform::*};
-use crate::uses::{asyn::*, *};
+use super::{args::*, parsing::*, uniform::*, *};
+use crate::GL::{offhand::*, window::*};
+use crate::{lazy::*, sync::*, FS};
 use std::ffi::CString;
 
 #[macro_export]
 macro_rules! SHADER {
 	($n: ident, $($body: expr),+) => {
 		#[allow(non_upper_case_globals)]
-		pub const $n: $crate::uses::GL::macro_uses::InlineShader = $crate::uses::GL::macro_uses::InlineShader(stringify!($n), const_format::concatcp!($crate::uses::GL::unigl::GLSL_VERSION, $($body,)+));
+		pub const $n: $crate::GL::macro_uses::InlineShader = $crate::GL::macro_uses::InlineShader(stringify!($n), const_format::concatcp!($crate::GL::unigl::GLSL_VERSION, $($body,)+));
 	};
 }
 
@@ -44,9 +45,9 @@ impl<'l> ShaderBinding<'l> {
 		Self { shd: o }
 	} //TODO uniform blocks
 	pub fn Uniform(&mut self, (id, name): (u32, &str), args: impl UniformArgs) {
-		ASSERT!(crate::uses::GL::macro_uses::uniforms_use::id(name).0 == id, "Use Uniforms!() macro to set uniforms");
+		ASSERT!(crate::GL::macro_uses::uniforms_use::id(name).0 == id, "Use Uniforms!() macro to set uniforms");
 		let addr = if let Some(found) = self.shd.uniforms.get(&id) {
-			let _collision_map = LocalStatic!(HashMap<u32, String>, { Def() });
+			let _collision_map = LocalStatic!(HashMap<u32, String>);
 			ASSERT!(_collision_map.entry(id).or_insert(name.into()) == name, "Unifrom collision at entry {name}");
 			*found
 		} else {
@@ -84,46 +85,51 @@ const SHD_DEFS: [(GLenum, &str); 3] = [(gl::VERTEX_SHADER, "vertex"), (gl::FRAGM
 #[derive(Default)]
 pub struct ShaderManager {
 	objects: HashMap<Box<str>, u32>,
-	sources: HashMap<Box<str>, CString>,
-	loading: Vec<Task<SourcePack>>,
+	sources: HashMap<Box<str>, (CString, Option<RcLazy<SourcePack>>)>,
+	//watched: HashMap<Box<str>, >   ////////////////////////////////////////////  do like wath that we can check per name
+	files: Vec<Lazy<SourcePack>>,
 }
 impl ShaderManager {
 	pub fn LoadSources(filename: impl ToString) {
-		let m = Self::get();
-		let name = filename.to_string();
-		m.loading.push(task::spawn(async move {
-			let data = OR_DEFAULT!(FS::read_text(&name).await);
-			parse_shader_sources(&name, &data)
-		}));
+		let n = filename.to_string();
+		Self::get().files.push(Lazy::new(FS::Lazy::Text(n.clone()).map(move |s| parse_shader_sources(&n, &s))));
+	}
+	pub fn WatchSources(filename: impl ToString) {
+		let n = filename.to_string();
+		Self::get().files.push(Lazy::new(FS::Watch::Text(n.clone()).map(move |s| parse_shader_sources(&n, &s))));
 	}
 	pub fn ForceSource(name: impl ToString, source: impl ToString) {
+		let Self { objects, sources, .. } = Self::get();
 		let name = name.to_string().into();
-		let m = Self::get();
-		m.objects.remove(&name).map(|o| GLCheck!(gl::DeleteShader(o)));
-		m.sources.insert(name, CString::new(source.to_string()).unwrap());
+		objects.remove(&name).map(|o| GLCheck!(gl::DeleteShader(o)));
+		sources.insert(name, (CString::new(source.to_string()).unwrap(), None));
 	}
 	pub fn ClearSources() {
-		let m = Self::get();
-		m.objects.iter().for_each(|(_, &o)| GLCheck!(gl::DeleteShader(o)));
-		m.objects.clear();
+		let Self { objects, .. } = Self::get();
+		objects.iter().for_each(|(_, &o)| GLCheck!(gl::DeleteShader(o)));
+		objects.clear();
+	}
+
+	pub fn RebuildWatched() {
+		let Self { objects, sources, .. } = Self::get();
 	}
 
 	fn compile((vert, geom, pix): CompileArgs) -> Res<(Object<ShdProg>, Box<str>)> {
-		let m = Self::get();
+		let Self { objects, sources, files, .. } = Self::get();
 		let get_object = |(name, typ): (C<'_>, _)| {
-			let Self { objects, sources, loading } = m;
 			if let Some(found) = objects.get(&*name) {
 				return Ok(*found);
 			}
 
-			task::block_on(async {
-				stream::iter(loading.drain(..))
-					.then(|t| t)
-					.for_each(|p| {
-						p.into_iter()
-							.for_each(|(name, body)| sources.insert(name.clone(), body).map(|_| WARN!("Shader source {name:?} was already loaded")).sink())
+			files.drain(..).for_each(|f| {
+				let mut f = RcLazy::from(f);
+				let rc = f.clone();
+				f.get().iter_mut().for_each(|(name, body)| {
+					sources
+						.insert(name.clone(), (mem::take(body), Some(rc.clone())))
+						.map(|_| WARN!("Shader source {name:?} was already loaded"))
+						.sink()
 					})
-					.await
 			});
 
 			let (name, (typ, type_name)) = (name.into_owned().into_boxed_str(), SHD_DEFS[typ as usize]);
@@ -131,7 +137,7 @@ impl ShaderManager {
 
 			let obj = GLCheck!(gl::CreateShader(typ));
 			ASSERT!(obj != 0, "Failed to create {type_name} shader object {name:?}");
-			GLCheck!(gl::ShaderSource(obj, 1, &source.as_ptr(), ptr::null()));
+			GLCheck!(gl::ShaderSource(obj, 1, &source.0.as_ptr(), ptr::null()));
 			GLCheck!(gl::CompileShader(obj));
 			let mut status: i32 = 0;
 			GLCheck!(gl::GetShaderiv(obj, gl::COMPILE_STATUS, &mut status));
@@ -176,9 +182,9 @@ impl ShaderManager {
 	fn inline_source(name: &str, source: &str) {
 		let m = Self::get();
 		if let Some(_found) = m.sources.get(name) {
-			ASSERT!(*_found == CString::new(source).unwrap(), "Shader {name:?} already exists",);
+			ASSERT!((*_found).0 == CString::new(source).unwrap(), "Shader {name:?} already exists",);
 		} else {
-			m.sources.insert(name.into(), CString::new(source).unwrap());
+			m.sources.insert(name.into(), (CString::new(source).unwrap(), None));
 		}
 	}
 

@@ -1,12 +1,13 @@
-pub use crate::kit::policies::casts::result::{UniformUnwrap, UniformUnwrapOrDefault};
-use crate::uses::{asyn::*, sync::io, *};
+pub use super::result::{UniformUnwrap, UniformUnwrapOrDefault};
+use super::{derives::*, ext::*};
+use crate::{asyn::*, sync};
 
-pub async fn Term() -> Unblock<io::Stdout> {
-	Unblock::new(io::stdout())
+pub async fn Term() -> Unblock<sync::io::Stdout> {
+	Unblock::new(sync::io::stdout())
 }
 
-pub async fn TermErr() -> Unblock<io::Stderr> {
-	Unblock::new(io::stderr())
+pub async fn TermErr() -> Unblock<sync::io::Stderr> {
+	Unblock::new(sync::io::stderr())
 }
 
 pub async fn File() -> fs::File {
@@ -19,18 +20,17 @@ pub async fn Null() -> Unblock<io::Sink> {
 
 pub struct Logger;
 impl Logger {
-	pub fn new<T, Fut, Fun>(out: Fun, l: Level) -> Self
+	pub fn new<T, F>(out: impl FnOnce() -> F + SendStat, l: Level) -> Self
 	where
 		T: AsyncWrite + Unpin + Send,
-		Fut: Future<Output = T> + Send,
-		Fun: FnOnce() -> Fut + Send + 'static,
+		F: Future<Output = T> + Send,
 	{
 		Self::logger(out, l);
 		Self
 	}
-	pub fn Log(l: Level, msg: String) {
+	pub fn log(l: Level, msg: String) {
 		if (l as i32) <= Self::level() {
-			Self::logger(CheckOrder, Level::INFO)
+			Self::logger(check_order, Level::INFO)
 				.get()
 				.expect("E| Logger already exited")
 				.sender
@@ -38,8 +38,8 @@ impl Logger {
 				.expect("E| Failed to send log");
 		}
 	}
-	pub fn AddPostmortem(f: impl FnOnce() + 'static) {
-		Self::logger(CheckOrder, Level::INFO)
+	pub fn add_postmortem(f: impl FnOnce() + 'static) {
+		Self::logger(check_order, Level::INFO)
 			.get()
 			.expect("E| Logger already exited")
 			.postmortem
@@ -54,17 +54,16 @@ impl Logger {
 	pub fn set_level(l: Level) {
 		unsafe { LEVEL = l }
 	}
-	fn logger<T, Fut, Fun>(out: Fun, l: Level) -> &'static mut OnceLock<LoggerState>
+	fn logger<T, F>(out: impl FnOnce() -> F + SendStat, l: Level) -> &'static mut OnceLock<LoggerState>
 	where
 		T: AsyncWrite + Unpin + Send,
-		Fut: Future<Output = T> + Send,
-		Fun: FnOnce() -> Fut + Send + 'static,
+		F: Future<Output = T> + Send,
 	{
 		static mut LOGGER: OnceLock<LoggerState> = OnceLock::new();
 		unsafe {
 			LEVEL = l;
 			LOGGER.get_or_init(move || {
-				let (sender, reciever): (Sender<Message>, Receiver<Message>) = chan::unbounded();
+				let (sender, reciever) = chan::unbounded::<Message>();
 				let handle = task::spawn(async move {
 					let mut out = out().await;
 					while let Ok(msg) = reciever.recv_async().await {
@@ -88,7 +87,7 @@ impl Logger {
 }
 impl Drop for Logger {
 	fn drop(&mut self) {
-		let s = Self::logger(CheckOrder, Level::INFO);
+		let s = Self::logger(check_order, Level::INFO);
 		s.get().expect("E| Logger already exited").postmortem.lock().unwrap().drain(..).for_each(|f| f());
 
 		let LoggerState { handle, sender, .. } = s.take().unwrap();
@@ -109,7 +108,7 @@ static mut LEVEL: Level = Level::INFO;
 struct LoggerState {
 	handle: Task<()>,
 	sender: Sender<Message>,
-	postmortem: Mutex<Vec<Box<dyn FnOnce() + 'static>>>,
+	postmortem: sync::Mutex<Vec<Box<dyn FnOnce() + 'static>>>,
 }
 
 enum Message {
@@ -117,6 +116,6 @@ enum Message {
 	Close,
 }
 
-async fn CheckOrder() -> Unblock<io::Stdout> {
+async fn check_order() -> Unblock<sync::io::Stdout> {
 	panic!("E| No logger! Add 'LOGGER!(logging::Term, INFO);' as first line in main()");
 }

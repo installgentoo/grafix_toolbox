@@ -1,4 +1,4 @@
-use crate::uses::{slicing::*, *};
+use crate::{lib::*, slicing::*, GL};
 use std::ffi::CString;
 
 pub fn parse_shader_sources(filename: &str, text: &str) -> SourcePack {

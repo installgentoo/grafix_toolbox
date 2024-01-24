@@ -1,5 +1,5 @@
 use super::{objects::*, parts::*};
-use crate::uses::*;
+use crate::lib::*;
 
 struct Obj {
 	idx: u32,
@@ -21,7 +21,7 @@ impl Batch {
 		}
 	}
 	pub fn typ<'a>(&self, objs: &'a [Primitive]) -> &'a ObjStore {
-		get(objs, self.idxs.get(0).valid())
+		get(objs, self.idxs.first().valid())
 	}
 	pub fn contains(&self, objs: &[Primitive], (o, z): (&ObjStore, u32)) -> bool {
 		let (t, idxs) = (self.typ(objs), &self.idxs);

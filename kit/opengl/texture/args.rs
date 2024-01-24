@@ -1,5 +1,4 @@
-use crate::uses::*;
-use Copy as C;
+use {crate::lib::*, Copy as C};
 
 pub trait MipsArgs {
 	fn getm(self) -> i32;

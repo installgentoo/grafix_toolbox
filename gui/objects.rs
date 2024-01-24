@@ -1,5 +1,5 @@
 use super::{batch::*, parts::*};
-use crate::uses::{math::*, GL::tex::*, GL::VaoBinding, *};
+use crate::{lib::*, math::*, GL::tex::*, GL::VaoBinding};
 
 #[derive(Default)]
 pub struct Objects {

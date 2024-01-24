@@ -1,7 +1,7 @@
 use super::obj::*;
 use super::sprite::{gui__pos_col_tex_vs, sampler};
-use crate::uses::{math::*, *};
-use GL::{font::*, shader::*, VaoBinding};
+use crate::GL::{font::*, shader::*, VaoBinding};
+use crate::{lib::*, math::*};
 
 pub struct Text<'r, 'a> {
 	pub pos: Vec2,

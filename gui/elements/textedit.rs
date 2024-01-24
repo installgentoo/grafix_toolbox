@@ -129,7 +129,7 @@ impl TextEdit {
 			}
 		});
 
-		let mut pip_pos = StaticPtr!(&mut scrollbar.pip_pos);
+		let mut pip_pos = typed_ptr!(&mut scrollbar.pip_pos);
 		r.logic(
 			(pos, pos.sum(size)),
 			move |e, focused, mouse_pos| {
@@ -137,7 +137,7 @@ impl TextEdit {
 					*changes = Some((lines.clone(), vec![]));
 				}
 				let (lines, line_cache) = unsafe { mem::transmute::<&mut _, &'static mut Option<(Vec<_>, Vec<_>)>>(changes) }.as_mut().unwrap();
-				let mut _lines = StaticPtr!(lines);
+				let mut _lines = typed_ptr!(lines);
 				let pip = pip_pos.get_mut();
 				let clampx = |c| util::clamp(lines, c);
 				let setx = |c, o| util::move_caret(lines, c, (o, 0), true);

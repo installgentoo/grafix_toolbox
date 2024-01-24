@@ -1,4 +1,4 @@
-use crate::uses::*;
+use crate::lib::*;
 
 pub trait TexSize: TrivialBound {
 	const TYPE: GLenum;

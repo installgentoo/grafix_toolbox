@@ -1,4 +1,5 @@
-use crate::uses::*;
+use crate::{lib::*, ser::*, FS, GL};
+use std::borrow::Borrow;
 use GL::{atlas::*, Tex2d, RED};
 
 derive_common_OBJ! {
@@ -23,7 +24,7 @@ pub struct Font {
 }
 impl Font {
 	pub fn tex(&self) -> &Tex2d<RED, u8> {
-		self.tex.as_ref().unwrap_or_else(|| LocalStatic!(Tex2d<RED, u8>, { Def() }))
+		self.tex.as_ref().unwrap_or_else(|| LocalStatic!(Tex2d<RED, u8>))
 	}
 	pub fn char(&self, c: char) -> &Glyph {
 		let g = &self.glyphs;
@@ -64,7 +65,7 @@ impl Font {
 	}
 	#[cfg(feature = "sdf")]
 	pub fn new(font_data: impl Borrow<Vec<u8>>, alphabet: impl AsRef<str>) -> Res<Self> {
-		use {super::sdf::*, math::*, rusttype as ttf};
+		use {super::sdf::*, crate::math::*, rusttype as ttf};
 		let alphabet = alphabet.as_ref();
 		let (glyph_size, border, supersample) = (28, 2, 16);
 		let alphabet = || alphabet.chars();

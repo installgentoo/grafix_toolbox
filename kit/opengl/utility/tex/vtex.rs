@@ -1,4 +1,4 @@
-use crate::uses::{prefetch::*, *};
+use crate::{lazy::*, lib::*, prefetch::*, FS, GL};
 use GL::{atlas, tex::*, uImage};
 
 #[derive(Debug)]
@@ -21,63 +21,89 @@ impl<S, F> Clone for VTex2d<S, F> {
 	}
 }
 
-pub type AtlasTex2d<'a, S> = Prefetched<'a, u32, VTex2d<S, u8>, TexAtlas<S>>;
+pub type VTex2dEntry<'a, S> = Prefetched<'a, u32, VTex2d<S, u8>, TexAtlas<S>>;
 
-#[derive(Default)]
 pub struct TexAtlas<S> {
-	t: UnsafeCell<(Vec<(String, FS::File::Resource)>, HashMap<u32, VTex2d<S, u8>>)>,
+	t: UnsafeCell<State<S>>,
 }
 impl<S: TexSize> TexAtlas<S> {
 	pub fn new() -> Self {
 		Def()
 	}
-	pub fn load(&self, name: &str) -> AtlasTex2d<S> {
-		let (reqs, _textures) = unsafe { &mut *self.t.get() };
-		ASSERT!(_textures.is_empty(), "Loading into atlas after batching");
-		let k = u32(reqs.len());
-		let name = format!("res/{name}");
-		reqs.push((name.clone(), FS::Preload::File(name)));
-		Prefetched::new(k, self)
-	}
-	fn initialize(&self) {
-		let (reqs, textures) = unsafe { &mut *self.t.get() };
-		let reqs = reqs
-			.iter_mut()
-			.enumerate()
-			.map(|(n, (name, r))| (u32(n), EXPECT!(uImage::<S>::load(r.get()).map_err(|e| format!("{e}, image {name:?}")))))
-			.collect_vec();
-		let max_side = GL::MAX_TEXTURE_SIZE();
-		let (mut atlas, mut tail) = atlas::pack_into_atlas::<_, _, S, _>(reqs, max_side, max_side);
-		if tail.is_empty() {
-			textures.extend(atlas.into_iter());
-		} else {
-			let mut last_s = tail.len();
-			while !tail.is_empty() {
-				textures.extend(atlas.into_iter());
-				let (a, l) = atlas::pack_into_atlas::<_, _, S, _>(tail, max_side, max_side);
-				atlas = a;
-				tail = l;
-				if tail.len() == last_s {
-					ERROR!("Graphics card can't fit textures: {tail:?}");
-				}
-				last_s = tail.len();
+	pub fn load(&self, name: &str) -> VTex2dEntry<S> {
+		match unsafe { &mut *self.t.get() } {
+			Baked(_) => ERROR!("Trying to load into finalized atals"),
+			Fresh(reqs) => {
+				let k = u32(reqs.len());
+				let name = format!("res/{name}");
+				reqs.push((name.clone(), Lazy::new(FS::Lazy::File(name))));
+				Prefetched::new(k, self)
 			}
 		}
 	}
+	fn finalise(state: &mut State<S>) -> &mut VTexMap<S> {
+		let mut s = Fresh(Def());
+		mem::swap(&mut s, state);
+
+		let t = match s {
+			Baked(_) => unreachable!(),
+			Fresh(mut reqs) => {
+				let reqs = reqs
+					.iter_mut()
+					.enumerate()
+					.map(|(n, (name, r))| (u32(n), EXPECT!(uImage::<S>::load(r.get()).map_err(|e| format!("{e}, image {name:?}")))))
+					.collect_vec();
+				let max_side = GL::MAX_TEXTURE_SIZE();
+				let (atlas, mut tail) = atlas::pack_into_atlas(reqs, max_side, max_side);
+				let mut textures: VTexMap<S> = atlas.into_iter().collect();
+				while !tail.is_empty() {
+					let last_l = tail.len();
+					let (a, t) = atlas::pack_into_atlas(tail, max_side, max_side);
+					if last_l == t.len() {
+						ERROR!("Graphics card can't fit textures: {t:?}");
+					}
+					textures.extend(a.into_iter());
+					tail = t;
+				}
+				textures
+			}
+		};
+
+		*state = Baked(t);
+		match state {
+			Fresh(_) => unreachable!(),
+			Baked(t) => t,
+		}
+	}
 }
+impl<S: TexSize> Default for TexAtlas<S> {
+	fn default() -> Self {
+		Self { t: UnsafeCell::new(Fresh(Def())) }
+	}
+}
+
 impl<S: TexSize> Fetcher<u32, VTex2d<S, u8>> for TexAtlas<S> {
 	fn get(&self, k: u32) -> &VTex2d<S, u8> {
-		let (_, textures) = unsafe { &mut *self.t.get() };
-		if textures.is_empty() {
-			self.initialize();
-		}
+		let s = unsafe { &mut *self.t.get() };
+		let textures = match s {
+			Fresh(_) => Self::finalise(s),
+			Baked(t) => t,
+		};
 		textures.get(&k).valid()
 	}
 	fn take(&self, k: u32) -> VTex2d<S, u8> {
-		let (_, textures) = unsafe { &mut *self.t.get() };
-		if textures.is_empty() {
-			self.initialize();
-		}
+		let s = unsafe { &mut *self.t.get() };
+		let textures = match s {
+			Fresh(_) => Self::finalise(s),
+			Baked(t) => t,
+		};
 		textures.remove(&k).take().valid()
 	}
 }
+
+enum State<S> {
+	Fresh(Vec<(String, Lazy<Vec<u8>>)>),
+	Baked(VTexMap<S>),
+}
+use State::*;
+type VTexMap<S> = HashMap<u32, VTex2d<S, u8>>;

@@ -23,7 +23,7 @@ impl Selector {
 
 		if !*open {
 			choices.clear();
-			let mut pressed = StaticPtr!(&mut button.pressed);
+			let mut pressed = typed_ptr!(&mut button.pressed);
 			if button.draw(r, t, pos, size, text) {
 				*pressed.get_mut() = false;
 				*open = true;

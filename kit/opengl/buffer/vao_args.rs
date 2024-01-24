@@ -1,4 +1,4 @@
-use crate::uses::*;
+use crate::lib::*;
 
 type Args = (u32, u32, bool, u32, u32);
 pub trait AttrFmtArgs {

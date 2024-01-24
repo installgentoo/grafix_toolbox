@@ -1,5 +1,5 @@
 use super::args::*;
-use crate::uses::*;
+use crate::lib::*;
 
 #[derive(Default)]
 pub struct Camera {
@@ -24,12 +24,12 @@ impl Camera {
 			view_proj: M4::identity(),
 		}
 	}
-	pub fn setProj(&mut self, p: impl CameraArgs) {
+	pub fn set_proj(&mut self, p: impl CameraArgs) {
 		let p = p.get();
 		self.proj = p;
 		self.view_proj = p * self.view;
 	}
-	pub fn setView(&mut self, v: impl PosArgs) {
+	pub fn set_view(&mut self, v: impl PosArgs) {
 		let v = v.getp();
 		self.view = v;
 		self.view_proj = self.proj * v;
@@ -47,10 +47,11 @@ impl Camera {
 		Mat4(self.view_proj * model)
 	}
 	pub fn N(&self, model: &M4) -> Mat3 {
-		Mat3(glm::inverse_transpose(model.fixed_resize(0.)))
+		Mat3(la::inverse_transpose(la::crop_3x3(model)))
 	}
 	pub fn NV(&self, model: &M4) -> Mat3 {
-		Mat3(glm::inverse_transpose((self.view * model).fixed_resize(0.)))
+		let m = self.view * model;
+		Mat3(la::inverse_transpose(la::crop_3x3(&m)))
 	}
 }
-use glm::Mat4 as M4;
+use la::Mat4 as M4;

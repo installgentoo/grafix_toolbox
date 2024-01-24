@@ -1,10 +1,9 @@
-use super::{policy::*, texture::TextureBinding};
-use crate::uses::*;
+use super::{super::texture::TextureBinding, *};
 
 #[macro_export]
 macro_rules! Uniform {
 	($bind: ident, ($n: expr, $v: expr)) => {{
-		const _ID: (u32, &str) = $crate::uses::GL::macro_uses::uniforms_use::id($n);
+		const _ID: (u32, &str) = $crate::GL::macro_uses::uniforms_use::id($n);
 		let mut b = $bind;
 		b.Uniform(_ID, $v);
 		b
@@ -73,10 +72,7 @@ impl<T: TexType> UniformArgs for &TextureBinding<'_, T> {
 		let u = i32(self.u);
 		let ent = tex_cache.entry(name).or_insert(-1);
 		if *ent != u {
-			DEBUG!("Updating GL tex {ent} to {u} in shader {}", {
-				use super::state::*;
-				ShdProg::bound_obj()
-			});
+			DEBUG!("Updating GL tex {ent} to {u} in shader {}", { ShdProg::bound_obj() });
 			GLCheck!(gl::Uniform1i(name, u));
 			*ent = u;
 		}

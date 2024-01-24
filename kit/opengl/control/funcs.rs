@@ -1,4 +1,4 @@
-use crate::uses::*;
+use crate::lib::*;
 
 macro_rules! APPLICATOR {
 	($n: ident, $($t: ident),+) => {
@@ -23,7 +23,7 @@ APPLICATOR!(UnpackTuple4, t0, t1, t2, t3, t4);
 APPLICATOR!(UnpackTuple5, t0, t1, t2, t3, t4, t5);
 
 pub fn states_map() -> &'static mut HashMap<usize, (bool, bool)> {
-	LocalStatic!(HashMap<usize, (bool, bool)>, { Def() })
+	LocalStatic!(HashMap<usize, (bool, bool)>)
 }
 
 macro_rules! FUNC {
@@ -95,7 +95,7 @@ pub trait State {
 }
 
 pub fn overflow_map() -> &'static mut HashMap<GLenum, i32> {
-	LocalStatic!(HashMap<GLenum, i32>, { Def() })
+	LocalStatic!(HashMap<GLenum, i32>)
 }
 
 macro_rules! SWITCH {

@@ -1,11 +1,9 @@
-use super::args::*;
-use crate::uses::*;
-use GL::{spec::*, unigl::*, window::*, Frame};
+use super::{Frame, GL::window::*, *};
 
 impl Frame for Window {
 	fn ClearColor(&self, args: impl ClearArgs) {
 		let (attach, c) = args.get();
-		GLCheck!(glClearFramebuff(0, gl::COLOR, attach, c.as_ptr() as *const f32));
+		GLCheck!(glClearFramebuff(0, gl::COLOR, attach, c.as_ptr()));
 	}
 	fn ClearDepth<T>(&self, d: T)
 	where

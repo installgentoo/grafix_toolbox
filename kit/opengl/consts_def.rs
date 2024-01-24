@@ -1,4 +1,4 @@
-use super::consts::Get;
+use super::control::consts::Get;
 
 CONST!(MAX_TEXTURE_IMAGE_UNITS, i32);
 CONST!(MAX_COMBINED_TEXTURE_IMAGE_UNITS, i32);

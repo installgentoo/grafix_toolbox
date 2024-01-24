@@ -175,7 +175,7 @@ impl HyperText {
 		});
 
 		if whole_text_h > size.y() {
-			let mut pip_pos = StaticPtr!(&mut scrollbar.pip_pos);
+			let mut pip_pos = typed_ptr!(&mut scrollbar.pip_pos);
 			r.logic(
 				(pos, pos.sum(size)),
 				move |e, _, _| {

@@ -1,26 +1,8 @@
-#[macro_use]
-mod control;
-#[macro_use]
-mod funcs_def;
-#[macro_use]
-mod shader;
-
-mod buffer;
-mod consts_def;
-mod debug;
-mod frame;
-mod texture;
-mod thread;
-mod utility;
-
-use control::*;
-use opengl::types;
-
 pub mod opengl {
 	pub use gl;
 	pub type Query = spec::Object<spec::Query>; // TODO negative traits stabilization - remove send/sync from Query, Framebuffer and Vao //impl !Send for //impl !Sync for
 	pub use super::debug::{DebugLevel, EnableDebugContext};
-	pub use super::thread::Fence;
+	pub use super::offhand::Fence;
 	pub use bind::*;
 	pub use buffer::*;
 	pub use fbo::*;
@@ -29,7 +11,7 @@ pub mod opengl {
 	pub use tex::*;
 	pub use types::*;
 	pub mod macro_uses {
-		pub use super::super::{error_check::gl_was_initialized, shader::uniform::uniforms_use, shader::InlineShader, texture::sampler_use};
+		pub use super::super::{control::gl_was_initialized, shader::uniform::uniforms_use, shader::InlineShader, texture::sampler_use};
 	}
 	pub mod bind {
 		use super::super::*;
@@ -64,16 +46,16 @@ pub mod opengl {
 	pub mod spec {
 		use super::super::*;
 		pub use buffer::{AttrType, IdxType};
-		pub use {object::*, policy::*};
+		pub use control::{object::*, policy::*};
 	}
 	pub mod atlas {
-		pub use super::super::utility::{pack_into_atlas, Animation, AtlasTex2d, TexAtlas, Tile, VTex2d};
+		pub use super::super::utility::{pack_into_atlas, Animation, TexAtlas, Tile, VTex2d, VTex2dEntry};
 	}
 	pub mod font {
 		pub use super::super::utility::{Font, Glyph};
 	}
 	pub mod offhand {
-		pub use super::super::thread::Offhand;
+		pub use super::super::offhand::Offhand;
 	}
 	pub mod laplacian {
 		pub use super::super::utility::{collapse, pyramid};
@@ -85,6 +67,25 @@ pub mod opengl {
 		pub use super::super::utility::{AnyMesh, Camera, Mesh, Model, Screen, Skybox};
 	}
 	pub mod unigl {
-		pub use super::super::universion::*;
+		pub use super::super::control::universion::*;
 	}
 }
+
+mod internal {
+	pub use super::control::{object::*, policy::*, state::*, tex_state::*, universion::*};
+}
+
+#[macro_use]
+mod control;
+#[macro_use]
+mod funcs_def;
+#[macro_use]
+mod shader;
+
+mod buffer;
+mod consts_def;
+mod debug;
+mod frame;
+mod offhand;
+mod texture;
+mod utility;

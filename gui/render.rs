@@ -1,6 +1,5 @@
 use super::{objects::*, parts::*};
-use crate::event::*;
-use crate::uses::{math::*, *};
+use crate::{event::*, lib::*, math::*, GL};
 use GL::{spec, Frame, Vao, RGB, RGBA};
 
 macro_rules! DRAW {
@@ -64,14 +63,14 @@ impl<'l> RenderLock<'l> {
 		prim.draw(*n, clip.last().valid(), r);
 		*n += 1;
 	}
-	pub fn logic(&mut self, b_box: Crop, func: impl 'l + FnMut(&Event, bool, Vec2) -> EventReply, id: LogicId) {
-		let (id, bound, func) = (id, LogicBound::Crop(b_box), Box::new(func));
+	pub fn logic(&mut self, b_box: Crop, func: impl 'l + EventReaction, id: LogicId) {
+		let (id, bound, func) = (id, LogicBound::Crop(b_box), Box(func));
 		self.logics.push(LogicStorage { id, bound, func });
 	}
-	pub fn draw_with_logic(&mut self, prim: impl DrawablePrimitive<'l>, func: impl 'l + FnMut(&Event, bool, Vec2) -> EventReply, id: LogicId) {
+	pub fn draw_with_logic(&mut self, prim: impl DrawablePrimitive<'l>, func: impl 'l + EventReaction, id: LogicId) {
 		let Self { r, n, clip, logics, .. } = self;
 		prim.draw(*n, clip.last().valid(), r);
-		let (id, bound, func) = (id, LogicBound::Obj(*n), Box::new(func));
+		let (id, bound, func) = (id, LogicBound::Obj(*n), Box(func));
 		logics.push(LogicStorage { id, bound, func });
 		*n += 1;
 	}
@@ -143,7 +142,7 @@ impl Renderer {
 		events.retain(|e| {
 			use {Event::*, EventReply::*};
 
-			map_enum!(MouseMove { at, .. } = e => *mouse_pos = *at);
+			map_variant!(MouseMove { at, .. } = e => *mouse_pos = *at);
 			let refocus = if let MouseButton { state, .. } = e { state.contains(Mod::PRESS) } else { false };
 
 			if !refocus && *focus != 0 {
@@ -296,10 +295,11 @@ impl<T: spec::Buffer, D: Copy> Storage<T, D> {
 type IdxArrStorage = Storage<spec::Index, u16>;
 type ArrStorage<T> = Storage<spec::Attribute, T>;
 
+trait_alias!(EventReaction, FnMut(&Event, bool, Vec2) -> EventReply); // TODO trait alias all
 struct LogicStorage<'l> {
 	id: LogicId,
 	bound: LogicBound,
-	func: Box<dyn 'l + FnMut(&Event, bool, Vec2) -> EventReply>, // TODO trait alias all
+	func: Box<dyn 'l + EventReaction>,
 }
 enum LogicBound {
 	Crop(Crop),

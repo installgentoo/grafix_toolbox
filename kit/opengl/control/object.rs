@@ -1,5 +1,5 @@
 use super::state::*;
-use crate::uses::Dummy;
+use crate::stdlib::Dummy;
 
 #[derive(Debug)]
 pub struct Object<T: State> {

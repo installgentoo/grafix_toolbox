@@ -1,6 +1,5 @@
-use super::{args::*, fbo::*};
-use crate::uses::{math::*, *};
-use GL::{spec::*, tex::*, unigl::*, Renderbuffer};
+use super::{Renderbuffer, *};
+use crate::{math::*, GL::tex::*};
 
 pub trait Frame {
 	fn aspect(&self) -> Vec2 {

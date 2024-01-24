@@ -1,6 +1,6 @@
-use crate::glsl::*;
-use crate::uses::{math::*, *};
-use GL::{mesh::*, *};
+use crate::GL::{mesh::*, *};
+use crate::{glsl::*, lib::*, math::*, ser::*, FS};
+use std::borrow::Borrow;
 
 pub struct EnvTex {
 	pub mip_levels: f32,
@@ -67,9 +67,9 @@ impl Environment {
 	pub fn new<S, F>(equirect: Tex2d<S, F>) -> Self {
 		Screen::Prepare();
 		let VP_mats = {
-			use glm::vec3;
-			let s = |to, up| glm::look_at(&vec3(0., 0., 0.), &to, &up);
-			let proj = glm::perspective(1., 90_f32.to_radians(), 0.1, 10.);
+			let vec3 = la::Vec3::new;
+			let s = |to, up| la::look_at(vec3(0., 0., 0.), to, up);
+			let proj = la::perspective(1., 90_f32.to_radians(), 0.1, 10.);
 			[
 				s(vec3(1., 0., 0.), vec3(0., -1., 0.)),
 				s(vec3(-1., 0., 0.), vec3(0., -1., 0.)),
@@ -86,7 +86,7 @@ impl Environment {
 		let mut irradiance_shd = Shader::pure((env__gen_vs, env__gen_irradiance_ps));
 		let mut specular_shd = Shader::pure((env__gen_vs, env__gen_spec_ps));
 
-		let color: [_; 6] = VP_mats
+		let color = VP_mats
 			.iter()
 			.map(|cam| {
 				let e = equirect.Bind(sampl);
@@ -99,7 +99,7 @@ impl Environment {
 			.collect_arr();
 		let cubemap = CubeTex::from(&color);
 
-		let diffuse: [_; 6] = VP_mats
+		let diffuse = VP_mats
 			.iter()
 			.map(|cam| {
 				let e = cubemap.Bind(sampl);
@@ -119,7 +119,7 @@ impl Environment {
 					.map(|l| {
 						let r = f32(l) / f32(mips - 1);
 						let wh = cubemap.param.dim_unchecked(u32(l)).xy();
-						let mip: [_; 6] = VP_mats
+						let mip = VP_mats
 							.iter()
 							.map(|cam| {
 								let e = cubemap.Bind(sampl);
@@ -132,8 +132,7 @@ impl Environment {
 							.collect_arr();
 						mip
 					})
-					.collect_vec()
-					.into_iter(),
+					.collect_vec(),
 			)
 			.collect_vec();
 

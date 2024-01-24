@@ -1,5 +1,4 @@
-use super::{args::*, format::*, object::*, policy::*, sampler::*, tex_state::*, tex_type::*, types::*, universion::*};
-use crate::uses::*;
+use super::{args::*, format::*, tex_type::*, *};
 
 derive_common_VAL! {
 pub struct TexParam {

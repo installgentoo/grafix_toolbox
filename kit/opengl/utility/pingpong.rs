@@ -1,6 +1,6 @@
 use super::super::shader::uniform::*;
-use crate::uses::*;
-use GL::{tex::*, Fbo};
+use crate::lib::*;
+use crate::GL::{tex::*, Fbo};
 
 #[macro_export]
 macro_rules! ComputeShader {

@@ -1,5 +1,5 @@
-use super::{funcs::*, types::*};
-use crate::uses::logging;
+use super::control::funcs::*;
+use crate::lib::*;
 
 FUNC!(gl, Viewport, i32, i32, i32, i32);
 FUNC!(gl, BlendFunc, GLenum, GLenum);
@@ -33,9 +33,9 @@ SWITCH!(TEXTURE_CUBE_MAP_SEAMLESS);
 
 #[macro_export]
 macro_rules! GLEnable {
-($f: ty) => {{ use $crate::uses::GL::states::*; <$f>::Enable(); }};
+($f: ty) => {{ use $crate::GL::states::*; <$f>::Enable(); }};
 ($f: ty, $($n: ty),+) => {{
-	use $crate::uses::GL::states::*;
+	use $crate::GL::states::*;
 	<$f>::Enable();
 	GLEnable!($($n),+);
 }};
@@ -43,9 +43,9 @@ macro_rules! GLEnable {
 
 #[macro_export]
 macro_rules! GLDisable {
-($f: ty) => {{ use $crate::uses::GL::states::*; <$f>::Disable(); }};
+($f: ty) => {{ use $crate::GL::states::*; <$f>::Disable(); }};
 ($f: ty, $($n: ty),+) => {{
-	use $crate::uses::GL::states::*;
+	use $crate::GL::states::*;
 	<$f>::Disable();
 	GLDisable!($($n),+);
 }};
@@ -53,9 +53,9 @@ macro_rules! GLDisable {
 
 #[macro_export]
 macro_rules! GLSave {
-($f: ty) => {{ use $crate::uses::GL::states::*; <$f>::Save(); }};
+($f: ty) => {{ use $crate::GL::states::*; <$f>::Save(); }};
 ($f: ty, $($n: ty),+) => {{
-	use $crate::uses::GL::states::*;
+	use $crate::GL::states::*;
 	<$f>::Save();
 	GLSave!($($n),+);
 }};
@@ -63,9 +63,9 @@ macro_rules! GLSave {
 
 #[macro_export]
 macro_rules! GLRestore {
-($f: ty) => {{ use $crate::uses::GL::states::*; <$f>::Restore(); }};
+($f: ty) => {{ use $crate::GL::states::*; <$f>::Restore(); }};
 ($f: ty, $($n: ty),+) => {{
-	use $crate::uses::GL::states::*;
+	use $crate::GL::states::*;
 	<$f>::Restore();
 	GLRestore!($($n),+);
 }};

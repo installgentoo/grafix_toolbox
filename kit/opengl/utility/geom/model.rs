@@ -1,5 +1,6 @@
 use super::mesh::*;
-use crate::uses::{math::*, GL::buffer::*, *};
+use crate::{lib::*, math::*, ser::*, FS, GL::buffer::*};
+use std::borrow::Borrow;
 
 #[derive(Debug, Default, Clone)]
 pub struct Model {
@@ -41,8 +42,8 @@ impl Model {
 						let xyz = &xyz[i..];
 						let (v1, v2, v3) = vec3::<Vec3>::to((xyz, &xyz[3..], &xyz[6..]));
 						let ndir = v1.sum(v2).sum(v3).div(3).sgn();
-						let (v1, v2, v3) = vec3::<glm::Vec3>::to((v1, v2, v3));
-						let n = <[_; 3]>::to(hVec3(Vec3(glm::triangle_normal(&v1, &v2, &v3)).mul(ndir)));
+						let (v1, v2, v3) = vec3::<la::Vec3>::to((v1, v2, v3));
+						let n = <[_; 3]>::to(hVec3(Vec3(la::normal(v1, v2, v3)).mul(ndir)));
 						(0..9).for_each(|i| norm.push(n[i % 3]));
 					}
 				}
@@ -134,7 +135,7 @@ impl Mesh<u16, f32, f16, f32> {
 
 #[cfg(feature = "adv_fs")]
 mod serde {
-	use {super::*, SERDE::uses::*};
+	use super::*;
 	impl Serialize for Model {
 		fn serialize<SE: Serializer>(&self, serializer: SE) -> Result<SE::Ok, SE::Error> {
 			serializer.serialize_bytes(&self.to_bytes())
@@ -146,7 +147,7 @@ mod serde {
 			impl de::Visitor<'_> for V {
 				type Value = Model;
 
-				fn expecting(&self, formatter: &mut Formatter) -> FmtRes {
+				fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
 					formatter.write_str("Model bytes")
 				}
 				fn visit_bytes<E: de::Error>(self, v: &[u8]) -> Result<Self::Value, E> {

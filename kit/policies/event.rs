@@ -1,4 +1,4 @@
-use crate::uses::*;
+use {super::math::*, bitflags::bitflags};
 
 #[derive(Debug, Clone)]
 pub enum Event {

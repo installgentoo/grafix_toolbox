@@ -1,5 +1,5 @@
 use super::{parts::*, *};
-use crate::uses::{math::*, GL::font::Font, GL::window::*, *};
+use crate::{lib::*, math::*, GL::font::Font, GL::window::*};
 
 #[derive(Default)]
 pub struct Theme {
@@ -39,7 +39,7 @@ macro_rules! storage {
 	($t: ty) => {
 		impl GuiStorage for $t {
 			fn storage(id: u32) -> &'static mut Self {
-				LazyStatic!(HashMap<u32, $t>, { Def() }).entry(id).or_default()
+				LazyStatic!(HashMap<u32, $t>).entry(id).or_default()
 			}
 		}
 	};
@@ -107,7 +107,7 @@ impl<'l> RenderLock<'l> {
 }
 
 pub fn borrow_map() -> &'static mut HashSet<u32> {
-	LazyStatic!(HashSet<u32>, { Def() })
+	LazyStatic!(HashSet<u32>)
 }
 fn check_borrow(id: u32) {
 	ASSERT!(
@@ -119,11 +119,11 @@ fn check_borrow(id: u32) {
 }
 
 fn clip_store() -> &'static mut (String, bool) {
-	LazyStatic!((String, bool), { ("".into(), false) })
+	LazyStatic!((String, bool))
 }
 
 fn theme() -> &'static mut Theme {
-	LazyStatic!(Theme, { Def() })
+	LazyStatic!(Theme)
 }
 fn t() -> &'static Theme {
 	let t = theme();

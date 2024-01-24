@@ -1,4 +1,4 @@
-use crate::uses::{math::*, *};
+use crate::{lib::*, math::*};
 
 pub fn pack(w: i32, h: i32, empty: &mut Vec<Rect>, filled: &mut Vec<Rect>, min: iVec2) -> Res<Rect> {
 	let (b, min_y) = Res(empty

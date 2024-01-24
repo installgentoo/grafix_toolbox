@@ -1,9 +1,10 @@
 use super::{atlas_pack::*, vtex::*};
-use crate::uses::{math::*, GL::tex::*, *};
+use crate::{lib::*, math::*, GL::tex::*};
+use std::{fmt, hash};
 
 pub fn pack_into_atlas<K, T: Tile<F>, S: TexSize, F: TexFmt>(mut tiles: Vec<(K, T)>, max_w: i32, max_h: i32) -> (Atlas<K, S, F>, Vec<(K, T)>)
 where
-	K: Debug + Clone + Eq + hash::Hash,
+	K: fmt::Debug + Clone + Eq + hash::Hash,
 {
 	if tiles.is_empty() {
 		FAIL!("Vector supplied to atlas is empty");

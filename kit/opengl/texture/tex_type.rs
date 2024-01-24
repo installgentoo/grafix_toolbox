@@ -1,5 +1,4 @@
-use super::policy::*;
-use crate::uses::*;
+use super::*;
 
 derive_common_VAL! { pub struct GL_TEXTURE_1D; }
 impl TexType for GL_TEXTURE_1D {

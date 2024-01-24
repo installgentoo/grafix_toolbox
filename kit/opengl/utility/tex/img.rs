@@ -1,5 +1,6 @@
 use super::atlas::Tile;
-use crate::uses::{sync::io, GL::tex::*, *};
+use crate::{lib::*, GL::tex::*};
+use std::{io, path::Path};
 
 pub type uImage<S> = Image<S, u8>;
 pub type fImage<S> = Image<S, f16>;
@@ -62,7 +63,7 @@ impl<S: TexSize> uImage<S> {
 				let img = img.into_rgba8();
 				(img.dimensions(), img.pixels().flat_map(|image::Rgba(p)| p).copied().collect())
 			}
-			_ => ASSERT!(false, "Not impl"),
+			_ => ERROR!("Not impl"),
 		};
 		Ok(Self { w, h, data, s: Dummy })
 	}

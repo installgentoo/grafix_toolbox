@@ -1,4 +1,4 @@
-use crate::uses::*;
+use crate::{lib::*, GL};
 use GL::{buffer::*, spec::*};
 
 pub mod Screen {
@@ -99,16 +99,17 @@ impl<I: IdxType, C: AttrType, T: AttrType, N: AttrType> Mesh<I, C, T, N> {
 	}
 }
 
+type MArgs<'s, I, C, T, N> = (&'s [I], &'s [C], Option<&'s [T]>, &'s [N], GLenum);
 pub trait MeshArgs<I, C, T, N> {
-	fn get(&self) -> (&[I], &[C], Option<&[T]>, &[N], GLenum);
+	fn get(&self) -> MArgs<'_, I, C, T, N>;
 }
 impl<I: IdxType, C: AttrType, T: AttrType, N: AttrType, SI: AsRef<[I]>, SC: AsRef<[C]>, ST: AsRef<[T]>, SN: AsRef<[N]>> MeshArgs<I, C, T, N> for (SI, SC, ST, SN, GLenum) {
-	fn get(&self) -> (&[I], &[C], Option<&[T]>, &[N], GLenum) {
+	fn get(&self) -> MArgs<'_, I, C, T, N> {
 		(self.0.as_ref(), self.1.as_ref(), Some(self.2.as_ref()), self.3.as_ref(), self.4)
 	}
 }
 impl<I: IdxType, C: AttrType, N: AttrType, SI: AsRef<[I]>, SC: AsRef<[C]>, SN: AsRef<[N]>> MeshArgs<I, C, f16, N> for (SI, SC, SN, GLenum) {
-	fn get(&self) -> (&[I], &[C], Option<&[f16]>, &[N], GLenum) {
+	fn get(&self) -> MArgs<'_, I, C, f16, N> {
 		(self.0.as_ref(), self.1.as_ref(), None, self.2.as_ref(), self.3)
 	}
 }
