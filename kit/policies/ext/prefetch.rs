@@ -16,9 +16,7 @@ enum mSelf<'a, K, T, M: Fetcher<K, T>> {
 
 impl<'a, K, T, M: Fetcher<K, T>> Prefetched<'a, K, T, M> {
 	pub fn new(k: K, m: &'a M) -> Self {
-		Self {
-			s: UnsafeCell::new(Started(Box::new(Some((k, m))))),
-		}
+		Self { s: UnsafeCell::new(Started(Box(Some((k, m))))) }
 	}
 	pub fn get(&self) -> &T {
 		let s = unsafe { &mut *self.s.get() };

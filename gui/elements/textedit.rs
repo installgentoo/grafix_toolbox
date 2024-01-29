@@ -5,11 +5,11 @@ pub struct TextEdit {
 	offset: Vec2,
 	size: Vec2,
 	scale: f32,
-	lines: Vec<STR>,
-	wraps: Vec<u32>,
+	lines: Box<[STR]>,
+	wraps: Box<[u32]>,
 	select: Caret,
 	caret: Caret,
-	changes: Option<(Vec<STR>, Vec<Box<str>>)>,
+	changes: Option<(Vec<STR>, Vec<Str>)>,
 	history: History,
 	scrollbar: Slider,
 	pub text: CachedStr,
@@ -21,7 +21,7 @@ impl TextEdit {
 
 		let font = &t.font;
 		if self.text.changed() || scale != self.scale || size != self.size {
-			let linenum_bar_w = |l| (font.char('0').adv * scale * (f32(l).max(1.).log10() + 1.)).min(size.x());
+			let linenum_bar_w = |l| (font.glyph('0').map(|g| g.adv).unwrap_or_default() * scale * (f32(l).max(1.).log10() + 1.)).min(size.x());
 			let offset = (linenum_bar_w(self.text.lines().count()), 0.);
 			let (lines, wraps) = util::parse_text_by(&self.text, font, scale, size.sub(offset).x() - SCR_PAD, char::is_whitespace);
 			self.select = util::move_caret(&lines, self.select, (0, 0), true);
@@ -35,9 +35,9 @@ impl TextEdit {
 		}
 		let id = LUID(self);
 		let Self {
-			offset,
-			lines,
-			wraps,
+			ref offset,
+			ref lines,
+			ref wraps,
 			select,
 			caret,
 			changes,
@@ -93,11 +93,7 @@ impl TextEdit {
 			});
 		}
 
-		r.draw(Rect {
-			pos,
-			size: (offset.x(), size.y()),
-			color: t.fg,
-		});
+		r.draw(Rect { pos, size: (offset.x(), size.y()), color: t.fg });
 		wraps.iter().skip(start).take(len).enumerate().filter(|(_, &w)| w == 0).for_each(|(n, _)| {
 			r.draw(Rect {
 				pos: p(size.x() - SCR_PAD - CUR_PAD * 1.5, n + start),
@@ -108,13 +104,7 @@ impl TextEdit {
 		lines.iter().skip(start).take(len).enumerate().for_each(|(n, text)| {
 			let p = p(0., n + start);
 			if !text.is_empty() {
-				r.draw(Text {
-					pos: offset.sum(p),
-					scale,
-					color: t.text,
-					text,
-					font,
-				});
+				r.draw(Text { pos: offset.sum(p), scale, color: t.text, text, font });
 			}
 			let w = wraps[n + start];
 
@@ -129,14 +119,15 @@ impl TextEdit {
 			}
 		});
 
-		let mut pip_pos = typed_ptr!(&mut scrollbar.pip_pos);
+		let (mut pip_pos, mut changes) = (typed_ptr!(&mut scrollbar.pip_pos), typed_ptr!(changes));
 		r.logic(
 			(pos, pos.sum(size)),
 			move |e, focused, mouse_pos| {
+				let changes = changes.get_mut();
 				if changes.is_none() {
-					*changes = Some((lines.clone(), vec![]));
+					*changes = Some((lines.clone().into_vec(), vec![]));
 				}
-				let (lines, line_cache) = unsafe { mem::transmute::<&mut _, &'static mut Option<(Vec<_>, Vec<_>)>>(changes) }.as_mut().unwrap();
+				let (lines, line_cache) = changes.as_mut().unwrap();
 				let mut _lines = typed_ptr!(lines);
 				let pip = pip_pos.get_mut();
 				let clampx = |c| util::clamp(lines, c);
@@ -173,14 +164,14 @@ impl TextEdit {
 				};
 				let lines = _lines.get_mut();
 
-				match e {
+				match *e {
 					OfferFocus => return Accept,
 					MouseButton { state, .. } if state.pressed() => {
 						*caret = click(mouse_pos);
 						*select = select.or_val(state.shift(), *caret);
 					}
 					MouseMove { at, state, .. } if focused && state.lmb() => {
-						*caret = click(*at);
+						*caret = click(at);
 						*select = select.or_val(state.shift(), *caret);
 						*pip = adj_edge(caret);
 					}
@@ -324,9 +315,9 @@ impl TextEdit {
 							history.push(Delete(text[b..e].into(), b, beg));
 							text.str().replace_range(b..e, &ins);
 						} else {
-							text.str().insert(b, *ch);
+							text.str().insert(b, ch);
 						}
-						line_cache.push([lines[beg.y()], &ins].concat());
+						line_cache.push([lines[beg.y()], &ins].concat().into());
 						lines[beg.y()] = line_cache.last().unwrap();
 
 						history.push(Insert(ins.into(), b, beg));
@@ -359,8 +350,8 @@ struct History {
 }
 #[derive(Clone)]
 enum Change {
-	Insert(Box<str>, usize, Caret),
-	Delete(Box<str>, usize, Caret),
+	Insert(Str, usize, Caret),
+	Delete(Str, usize, Caret),
 }
 impl Change {
 	fn invert(self) -> Self {
@@ -380,7 +371,7 @@ impl History {
 		if changes.len() > Self::MAXLENGTH * 2 {
 			changes.drain(..changes.len() - Self::MAXLENGTH);
 		}
-		changes.extend(c);
+		changes.extend_from_slice(&c);
 		*at = changes.len();
 	}
 	fn undo(&mut self) -> Option<Change> {
@@ -411,15 +402,15 @@ fn caret_range(lines: &[&str], caret: Caret, select: Caret) -> (Caret, Caret) {
 }
 
 trait HistoryPushArgs {
-	fn get(self) -> Vec<Change>;
+	fn get(self) -> Box<[Change]>;
 }
 impl<const L: usize> HistoryPushArgs for [Change; L] {
-	fn get(self) -> Vec<Change> {
-		self.to_vec()
+	fn get(self) -> Box<[Change]> {
+		self.to_vec().into()
 	}
 }
 impl HistoryPushArgs for Change {
-	fn get(self) -> Vec<Self> {
-		vec![self]
+	fn get(self) -> Box<[Self]> {
+		[self].into()
 	}
 }

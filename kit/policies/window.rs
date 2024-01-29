@@ -62,11 +62,7 @@ impl GlfwWindow {
 		}
 
 		Self::set_size((w, h));
-		Ok(Self {
-			window,
-			events,
-			resized_hint: true,
-		})
+		Ok(Self { window, events, resized_hint: true })
 	}
 
 	fn set_size((w, h): uVec2) {
@@ -195,10 +191,7 @@ impl WindowSpec for GlfwWindow {
 					Some(Event::MouseButton { button, state })
 				}
 				glfw::WindowEvent::Key(key, _, a, m) => Some(Event::Keyboard { key, state: action(a) | mods(m) }),
-				glfw::WindowEvent::Scroll(x, y) => Some(Event::Scroll {
-					at: Vec2((x, y)),
-					state: collect_mods(),
-				}),
+				glfw::WindowEvent::Scroll(x, y) => Some(Event::Scroll { at: Vec2((x, y)), state: collect_mods() }),
 				glfw::WindowEvent::Char(ch) => Some(Event::Char { ch }),
 
 				glfw::WindowEvent::Size(w, h) => {

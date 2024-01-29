@@ -47,7 +47,7 @@ impl<S: TexSize, F: TexFmt> Image<S, F> {
 	pub fn from_bytes(v: &[u8]) -> Self {
 		let w = u32::from_le_bytes(v[0..4].try_into().valid());
 		let h = u32::from_le_bytes(v[4..8].try_into().valid());
-		let data = unsafe { v[8..].align_to() }.1.to_vec();
+		let data = unsafe { v[8..].align_to() }.1.into();
 		Self { w, h, data, s: Dummy }
 	}
 }

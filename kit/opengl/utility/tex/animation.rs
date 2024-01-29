@@ -2,7 +2,7 @@ use crate::GL::{atlas::*, tex::*};
 use crate::{lib::*, math::*, slicing::*, FS};
 
 pub struct Animation<'a, S: TexSize> {
-	frames: Vec<((f32, f32), VTex2dEntry<'a, S>)>,
+	frames: Box<[(Vec2, VTex2dEntry<'a, S>)]>,
 	c: usize,
 	a: Dummy<&'a u32>,
 }
@@ -31,7 +31,7 @@ impl<'a, S: TexSize> Animation<'a, S> {
 			.into_iter()
 			.zip(starts.iter().zip(starts.iter().chain(&[time]).skip(1)))
 			.map(|(f, (&s, &e))| ((s, e).div(time), f))
-			.collect_vec();
+			.collect_box();
 
 		if frames.is_empty() {
 			Err(format!("Empty animation file {anim_desc}"))
@@ -40,7 +40,7 @@ impl<'a, S: TexSize> Animation<'a, S> {
 		}
 	}
 	pub fn frame(&mut self, t: f32) -> &VTex2d<S, u8> {
-		let Self { frames, c, .. } = self;
+		let Self { ref frames, c, .. } = self;
 		ASSERT!(t <= 1., "Animation assumes time in (0..1), given {t}");
 
 		for (n, ((b, e), guess)) in frames.iter().skip(*c).chain(frames.iter().take(*c)).enumerate() {

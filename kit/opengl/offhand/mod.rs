@@ -5,23 +5,26 @@ pub struct Offhand<O> {
 	rx: Receiver<(O, Fence)>,
 }
 impl<O: SendStat> Offhand<O> {
-	pub fn new<I: SendStat>(window: &mut Window, depth: usize, process: impl SendStat + Fn(I) -> O) -> (Sender<I>, Self) {
-		let (data_sn, data_rx) = chan::bounded::<I>(depth);
-		let (res_sn, res_rx) = chan::bounded::<(O, Fence)>(depth);
-		let handle = window.spawn_offhand_gl(move || {
+	pub fn new<I: SendStat>(w: &mut Window, depth: usize, process: impl SendStat + Fn(I) -> O) -> (Sender<I>, Self) {
+		Self::from_fn(w, depth, move |data_rx, res_sn| {
 			while let Ok(msg) = data_rx.recv() {
 				let res = process(msg);
 				let _ = res_sn.send((res, Fence::new())).map_err(|e| FAIL!(e));
 			}
-		});
+		})
+	}
+	pub fn from_fn<I: SendStat>(w: &mut Window, depth: usize, process: impl SendStat + Fn(Receiver<I>, Sender<(O, Fence)>)) -> (Sender<I>, Self) {
+		let (data_sn, data_rx) = chan::bounded::<I>(depth);
+		let (res_sn, res_rx) = chan::bounded::<(O, Fence)>(depth);
+		let handle = w.spawn_offhand_gl(move || process(data_rx, res_sn));
 		let (handle, rx) = (Some(handle), res_rx);
 		(data_sn, Self { handle, rx })
 	}
-	pub fn recv(&self) -> OffhandRes<O> {
-		self.rx.recv().ok().map_or(OffhandRes(None), |r| OffhandRes(Some(r)))
+	pub fn recv(&self) -> Option<OffhandRes<O>> {
+		self.rx.recv().ok().map(|r| OffhandRes(r))
 	}
 	pub fn try_recv(&self) -> Option<OffhandRes<O>> {
-		self.rx.try_recv().ok().map(|r| OffhandRes(Some(r)))
+		self.rx.try_recv().ok().map(|r| OffhandRes(r))
 	}
 }
 impl<O> Drop for Offhand<O> {
@@ -30,13 +33,12 @@ impl<O> Drop for Offhand<O> {
 	}
 }
 
-pub struct OffhandRes<O>(Option<(O, Fence)>);
+pub struct OffhandRes<O>((O, Fence));
 impl<O> OffhandRes<O> {
-	pub fn wait(self) -> Option<O> {
-		self.0.map(|(r, f)| {
-			f.Block();
-			r
-		})
+	pub fn wait(self) -> O {
+		let (r, f) = self.0;
+		f.Block();
+		r
 	}
 }
 

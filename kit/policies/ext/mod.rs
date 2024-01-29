@@ -7,6 +7,8 @@ pub mod prefetch;
 pub use {def::*, vec::*};
 
 pub type STR = &'static str;
+pub type Str = Box<str>;
+pub type Astr = std::sync::Arc<str>;
 
 pub fn Box<T>(v: T) -> Box<T> {
 	Box::new(v)
@@ -20,6 +22,11 @@ pub trait OptionSink {
 	fn sink(self);
 }
 impl<T> OptionSink for Option<T> {
+	fn sink(self) {
+		let _ = self;
+	}
+}
+impl<T, R> OptionSink for Result<T, R> {
 	fn sink(self) {
 		let _ = self;
 	}

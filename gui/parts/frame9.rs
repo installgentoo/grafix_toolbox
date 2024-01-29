@@ -1,5 +1,5 @@
 use super::obj::*;
-use super::sprite::{gui__pos_col_tex_vs, sampler};
+use super::sprite::{sampler, vs_gui__pos_col_tex};
 use super::sprite9::{sprite9_idxs, write_sprite9};
 use crate::GL::{atlas::VTex2d, shader::*, VaoBinding, RGBA};
 use crate::{lib::*, math::*};
@@ -23,11 +23,7 @@ impl Frame9<'_> {
 	}
 	pub fn obj(self, crop: Crop) -> Frame9Impl {
 		let Self { pos, size, corner, color, theme } = self;
-		Frame9Impl {
-			base: Base { pos, size, crop, color },
-			corner,
-			tex: theme,
-		}
+		Frame9Impl { base: Base { pos, size, crop, color }, corner, tex: theme }
 	}
 }
 pub struct Frame9Impl {
@@ -44,13 +40,13 @@ impl Object for Frame9Impl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, aspect: Vec2, range: BatchRange) {
+	fn write_mesh(&self, aspect: Vec2, range: BatchedObj) {
 		let (crop, &Base { pos, size, color, .. }) = (self.base.bound_box(), self.base());
 		let c = size.x().min(size.y()) * self.corner.min(0.5).max(0.);
 		write_sprite9((aspect, pos, size, (c, c), crop, (0., 0., 1., 1.), color), range);
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LocalStatic!(Shader, { Shader::pure((gui__pos_col_tex_vs, gui__frame_ps)) });
+		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__frame]) });
 
 		let tex = unsafe { &*self.tex };
 		let t = tex.tex.Bind(sampler());
@@ -62,13 +58,13 @@ impl Object for Frame9Impl {
 	fn vert_count(&self) -> u32 {
 		16
 	}
-	fn gen_idxs(&self, (start, size): (u16, u16)) -> Vec<u16> {
+	fn gen_idxs(&self, (start, size): (u16, u16)) -> Box<[u16]> {
 		sprite9_idxs((start, size))
 	}
 }
 
 SHADER!(
-	gui__frame_ps,
+	ps_gui__frame,
 	r"in vec4 glColor;
 	in vec2 glTexCoord;
 	layout(location = 0) out vec4 glFragColor;

@@ -2,11 +2,15 @@ use super::*;
 
 const SPLIT: fn(char) -> bool = char::is_whitespace;
 
-type Popup = Option<(Vec2, Box<str>)>;
+#[derive(Default, Debug)]
+struct Popup {
+	size: Vec2,
+	text: Str,
+}
 #[derive(Default, Debug)]
 struct HyperKey {
-	val: Popup,
-	trie: HashMap<Box<str>, Self>,
+	val: Option<Popup>,
+	trie: HashMap<Str, Self>,
 }
 #[derive(Default)]
 pub struct HyperDB {
@@ -36,7 +40,7 @@ impl HyperDB {
 			};
 
 			let val = &mut k.split(SPLIT).fold(&mut keys, |t, k| t.trie.entry(k.to_lowercase().into()).or_default()).val;
-			*val = Some((s.sum(PADDING * scale).fmin((2, 1.5)), v.into()));
+			*val = Some(Popup { size: s.sum(PADDING * scale).fmin((2, 1.5)), text: v.into() });
 		});
 		Self { keys, max_breaks }
 	}
@@ -44,8 +48,8 @@ impl HyperDB {
 		let mut trie = &self.keys.trie;
 		for (n, k) in keys.enumerate() {
 			if let Some(k) = trie.get(&*k.to_lowercase()) {
-				if let Some((s, l)) = k.val.as_ref() {
-					return Some((n, *s, l));
+				if let Some(Popup { size, text }) = k.val.as_ref() {
+					return Some((n, *size, text));
 				}
 				trie = &k.trie;
 			} else {
@@ -60,7 +64,7 @@ impl HyperDB {
 pub struct HyperText {
 	size: Vec2,
 	scale: f32,
-	lines: Vec<STR>,
+	lines: Box<[STR]>,
 	hovered: bool,
 	scrollbar: Slider,
 	popup: Option<(usize, Vec2, Box<Self>)>,
@@ -78,9 +82,7 @@ impl HyperText {
 			self.lines = lines;
 		}
 		let id = LUID(self);
-		let Self {
-			lines, hovered, scrollbar, popup, ..
-		} = self;
+		let Self { lines, hovered, scrollbar, popup, .. } = self;
 
 		let whole_text_h = scale * f32(lines.len());
 		let (p, vis_range) = {

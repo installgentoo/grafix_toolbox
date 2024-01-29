@@ -12,7 +12,7 @@ pub fn fit_text(text: &str, t: &Theme, size: Vec2) -> (Vec2, f32) {
 	}
 }
 
-type LinesWraps = (Vec<STR>, Vec<u32>);
+type LinesWraps = (Box<[STR]>, Box<[u32]>);
 
 pub fn parse_text(t: &str, f: &Font, s: f32, m: f32) -> LinesWraps {
 	parse_text_impl(t, f, s, m, false, |_| false)
@@ -22,7 +22,7 @@ pub fn parse_text_by(t: &str, f: &Font, s: f32, m: f32, sp: impl Fn(char) -> boo
 }
 fn parse_text_impl(text: &str, font: &Font, scale: f32, max_w: f32, split: bool, split_by: impl Fn(char) -> bool) -> LinesWraps {
 	if text.is_empty() {
-		return (vec![""], vec![1]);
+		return (Box([""]), Box([1]));
 	}
 
 	let (mut lnum, mut lines, mut wraps) = (1, vec![], vec![]);
@@ -61,7 +61,7 @@ fn parse_text_impl(text: &str, font: &Font, scale: f32, max_w: f32, split: bool,
 			l = tail;
 		}
 	}
-	(lines, wraps)
+	(lines.into(), wraps.into())
 }
 
 pub fn caret_x(text: &str, t: &Theme, scale: f32, at: usize, pad: f32) -> f32 {

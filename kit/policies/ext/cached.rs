@@ -42,10 +42,7 @@ impl<T: Default> Default for Cached<T> {
 }
 impl<T: Clone> Clone for Cached<T> {
 	fn clone(&self) -> Self {
-		Self {
-			val: self.val.clone(),
-			changed: true,
-		}
+		Self { val: self.val.clone(), changed: true }
 	}
 }
 impl<T: fmt::Debug> fmt::Debug for Cached<T> {

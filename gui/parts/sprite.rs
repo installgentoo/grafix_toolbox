@@ -20,10 +20,7 @@ impl<S: TexSize> Sprite<'_, S> {
 	}
 	pub fn obj(self, crop: Crop) -> SpriteImpl<S> {
 		let Self { pos, size, color, tex } = self;
-		SpriteImpl {
-			base: Base { pos, size, crop, color },
-			tex,
-		}
+		SpriteImpl { base: Base { pos, size, crop, color }, tex }
 	}
 }
 pub struct SpriteImpl<S> {
@@ -39,7 +36,7 @@ impl<S: TexSize> Object for SpriteImpl<S> {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, aspect: Vec2, (z, state, xyzw, rgba, uv): BatchRange) {
+	fn write_mesh(&self, aspect: Vec2, BatchedObj { z, state, xyzw, rgba, uv }: BatchedObj) {
 		if state.contains(State::XYZW | State::UV) {
 			let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <_>::to({
 				let (aspect, (crop1, crop2), &Base { pos, size, .. }) = (aspect, self.base.bound_box(), self.base());
@@ -66,7 +63,7 @@ impl<S: TexSize> Object for SpriteImpl<S> {
 		}
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LocalStatic!(Shader, { Shader::pure((gui__pos_col_tex_vs, gui__col_tex_ps)) });
+		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__col_tex]) });
 
 		let t = unsafe { &*self.tex }.tex.Bind(sampler());
 		let _ = Uniforms!(s, ("tex", &t));
@@ -83,7 +80,7 @@ pub fn sampler() -> &'static Sampler {
 }
 
 SHADER!(
-	gui__pos_col_tex_vs,
+	vs_gui__pos_col_tex,
 	r"layout(location = 0) in vec4 Position;
 	layout(location = 1) in vec4 Color;
 	layout(location = 2) in vec2 TexCoord;
@@ -97,7 +94,7 @@ SHADER!(
 	}"
 );
 SHADER!(
-	gui__col_tex_ps,
+	ps_gui__col_tex,
 	r"in vec4 glColor;
 	in vec2 glTexCoord;
 	layout(location = 0) out vec4 glFragColor;

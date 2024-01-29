@@ -28,6 +28,7 @@ impl Logger {
 		Self::logger(out, l);
 		Self
 	}
+	#[inline(always)]
 	pub fn log(l: Level, msg: String) {
 		if (l as i32) <= Self::level() {
 			Self::logger(check_order, Level::INFO)
@@ -75,11 +76,7 @@ impl Logger {
 						}
 					}
 				});
-				LoggerState {
-					handle,
-					sender,
-					postmortem: Def(),
-				}
+				LoggerState { handle, sender, postmortem: Def() }
 			});
 			&mut LOGGER
 		}

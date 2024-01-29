@@ -20,7 +20,6 @@ impl<T> AllocArgs<T> for &[T] {
 		(*self, gl::DYNAMIC_STORAGE_BIT | gl::MAP_READ_BIT | gl::MAP_WRITE_BIT).geta()
 	}
 }
-impl_for_asref!(AllocArgs, geta, Args);
 
 type UArgs = (*const GLvoid, usize, usize);
 pub trait UpdateArgs<T> {
@@ -45,7 +44,6 @@ impl<T> UpdateArgs<T> for &[T] {
 		(*self, 0).getu()
 	}
 }
-impl_for_asref!(UpdateArgs, getu, UArgs);
 
 type RArgs = (isize, isize, GLenum);
 pub trait MappingArgs {

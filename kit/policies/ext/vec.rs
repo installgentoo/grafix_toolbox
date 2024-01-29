@@ -29,6 +29,9 @@ pub trait CollectVec<T>: Sized + Iterator<Item = T> {
 	fn collect_vec(self) -> Vec<T> {
 		self.collect()
 	}
+	fn collect_box(self) -> Box<[T]> {
+		self.collect()
+	}
 	fn collect_arr<const N: usize>(self) -> [T; N] {
 		let vec = self.collect_vec();
 		ASSERT!(vec.len() == N, "Collecting into array of wrong length");

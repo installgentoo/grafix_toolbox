@@ -1,5 +1,5 @@
 use super::obj::*;
-use super::sprite::{gui__pos_col_tex_vs, sampler};
+use super::sprite::{sampler, vs_gui__pos_col_tex};
 use crate::GL::{font::*, shader::*, VaoBinding};
 use crate::{lib::*, math::*};
 
@@ -17,12 +17,12 @@ impl<'a> Text<'_, 'a> {
 	pub fn substr(text: &'a str, font: &Font, scale: f32, max_width: f32) -> (Vec2, (&'a str, &'a str)) {
 		let (size, i) = text
 			.char_indices()
-			.scan((-0.5 * font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char), |(x, last_c), (i, c)| {
+			.scan((-0.5 * first_glyph(font, text).x(), 0 as char), |(x, last_c), (i, c)| {
 				*x += font.kern(*last_c, c);
 				*last_c = c;
-				let ch = font.char(c);
-				Some((*x, ch)).filter(|(x, ch)| (x + ch.coord.z()) * scale <= max_width).map(|r| {
-					*x += ch.adv;
+				let g = font.glyph(c)?;
+				Some((*x, g)).filter(|(x, g)| (x + g.coord.z()) * scale <= max_width).map(|r| {
+					*x += g.adv;
 					(r, i)
 				})
 			})
@@ -38,8 +38,9 @@ impl<'a> Text<'_, 'a> {
 			.scan((0., 0 as char), |(x, last_c), c| {
 				*x += font.kern(*last_c, c);
 				*last_c = c;
+				let g = font.glyph(c)?;
 				Some(*x).map(|r| {
-					*x += font.char(c).adv;
+					*x += g.adv;
 					r
 				})
 			})
@@ -47,30 +48,32 @@ impl<'a> Text<'_, 'a> {
 			.map_or(0., |x| x * scale)
 	}
 	pub fn char_at(text: &str, font: &Font, scale: f32, at_glyph: usize) -> Glyph {
-		text.chars().take(at_glyph + 1).last().map_or_else(Glyph::default, |c| {
-			let Glyph { adv, coord, uv } = *font.char(c);
-			let coord = coord.mul(scale);
-			Glyph { adv: adv * scale, coord, uv }
-		})
+		text.chars()
+			.take(at_glyph + 1)
+			.last()
+			.and_then(|c| font.glyph(c))
+			.map(|&Glyph { adv, coord, uv }| {
+				let coord = coord.mul(scale);
+				Glyph { adv: adv * scale, coord, uv }
+			})
+			.unwrap_or_default()
 	}
 	fn size_and_len(text: &'a str, font: &Font, scale: f32) -> (Vec2, u32) {
-		let mut len = 0;
-		let size = text
+		let (len, size) = text
 			.chars()
-			.scan((-0.5 * font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char), |(x, last_c), c| {
+			.scan((-0.5 * first_glyph(font, text).x(), 0 as char), |(x, last_c), c| {
 				*x += font.kern(*last_c, c);
 				*last_c = c;
-				let ch = font.char(c);
-				Some((*x, ch)).map(|r| {
-					Some(ch).filter(|ch| !ch.is_empty()).map(|_| len += 1);
-					*x += ch.adv;
-					r
-				})
+				let g = font.glyph(c)?;
+				let p = (*x, g);
+				*x += g.adv;
+				Some(p)
 			})
-			.fuse()
+			.enumerate()
 			.last()
-			.map_or((0., 0.), |(x, g)| (x + g.coord.z(), 1.).mul(scale));
-		(size, len)
+			.map(|(n, (x, g))| (n + 1, (x + g.coord.z(), 1.).mul(scale)))
+			.unwrap_or_default();
+		(size, u32(len))
 	}
 	#[inline(always)]
 	pub fn compare(&self, crop: &Crop, r: &TextImpl) -> State {
@@ -98,7 +101,7 @@ pub struct TextImpl {
 	base: Base,
 	scale: f32,
 	len: u32,
-	text: Box<str>,
+	text: Str,
 	font: &'static Font,
 }
 impl TextImpl {
@@ -110,32 +113,32 @@ impl Object for TextImpl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, aspect: Vec2, (z, state, mut xyzw, mut rgba, mut uv): BatchRange) {
+	fn write_mesh(&self, aspect: Vec2, BatchedObj { z, state, mut xyzw, mut rgba, mut uv }: BatchedObj) {
 		if self.text.is_empty() {
 			return;
 		}
 
-		let Self { base, scale, len, text, font } = self;
-		let &Base {
-			pos, color, crop: (crop1, crop2), ..
-		} = base;
+		let &Self {
+			base: Base { pos, color, crop: (crop1, crop2), .. },
+			scale,
+			len,
+			ref text,
+			font,
+		} = self;
 
 		if state.contains(State::XYZW) {
-			let (aspect, s) = (aspect, *scale);
+			let (aspect, s) = (aspect, scale);
 
-			let (mut x, mut last_c) = (-0.5 * font.char(text.chars().next().unwrap_or(' ')).coord.x(), 0 as char);
+			let (mut x, mut last_c) = (-0.5 * first_glyph(font, text).x(), 0 as char);
 			for c in text.chars() {
 				x += font.kern(last_c, c);
 				last_c = c;
-				let ch = font.char(c);
 
-				if !ch.is_empty() {
+				if let Some(&Glyph { coord: (x1, y1, x2, y2), uv: u, adv }) = font.glyph(c) {
 					let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <_>::to({
-						let &Glyph { coord: (x1, y1, x2, y2), uv, .. } = ch;
-
 						let xy1 = pos.sum((x + x1, y1).mul(s));
 						let xy2 = pos.sum((x + x2, y2).mul(s));
-						let uv = bound_uv((crop1, crop2), (xy1, xy2), uv);
+						let uv = bound_uv((crop1, crop2), (xy1, xy2), u);
 						let xy1 = xy1.clmp(crop1, crop2).mul(aspect);
 						let xy2 = xy2.clmp(crop1, crop2).mul(aspect);
 						(xy1, xy2, uv)
@@ -146,8 +149,9 @@ impl Object for TextImpl {
 					xyzw = &mut xyzw[16..];
 					uv[..8].copy_from_slice(&[u1, v1, u2, v1, u2, v2, u1, v2]);
 					uv = &mut uv[8..];
+
+					x += adv;
 				}
-				x += ch.adv;
 			}
 		}
 
@@ -155,14 +159,14 @@ impl Object for TextImpl {
 			let (r, g, b, a) = vec4::to(color.mul(255).clmp(0, 255).round());
 			let col = &[r, g, b, a];
 
-			for _ in 0..4 * *len {
+			for _ in 0..4 * len {
 				rgba[..4].copy_from_slice(col);
 				rgba = &mut rgba[4..];
 			}
 		}
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LocalStatic!(Shader, { Shader::pure((gui__pos_col_tex_vs, gui_sdftext_ps)) });
+		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui_sdftext]) });
 
 		let t = self.font.tex().Bind(sampler());
 		let _ = Uniforms!(s, ("tex", &t));
@@ -174,8 +178,12 @@ impl Object for TextImpl {
 	}
 }
 
+fn first_glyph<'a>(f: &'a Font, text: &str) -> Vec4 {
+	f.glyph(text.chars().next().unwrap_or(' ')).map(|g| g.coord).unwrap_or_default()
+}
+
 SHADER!(
-	gui_sdftext_ps,
+	ps_gui_sdftext,
 	r"in vec4 glColor;
 	in vec2 glTexCoord;
 	layout(location = 0) out vec4 glFragColor;

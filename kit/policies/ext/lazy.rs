@@ -74,7 +74,7 @@ impl<T: SendStat + Default> Lazy<T> {
 }
 
 fn check_and_load<T: SendStat + Default>(blocking: bool, lazy: &mut Lazy<T>) -> bool {
-	let Lazy { state, loaded } = lazy;
+	let Lazy { state, ref loaded } = lazy;
 
 	let check_progress = |blocking: bool, t: &mut Task<(Option<T>, Source<T>)>| {
 		let reload = |(v, mut s): (Option<_>, Source<T>)| {

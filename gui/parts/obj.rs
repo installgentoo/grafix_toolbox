@@ -3,7 +3,7 @@ use crate::{lib::*, math::*};
 
 pub trait Object {
 	fn base(&self) -> &Base;
-	fn write_mesh(&self, aspect: Vec2, _: BatchRange);
+	fn write_mesh(&self, aspect: Vec2, _: BatchedObj);
 	fn batch_draw(&self, _: &VaoBinding<u16>, range: (u16, u16));
 
 	fn vert_count(&self) -> u32 {
@@ -12,7 +12,7 @@ pub trait Object {
 	fn ordered(&self) -> bool {
 		true
 	}
-	fn gen_idxs(&self, (start, size): (u16, u16)) -> Vec<u16> {
+	fn gen_idxs(&self, (start, size): (u16, u16)) -> Box<[u16]> {
 		rect_idxs((start, size))
 	}
 }
@@ -20,7 +20,13 @@ pub trait Object {
 pub type Crop = (Vec2, Vec2);
 pub type Color = Vec4;
 pub type TexCoord = Vec4;
-pub type BatchRange<'a> = (f16, State, &'a mut [f16], &'a mut [u8], &'a mut [f16]);
+pub struct BatchedObj<'a> {
+	pub z: f16,
+	pub state: State,
+	pub xyzw: &'a mut [f16],
+	pub rgba: &'a mut [u8],
+	pub uv: &'a mut [f16],
+}
 
 pub struct Base {
 	pub pos: Vec2,
@@ -30,9 +36,7 @@ pub struct Base {
 }
 impl Base {
 	pub fn bound_box(&self) -> Crop {
-		let &Self {
-			pos, size, crop: (crop1, crop2), ..
-		} = self;
+		let &Self { pos, size, crop: (crop1, crop2), .. } = self;
 		(pos.clmp(crop1, crop2), pos.sum(size).clmp(crop1, crop2))
 	}
 	pub fn intersects(&self, r: &Self) -> bool {
@@ -44,13 +48,12 @@ impl Base {
 bitflags! {
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct State: u32 {
-	const RESIZED = 0x1;
-	const TYPE = 0x2;
+	const BATCH_RESIZED = 0x2;
 	const XYZW = 0x10;
 	const RGBA = 0x20;
 	const UV = 0x40;
-	const MISMATCH = Self::TYPE.bits() | Self::XYZW.bits() | Self::RGBA.bits() | Self::UV.bits() | Self::RESIZED.bits();
-	const FULL = Self::XYZW.bits() | Self::RGBA.bits() | Self::UV.bits() | Self::RESIZED.bits();
+	const FULL = Self::XYZW.bits() | Self::RGBA.bits() | Self::UV.bits();
+	const MISMATCH = 0x1 | Self::FULL.bits() | Self::BATCH_RESIZED.bits();
 }
 }
 
@@ -78,6 +81,6 @@ pub fn bound_uv((crop1, crop2): Crop, (xy1, xy2): Crop, (u1, v1, u2, v2): TexCoo
 	(u1, v1, u2, v2)
 }
 
-pub fn rect_idxs((start, size): (u16, u16)) -> Vec<u16> {
+pub fn rect_idxs((start, size): (u16, u16)) -> Box<[u16]> {
 	(start..(start + size)).step_by(4).flat_map(|i| [i, i + 1, i + 3, i + 3, i + 1, i + 2]).collect()
 }

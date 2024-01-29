@@ -21,11 +21,11 @@ impl Slider {
 		r.draw_with_logic(
 			Rect { pos, size, color: t.fg },
 			move |e, focused, mouse_pos| {
-				match e {
+				match *e {
 					OfferFocus => return Accept,
 					MouseButton { state, .. } if focused && state.released() => return DropFocus,
 					MouseButton { state, .. } if state.pressed() => *pip_pos = set_pip(o(mouse_pos)),
-					MouseMove { at, .. } if focused => *pip_pos = set_pip(o(*at)),
+					MouseMove { at, .. } if focused => *pip_pos = set_pip(o(at)),
 					Scroll { at, .. } => {
 						*pip_pos = (*pip_pos + o(at.mul((-1, 1))) * pip_size).clamp(0., 1.);
 						return Accept;

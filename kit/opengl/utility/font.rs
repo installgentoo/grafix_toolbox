@@ -1,5 +1,4 @@
 use crate::{lib::*, ser::*, FS, GL};
-use std::borrow::Borrow;
 use GL::{atlas::*, Tex2d, RED};
 
 derive_common_OBJ! {
@@ -8,11 +7,6 @@ pub struct Glyph {
 	pub coord: Vec4,
 	pub uv: Vec4,
 }}
-impl Glyph {
-	pub fn is_empty(&self) -> bool {
-		self.uv.0 == self.uv.2
-	}
-}
 
 #[cfg_attr(feature = "adv_fs", derive(Serialize, Deserialize))]
 #[derive(Default)]
@@ -26,17 +20,8 @@ impl Font {
 	pub fn tex(&self) -> &Tex2d<RED, u8> {
 		self.tex.as_ref().unwrap_or_else(|| LocalStatic!(Tex2d<RED, u8>))
 	}
-	pub fn char(&self, c: char) -> &Glyph {
-		let g = &self.glyphs;
-		g.get(&c).unwrap_or_else(|| {
-			DEBUG!("No character {c:?} in font");
-			static E: Glyph = Glyph {
-				adv: 0.,
-				coord: (0., 0., 0., 0.),
-				uv: (0., 0., 0., 0.),
-			};
-			&E
-		})
+	pub fn glyph(&self, c: char) -> Option<&Glyph> {
+		self.glyphs.get(&c)
 	}
 	pub fn kern(&self, l: char, r: char) -> f32 {
 		if self.kerning.is_empty() {
@@ -48,8 +33,8 @@ impl Font {
 	pub fn new_cached(name: &str, alphabet: impl AsRef<str>) -> Self {
 		let alphabet = alphabet.as_ref();
 		let alph_chksum = chksum::const_fnv1(alphabet.as_bytes()).to_string();
-		let cache = &format!("{name}.{alph_chksum}.font.z");
-		if let Ok(d) = FS::Load::Archive(cache) {
+		let cache = format!("{name}.{alph_chksum}.font.z");
+		if let Ok(d) = FS::Load::Archive(&cache) {
 			if let Ok(font) = SERDE::FromVec(&d) {
 				return font;
 			}
@@ -57,23 +42,22 @@ impl Font {
 
 		let font: Res<_> = (|| {
 			let file = FS::Load::File(format!("res/{name}.ttf"))?;
-			let font = Self::new(file, alphabet)?;
+			let font = Self::new(&file, alphabet)?;
 			let _ = SERDE::ToVec(&font).map(|v| FS::Save::Archive((cache, v)));
 			Ok(font)
 		})();
 		OR_DEFAULT!(font, "Could not load font {name}: {}")
 	}
 	#[cfg(feature = "sdf")]
-	pub fn new(font_data: impl Borrow<Vec<u8>>, alphabet: impl AsRef<str>) -> Res<Self> {
+	pub fn new(font_data: &[u8], alphabet: &str) -> Res<Self> {
 		use {super::sdf::*, crate::math::*, rusttype as ttf};
-		let alphabet = alphabet.as_ref();
 		let (glyph_size, border, supersample) = (28, 2, 16);
 		let alphabet = || alphabet.chars();
 		let glyph_divisor = 2. / f32(glyph_size + border * 2);
 		let divisor = glyph_divisor / f32(supersample);
 		let scale = ttf::Scale::uniform(f32(glyph_size * supersample));
 
-		let font = Res(ttf::Font::try_from_bytes(font_data.borrow()))?;
+		let font = Res(ttf::Font::try_from_bytes(font_data))?;
 
 		let kerning = alphabet()
 			.filter_map(|c| {
@@ -110,7 +94,7 @@ impl Font {
 					let (w, h, data) = {
 						let mut data = vec![0; w * h];
 						g.draw(|x, y, v| data[w * (b + usize(y)) + b + usize(x)] = u8((v * 255.).min(255.)));
-						let sdf = sdf.generate(Tex2d::<RED, u8>::new((w, h), &data), supersample, border * 2);
+						let sdf = sdf.generate(Tex2d::<RED, u8>::new((w, h), &data[..]), supersample, border * 2);
 						let p = sdf.param;
 						(p.w, p.h, sdf.Save::<RED, u8>(0))
 					};
@@ -157,7 +141,7 @@ impl Font {
 struct ImgBox {
 	w: i32,
 	h: i32,
-	data: Vec<u8>,
+	data: Box<[u8]>,
 }
 impl Eq for ImgBox {}
 impl PartialEq for ImgBox {
@@ -165,7 +149,7 @@ impl PartialEq for ImgBox {
 		if self.w != r.w && self.h != r.h {
 			return false;
 		}
-		let diff = self.data.iter().zip(&r.data).map(|(&l, &r)| (i32(l) - i32(r)).abs()).max().unwrap_or(0);
+		let diff = self.data.iter().zip(&r.data[..]).map(|(&l, &r)| (i32(l) - i32(r)).abs()).max().unwrap_or(0);
 		diff < 5
 	}
 }

@@ -11,14 +11,7 @@ pub struct Selector {
 }
 impl Selector {
 	pub fn draw<'s>(&'s mut self, r: &mut RenderLock<'s>, t: &'s Theme, pos: Vec2, size: Vec2, options: &'s mut [String]) -> usize {
-		let Self {
-			button,
-			line_edit,
-			choices,
-			open,
-			editing,
-			choice,
-		} = self;
+		let Self { button, line_edit, choices, open, editing, choice } = self;
 		let text = options.at(*choice);
 
 		if !*open {

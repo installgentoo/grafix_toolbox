@@ -10,7 +10,7 @@ pub mod Screen {
 	pub fn Draw() {
 		LocalStatic!(Model, {
 			#[rustfmt::skip]
-			let _xyuv = AttrArr::new([ -1, -1, 0, 0,  3, -1, 2, 0,  -1, 3, 0, 2 ]);
+			let _xyuv = AttrArr::new(&[ -1, -1, 0, 0,  3, -1, 2, 0,  -1, 3, 0, 2 ][..]);
 			let mut vao = Vao::new();
 			vao.AttribFmt(&_xyuv, (0, 4));
 			Model { vao, _xyuv }
@@ -36,15 +36,15 @@ pub mod Skybox {
 	pub fn Draw() {
 		LocalStatic!(Model, {
 			#[rustfmt::skip]
-			let _idx = IdxArr::new([ 0, 1, 3,  3, 1, 2,
-									 4, 5, 7,  7, 5, 6,
-									 0, 1, 4,  4, 1, 5,
-									 3, 2, 7,  7, 2, 6,
-									 2, 1, 6,  6, 1, 5,
-									 3, 7, 0,  0, 7, 4, ]);
+			let _idx = IdxArr::new(&[ 0, 1, 3,  3, 1, 2,
+									  4, 5, 7,  7, 5, 6,
+									  0, 1, 4,  4, 1, 5,
+									  3, 2, 7,  7, 2, 6,
+									  2, 1, 6,  6, 1, 5,
+									  3, 7, 0,  0, 7, 4, ][..]);
 			#[rustfmt::skip]
-			let _xyz = AttrArr::new([ -1,  1, 1,   1,  1, 1,   1,  1, -1,  -1,  1, -1,
-									  -1, -1, 1,   1, -1, 1,   1, -1, -1,  -1, -1, -1 ]);
+			let _xyz = AttrArr::new(&[ -1,  1, 1,   1,  1, 1,   1,  1, -1,  -1,  1, -1,
+									   -1, -1, 1,   1, -1, 1,   1, -1, -1,  -1, -1, -1 ][..]);
 			let mut vao = Vao::new();
 			vao.BindIdxs(&_idx);
 			vao.AttribFmt(&_xyz, (0, 3));

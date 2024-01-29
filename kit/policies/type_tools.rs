@@ -6,27 +6,6 @@ macro_rules! impl_trait_for {
 }
 
 #[macro_export]
-macro_rules! impl_for_asref {
-	($t: ident, $met: ident, $ret: ty) => {
-		impl<T, const L: usize> $t<T> for [T; L] {
-			fn $met(&self) -> $ret {
-				(&self[..]).$met()
-			}
-		}
-		impl<T> $t<T> for &Vec<T> {
-			fn $met(&self) -> $ret {
-				(&self[..]).$met()
-			}
-		}
-		impl<T> $t<T> for Vec<T> {
-			fn $met(&self) -> $ret {
-				(&self).$met()
-			}
-		}
-	};
-} //TODO redo with specialization
-
-#[macro_export]
 macro_rules! type_name {
 	($t: ty) => {{
 		type_tools::short_type_name::<$t>()

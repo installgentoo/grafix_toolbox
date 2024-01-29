@@ -34,9 +34,29 @@ impl Buffer for Index {
 	const TYPE: GLenum = gl::ELEMENT_ARRAY_BUFFER;
 }
 
-#[derive(Default)]
-pub struct ShdProg;
-impl State for ShdProg {
+macro_rules! impl_shd {
+	($n: ident, $t: ident) => {
+		#[derive(Default, Debug)]
+		pub struct $n;
+		impl State for $n {
+			m_STATE!();
+			unsafe fn gen(obj: &mut u32) {
+				*obj = gl::CreateShader(gl::$t);
+			}
+			unsafe fn del(obj: &mut u32) {
+				gl::DeleteShader(*obj);
+			}
+		}
+	};
+}
+impl_shd!(ShaderVert, VERTEX_SHADER);
+impl_shd!(ShaderPix, FRAGMENT_SHADER);
+impl_shd!(ShaderGeom, GEOMETRY_SHADER);
+impl_shd!(ShaderComp, COMPUTE_SHADER);
+
+#[derive(Debug, Default)]
+pub struct ShaderProg;
+impl State for ShaderProg {
 	m_STATE!();
 	unsafe fn bind(obj: u32) {
 		gl::UseProgram(obj);
@@ -49,7 +69,7 @@ impl State for ShdProg {
 	}
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct VertArrObj;
 impl State for VertArrObj {
 	m_STATE!();
@@ -64,7 +84,7 @@ impl State for VertArrObj {
 	}
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Query;
 impl State for Query {
 	m_STATE!();
@@ -76,7 +96,7 @@ impl State for Query {
 	}
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Framebuff;
 impl State for Framebuff {
 	m_STATE!();
@@ -91,7 +111,7 @@ impl State for Framebuff {
 	}
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Renderbuff;
 impl State for Renderbuff {
 	m_STATE!();
@@ -103,7 +123,7 @@ impl State for Renderbuff {
 	}
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct SamplObj;
 impl State for SamplObj {
 	m_STATE!();

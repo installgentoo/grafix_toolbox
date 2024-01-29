@@ -3,7 +3,7 @@ use std::{borrow::Borrow, fmt, ops};
 derive_common_OBJ! {
 pub struct CachedStr {
 	str: String,
-	old_str: String,
+	old_str: Box<str>,
 	accessed: bool,
 }}
 impl CachedStr {
@@ -17,12 +17,12 @@ impl CachedStr {
 		Self { str, old_str, accessed: true }
 	}
 	pub fn changed(&mut self) -> bool {
-		let Self { str, old_str, accessed } = self;
-		if !*accessed || str == old_str {
+		let Self { ref str, old_str, accessed } = self;
+		if !*accessed || str[..] == old_str[..] {
 			return false;
 		}
 		*accessed = false;
-		*old_str = str.clone();
+		*old_str = str.clone().into();
 		true
 	}
 }

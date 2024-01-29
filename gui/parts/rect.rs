@@ -18,9 +18,7 @@ impl Rect {
 	}
 	pub fn obj(self, crop: Crop) -> RectImpl {
 		let Self { pos, size, color } = self;
-		RectImpl {
-			base: Base { pos, size, crop, color },
-		}
+		RectImpl { base: Base { pos, size, crop, color } }
 	}
 }
 pub struct RectImpl {
@@ -35,7 +33,7 @@ impl Object for RectImpl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, aspect: Vec2, (z, state, xyzw, rgba, _): BatchRange) {
+	fn write_mesh(&self, aspect: Vec2, BatchedObj { z, state, xyzw, rgba, .. }: BatchedObj) {
 		if state.contains(State::XYZW) {
 			let ((x1, y1), (x2, y2)) = <_>::to({
 				let (aspect, (crop1, crop2)) = (aspect, self.base.bound_box());
@@ -53,7 +51,7 @@ impl Object for RectImpl {
 		}
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LocalStatic!(Shader, { Shader::pure((gui__pos_col_vs, gui__col_ps)) });
+		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col, ps_gui__col]) });
 
 		let _ = s.Bind();
 		b.Draw((num, offset, gl::TRIANGLES));
@@ -65,7 +63,7 @@ impl Object for RectImpl {
 }
 
 SHADER!(
-	gui__pos_col_vs,
+	vs_gui__pos_col,
 	r"layout(location = 0) in vec4 Position;
 	layout(location = 1) in vec4 Color;
 	out vec4 glColor;
@@ -76,7 +74,7 @@ SHADER!(
 	}"
 );
 SHADER!(
-	gui__col_ps,
+	ps_gui__col,
 	r"in vec4 glColor;
 	layout(location = 0) out vec4 glFragColor;
 

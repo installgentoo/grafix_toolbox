@@ -4,10 +4,10 @@ use std::path::{Path, PathBuf};
 pub mod Save {
 	use super::*;
 
-	pub fn Write(p: impl Into<PathBuf>, data: impl Into<Vec<u8>>) {
+	pub fn Write(p: impl Into<Astr>, data: impl Into<Arc<[u8]>>) {
 		sender().send((p.into(), MessageType::Write, data.into())).expect(FAILED_WRITE);
 	}
-	pub fn Append(p: impl Into<PathBuf>, data: impl Into<Vec<u8>>) {
+	pub fn Append(p: impl Into<Astr>, data: impl Into<Arc<[u8]>>) {
 		sender().send((p.into(), MessageType::Append, data.into())).expect(FAILED_WRITE);
 	}
 	pub fn Archive(args: impl CompressArgs) {
@@ -15,11 +15,11 @@ pub mod Save {
 		sender().send((p, MessageType::ComprW(level), data)).expect(FAILED_WRITE);
 	}
 
-	type Args = (PathBuf, Vec<u8>, i32);
+	type Args = (Astr, Arc<[u8]>, i32);
 	pub trait CompressArgs {
 		fn get(self) -> Args;
 	}
-	impl<T: Into<Vec<u8>>, F: Into<PathBuf>, C> CompressArgs for (F, T, C)
+	impl<T: Into<Arc<[u8]>>, F: Into<Astr>, C> CompressArgs for (F, T, C)
 	where
 		i32: Cast<C>,
 	{
@@ -27,7 +27,7 @@ pub mod Save {
 			(self.0.into(), self.1.into(), i32(self.2))
 		}
 	}
-	impl<T: Into<Vec<u8>>, F: Into<PathBuf>> CompressArgs for (F, T) {
+	impl<T: Into<Arc<[u8]>>, F: Into<Astr>> CompressArgs for (F, T) {
 		fn get(self) -> Args {
 			(self.0.into(), self.1.into(), 0)
 		}
@@ -39,7 +39,7 @@ pub mod Save {
 		ComprW(i32),
 		Close,
 	}
-	type Message = (PathBuf, MessageType, Vec<u8>);
+	type Message = (Astr, MessageType, Arc<[u8]>);
 	fn sender() -> &'static Sender<Message> {
 		static SENDER: OnceLock<Sender<Message>> = OnceLock::new();
 		SENDER.get_or_init(move || {
@@ -50,14 +50,14 @@ pub mod Save {
 						use MessageType::*;
 						let (name, operation, data) = msg;
 						let file = match operation {
-							Write | ComprW(_) => fs::File::create(&name).await,
-							Append => fs::OpenOptions::new().append(true).create(true).open(&name).await,
+							Write | ComprW(_) => fs::File::create(&*name).await,
+							Append => fs::OpenOptions::new().append(true).create(true).open(&*name).await,
 							Close => return false,
 						};
 
 						if let Ok(mut file) = file {
 							let data = if let ComprW(l) = operation {
-								OR_DEFAULT!(zstd::stream::encode_all(&data[..], l))
+								OR_DEFAULT!(zstd::stream::encode_all(&data[..], l)).into()
 							} else {
 								data
 							};
@@ -65,7 +65,8 @@ pub mod Save {
 							let _ = file.write_all(&data).await;
 							EXPECT!(file.sync_all().await);
 						} else {
-							FAIL!(fmt_err(file, &name));
+							let name: PathBuf = (*name).into();
+							FAIL!("{:?}", fmt_err(file, &name));
 						}
 						true
 					});
@@ -76,7 +77,7 @@ pub mod Save {
 			});
 
 			logging::Logger::add_postmortem(move || {
-				sender().send((Def(), MessageType::Close, vec![])).expect("E| Failed to close write");
+				sender().send(("".into(), MessageType::Close, vec![].into())).expect("E| Failed to close write");
 				task::block_on(handle);
 			});
 
@@ -88,11 +89,11 @@ pub mod Save {
 pub mod Load {
 	use super::*;
 	pub fn File(p: impl AsRef<Path>) -> Res<Vec<u8>> {
-		let p: &Path = p.as_ref();
+		let p = p.as_ref();
 		fmt_err(std::fs::read(p), p)
 	}
 	pub fn Text(p: impl AsRef<Path>) -> Res<String> {
-		let p: &Path = p.as_ref();
+		let p = p.as_ref();
 		fmt_err(std::fs::read_to_string(p), p)
 	}
 	pub fn Archive(p: impl AsRef<Path>) -> Res<Vec<u8>> {
@@ -108,13 +109,13 @@ pub mod Load {
 
 pub mod Lazy {
 	use super::*;
-	pub fn File(p: impl Into<PathBuf>) -> impl Stream<Item = Vec<u8>> {
+	pub fn File(p: impl Into<Astr>) -> impl Stream<Item = Vec<u8>> {
 		lazy_read(p, read_file)
 	}
-	pub fn Text(p: impl Into<PathBuf>) -> impl Stream<Item = String> {
+	pub fn Text(p: impl Into<Astr>) -> impl Stream<Item = String> {
 		lazy_read(p, read_text)
 	}
-	pub fn Archive(p: impl Into<PathBuf>) -> impl Stream<Item = Vec<u8>> {
+	pub fn Archive(p: impl Into<Astr>) -> impl Stream<Item = Vec<u8>> {
 		let p = p.into();
 		lazy_read(p.clone(), read_file).map(move |data| OR_DEFAULT!(zstd::stream::decode_all(&data[..]), "Failed to decode archive {p:?}: {}"))
 	}
@@ -122,32 +123,31 @@ pub mod Lazy {
 
 pub mod Watch {
 	use super::*;
-	pub fn File(p: impl Into<PathBuf>) -> impl Stream<Item = Vec<u8>> {
+	pub fn File(p: impl Into<Astr>) -> impl Stream<Item = Vec<u8>> {
 		watch_file(p, read_file)
 	}
-	pub fn Text(p: impl Into<PathBuf>) -> impl Stream<Item = String> {
+	pub fn Text(p: impl Into<Astr>) -> impl Stream<Item = String> {
 		watch_file(p, read_text)
 	}
-	pub fn Archive(p: impl Into<PathBuf>) -> impl Stream<Item = Vec<u8>> {
+	pub fn Archive(p: impl Into<Astr>) -> impl Stream<Item = Vec<u8>> {
 		let p = p.into();
 		watch_file(p.clone(), read_file).map(move |data| OR_DEFAULT!(zstd::stream::decode_all(&data[..]), "Failed to decode archive {p:?}: {}"))
 	}
 }
 
-fn lazy_read<T: Default, F: Future<Output = Res<T>>>(p: impl Into<PathBuf>, loader: impl FnOnce(PathBuf) -> F) -> impl Stream<Item = T> {
+fn lazy_read<T: Default, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader: impl FnOnce(Arc<Path>) -> F) -> impl Stream<Item = T> {
 	stream::once_future(async move {
-		let p = p.into();
-		let file = loader(p).await.map_err(|e| FAIL!(e));
-		file.unwrap_or_else(|e| {
-			FAIL!(e);
-			Def()
-		})
+		let p = PathBuf::from(&*p.into()).into();
+		match loader(p).await {
+			Ok(file) => file,
+			e @ Err(_) => OR_DEFAULT!(e),
+		}
 	})
 }
 
-fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<PathBuf>, loader: impl FnOnce(PathBuf) -> F + Clone) -> impl Stream<Item = T> {
+fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader: impl FnOnce(Arc<Path>) -> F + Clone) -> impl Stream<Item = T> {
 	let (sn, rx) = chan::bounded::<()>(1);
-	let p = p.into();
+	let p: Arc<Path> = PathBuf::from(&*p.into()).into();
 
 	stream::unfold(None, move |w| {
 		let (p, l, _sn, rx) = (p.clone(), loader.clone(), sn.clone(), rx.clone());
@@ -182,12 +182,12 @@ fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<PathBuf>, loader: impl
 			};
 
 			let file = l(p).await.map_err(|e| FAIL!(e));
-			file.ok().map(move |f| (f, w))
+			file.ok().map(|f| (f, w))
 		}
 	})
 }
 
-async fn read_file(p: PathBuf) -> Res<Vec<u8>> {
+async fn read_file(p: Arc<Path>) -> Res<Vec<u8>> {
 	async fn read(p: &Path) -> Res<Vec<u8>> {
 		let (mut f, mut b) = (Res(fs::File::open(p).await)?, vec![]);
 		Res(f.read_to_end(&mut b).await)?;
@@ -195,7 +195,7 @@ async fn read_file(p: PathBuf) -> Res<Vec<u8>> {
 	}
 	fmt_err(read(&p).await, &p)
 }
-async fn read_text(p: PathBuf) -> Res<String> {
+async fn read_text(p: Arc<Path>) -> Res<String> {
 	async fn read(p: &Path) -> Res<String> {
 		let (mut f, mut b) = (Res(fs::File::open(p).await)?, String::new());
 		Res(f.read_to_string(&mut b).await)?;

@@ -49,21 +49,16 @@ impl Model {
 				}
 				let d: Vec3 = max.sub(min);
 				let (center, scale) = (max.sum(min).div(2), (1., 1., 1.).div(d.x().max(d.y()).max(d.z())).mul(scale));
-				let xyz = xyz.chunks(3).flat_map(|s| <[_; 3]>::to((Vec3(s)).sub(center).mul(scale)).to_vec()).collect_vec();
-				Self {
-					idxs,
-					xyz: xyz.into(),
-					uv,
-					norm: norm.into(),
-				}
+				let xyz = xyz.chunks(3).flat_map(|s| <[_; 3]>::to((Vec3(s)).sub(center).mul(scale)).to_vec()).collect();
+				Self { idxs, xyz, uv, norm: norm.into() }
 			})
 			.collect();
 		Ok(models)
 	}
 	#[cfg(feature = "adv_fs")]
 	pub fn new_cached(name: &str) -> Res<Self> {
-		let cache = &format!("{name}.obj.z");
-		if let Ok(d) = FS::Load::Archive(cache) {
+		let cache = format!("{name}.obj.z");
+		if let Ok(d) = FS::Load::Archive(&cache) {
 			if let Ok(model) = SERDE::FromVec(&d) {
 				return Ok(model);
 			}
@@ -118,9 +113,9 @@ impl Mesh<u16, f32, f16, f32> {
 			.collect_vec();
 
 		let draw = (u32(idx.len()), gl::TRIANGLE_STRIP);
-		let idx = IdxArr::new(idx);
-		let xyz = AttrArr::new(xyz);
-		let uv = AttrArr::new(uv);
+		let idx = IdxArr::new(&idx[..]);
+		let xyz = AttrArr::new(&xyz[..]);
+		let uv = AttrArr::new(&uv[..]);
 
 		let mut vao = Vao::new();
 		vao.BindIdxs(&idx);
@@ -161,7 +156,7 @@ mod serde {
 }
 
 impl Model {
-	pub fn to_bytes(&self) -> Vec<u8> {
+	pub fn to_bytes(&self) -> Box<[u8]> {
 		let Self { idxs, xyz, uv, norm } = self;
 		let il: [_; 8] = (idxs.len() * type_size!(u32)).to_le_bytes();
 		let cl: [_; 8] = (xyz.len() * type_size!(f32)).to_le_bytes();
@@ -170,7 +165,7 @@ impl Model {
 		let (_, c, _) = unsafe { xyz.align_to() };
 		let (_, t, _) = unsafe { uv.align_to() };
 		let (_, n, _) = unsafe { norm.align_to() };
-		[&il, &cl, &tl, i, c, t, n].concat()
+		[&il, &cl, &tl, i, c, t, n].concat().into()
 	}
 	pub fn from_bytes(v: &[u8]) -> Self {
 		let il = 24 + usize::from_le_bytes(v[0..8].try_into().valid());

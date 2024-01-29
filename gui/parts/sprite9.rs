@@ -1,5 +1,5 @@
 use super::obj::*;
-use super::sprite::{gui__col_tex_ps, gui__pos_col_tex_vs, sampler};
+use super::sprite::{ps_gui__col_tex, sampler, vs_gui__pos_col_tex};
 use crate::GL::{atlas::VTex2d, shader::Shader, tex::TexSize, VaoBinding};
 use crate::{lib::*, math::*};
 
@@ -22,11 +22,7 @@ impl<S: TexSize> Sprite9<'_, S> {
 	}
 	pub fn obj(self, crop: Crop) -> Sprite9Impl<S> {
 		let Self { pos, size, corner, color, tex } = self;
-		Sprite9Impl {
-			base: Base { pos, size, crop, color },
-			corner,
-			tex,
-		}
+		Sprite9Impl { base: Base { pos, size, crop, color }, corner, tex }
 	}
 }
 pub struct Sprite9Impl<S> {
@@ -43,13 +39,13 @@ impl<S: TexSize> Object for Sprite9Impl<S> {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, aspect: Vec2, range: BatchRange) {
+	fn write_mesh(&self, aspect: Vec2, range: BatchedObj) {
 		let (crop, &Base { pos, size, color, .. }, (u1, v1, u2, v2)) = (self.base.bound_box(), self.base(), unsafe { &*self.tex }.region);
 		let c = size.x().min(size.y()) * self.corner.min(0.5).max(0.);
 		write_sprite9((aspect, pos, size, (c, c), crop, (u1, v2, u2, v1), color), range);
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LocalStatic!(Shader, { Shader::pure((gui__pos_col_tex_vs, gui__col_tex_ps)) });
+		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__col_tex]) });
 
 		let t = unsafe { &*self.tex }.tex.Bind(sampler());
 		let _ = Uniforms!(s, ("src", &t));
@@ -62,13 +58,13 @@ impl<S: TexSize> Object for Sprite9Impl<S> {
 	fn ordered(&self) -> bool {
 		S::TYPE == gl::RGBA || Object::ordered(self)
 	}
-	fn gen_idxs(&self, (start, size): (u16, u16)) -> Vec<u16> {
+	fn gen_idxs(&self, (start, size): (u16, u16)) -> Box<[u16]> {
 		sprite9_idxs((start, size))
 	}
 }
 
 type Sprite9Desc = (Vec2, Vec2, Vec2, Vec2, Crop, TexCoord, Color);
-pub fn write_sprite9((aspect, pos, size, corner, (crop1, crop2), (u1, v1, u2, v2), color): Sprite9Desc, (z, state, xyzw, rgba, uv): BatchRange) {
+pub fn write_sprite9((aspect, pos, size, corner, (crop1, crop2), (u1, v1, u2, v2), color): Sprite9Desc, BatchedObj { z, state, xyzw, rgba, uv }: BatchedObj) {
 	if state.contains(State::XYZW) {
 		let (((x1, y1), (x2, y2), (m1x, m1y), (m2x, m2y)), (u1, v1, u2, v2), (m1u, m1v, m2u, m2v)) = <_>::to({
 			let (xy1, xy2) = (pos, pos.sum(size));
@@ -116,7 +112,7 @@ pub fn write_sprite9((aspect, pos, size, corner, (crop1, crop2), (u1, v1, u2, v2
 	}
 }
 
-pub fn sprite9_idxs((start, size): (u16, u16)) -> Vec<u16> {
+pub fn sprite9_idxs((start, size): (u16, u16)) -> Box<[u16]> {
 	(start..(start + size))
 		.step_by(16)
 		.flat_map(|i| {

@@ -8,10 +8,10 @@ macro_rules! DRAW {
 			fn draw(self, obj_n: u32, clip: &Crop, r: &mut Renderer) {
 				use ObjStore::$draw_spec as object;
 				if obj_n < u32(r.objs.objs.len()) {
-					let Primitive { state, o, .. } = r.objs.get(obj_n);
+					let Primitive { state, o, .. } = r.objs.get_mut(obj_n);
 					if let object(l) = o {
 						*state = self.compare(clip, l) | r.status;
-						if !state.contains(State::TYPE) {
+						if !state.contains(State::MISMATCH) {
 							if !state.is_empty() {
 								r.flush |= *state;
 								*o = object(self.obj(*clip));
@@ -24,10 +24,8 @@ macro_rules! DRAW {
 				}
 
 				r.flush |= State::FULL;
-				r.objs.objs.push(Primitive {
-					state: State::MISMATCH,
-					o: object(self.obj(*clip)),
-				});
+				let p = Primitive { state: State::MISMATCH, o: object(self.obj(*clip)) };
+				r.objs.objs.push(p);
 			}
 		}
 	};
@@ -59,7 +57,7 @@ impl<'l> RenderLock<'l> {
 		ClipLock::new(self)
 	}
 	pub fn draw(&mut self, prim: impl DrawablePrimitive<'l>) {
-		let Self { r, n, clip, .. } = self;
+		let Self { r, n, ref clip, .. } = self;
 		prim.draw(*n, clip.last().valid(), r);
 		*n += 1;
 	}
@@ -68,7 +66,7 @@ impl<'l> RenderLock<'l> {
 		self.logics.push(LogicStorage { id, bound, func });
 	}
 	pub fn draw_with_logic(&mut self, prim: impl DrawablePrimitive<'l>, func: impl 'l + EventReaction, id: LogicId) {
-		let Self { r, n, clip, logics, .. } = self;
+		let Self { r, n, ref clip, logics, .. } = self;
 		prim.draw(*n, clip.last().valid(), r);
 		let (id, bound, func) = (id, LogicBound::Obj(*n), Box(func));
 		logics.push(LogicStorage { id, bound, func });
@@ -77,12 +75,12 @@ impl<'l> RenderLock<'l> {
 	pub fn hovers_in(&mut self, pos: Vec2, size: Vec2) -> bool {
 		contains((pos, pos.sum(size)), self.r.mouse_pos)
 	}
-	pub fn hovered(&mut self) -> bool {
-		let Self { r, n, .. } = self;
-		if *n < 1 {
+	pub fn hovered(&self) -> bool {
+		let &Self { ref r, n, .. } = self;
+		if n < 1 {
 			return false;
 		}
-		let b_box = r.objs.get(*n - 1).o.obj().base().bound_box();
+		let b_box = r.objs.get(n - 1).o.obj().base().bound_box();
 		contains(b_box, self.r.mouse_pos)
 	}
 	pub fn focused(&self, l: LogicId) -> bool {
@@ -135,14 +133,14 @@ impl Renderer {
 		}
 	}
 	fn consume_events(&mut self, logics: Vec<LogicStorage>, events: &mut Vec<Event>) {
-		let Self { objs, focus, mouse_pos, .. } = self;
+		let Self { ref objs, focus, mouse_pos, .. } = self;
 
 		let logics = UnsafeCell::new(logics);
 		let logics = || unsafe { &mut *logics.get() }.iter_mut().rev();
 		events.retain(|e| {
 			use {Event::*, EventReply::*};
 
-			map_variant!(MouseMove { at, .. } = e => *mouse_pos = *at);
+			map_variant!(&MouseMove { at, .. } = e => *mouse_pos = at);
 			let refocus = if let MouseButton { state, .. } = e { state.contains(Mod::PRESS) } else { false };
 
 			if !refocus && *focus != 0 {
@@ -216,18 +214,7 @@ impl Renderer {
 		});
 	}
 	fn render(&mut self, frame: &mut impl Frame) {
-		let Self {
-			vao,
-			idxs,
-			xyzw,
-			uv,
-			rgba,
-			objs,
-			flush,
-			status,
-			aspect,
-			..
-		} = self;
+		let Self { vao, idxs, xyzw, uv, rgba, objs, flush, status, aspect, .. } = self;
 
 		if !flush.is_empty() {
 			objs.batch();
@@ -279,7 +266,7 @@ struct Storage<T: spec::Buffer, D> {
 impl<T: spec::Buffer, D: Copy> Storage<T, D> {
 	fn flush(&mut self, from: Option<usize>, mut rebind: impl FnMut(&spec::ArrObject<T, D>)) {
 		if let Some(from) = from {
-			let Self { obj, buff, size } = self;
+			let Self { obj, ref buff, size } = self;
 			let new_size = buff.len();
 			if new_size <= *size && new_size * 2 > *size {
 				obj.MapRangeMut((from, new_size - from, gl::MAP_INVALIDATE_RANGE_BIT)).mem().copy_from_slice(&buff[from..]);

@@ -72,7 +72,7 @@ impl<T: TexType> UniformArgs for &TextureBinding<'_, T> {
 		let u = i32(self.u);
 		let ent = tex_cache.entry(name).or_insert(-1);
 		if *ent != u {
-			DEBUG!("Updating GL tex {ent} to {u} in shader {}", { ShdProg::bound_obj() });
+			DEBUG!("Updating GL tex {ent} to {u} in shader {}", { ShaderProg::bound_obj() });
 			GLCheck!(gl::Uniform1i(name, u));
 			*ent = u;
 		}
@@ -108,22 +108,6 @@ where
 {
 	fn get(self, name: i32, _: &mut HashMap<i32, i32>) {
 		self.apply(name);
-	}
-}
-impl<T> UniformArgs for &Vec<T>
-where
-	[T]: UniformImpl,
-{
-	fn get(self, name: i32, _: &mut HashMap<i32, i32>) {
-		self[..].apply(name);
-	}
-}
-impl<T> UniformArgs for Vec<T>
-where
-	[T]: UniformImpl,
-{
-	fn get(self, name: i32, _: &mut HashMap<i32, i32>) {
-		self[..].apply(name);
 	}
 }
 

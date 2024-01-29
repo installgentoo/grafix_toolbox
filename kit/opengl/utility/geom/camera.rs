@@ -9,13 +9,9 @@ pub struct Camera {
 }
 impl Camera {
 	pub fn new(cargs: impl CameraArgs, pargs: impl PosArgs) -> Self {
-		let p = cargs.get();
-		let v = pargs.getp();
-		Self {
-			proj: p,
-			view: v,
-			view_proj: p * v,
-		}
+		let proj = cargs.get();
+		let view = pargs.getp();
+		Self { proj, view, view_proj: proj * view }
 	}
 	pub fn zero(cargs: impl CameraArgs) -> Self {
 		Self {

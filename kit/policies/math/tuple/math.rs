@@ -12,7 +12,7 @@ pub trait TupleMath<RA, A: Number>: TupleApply<RA, A, R<A> = Self> {
 		f32: Cast<M>,
 	{
 		let a = f32(a);
-		self.apply(r, move |l, r| l.mix(a, r))
+		self.apply(r, |l, r| l.mix(a, r))
 	}
 	fn sum(self, r: RA) -> Self {
 		self.apply(r, |l, r| l + r)

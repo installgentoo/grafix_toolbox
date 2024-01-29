@@ -6,8 +6,8 @@ pub fn pyramid(img: impl Into<Tex2d<RGBA, f32>>) -> Vec<Tex2d<RGBA, f32>> {
 	let (w, h) = (img.param.w, img.param.h);
 	let levels = i32(f64(w.min(h)).log2());
 
-	let mut render = Shader::pure((mesh__2d_screen_vs, mesh__2d_screen_ps));
-	let mut sub = Shader::pure((mesh__2d_screen_vs, shd::sub));
+	let mut render = Shader::pure([vs_mesh__2d_screen, ps_mesh__2d_screen]);
+	let mut sub = Shader::pure([vs_mesh__2d_screen, ps_pyramid___sub]);
 	let linear = &Sampler::linear();
 
 	let mut img1 = img;
@@ -38,7 +38,7 @@ pub fn pyramid(img: impl Into<Tex2d<RGBA, f32>>) -> Vec<Tex2d<RGBA, f32>> {
 }
 
 pub fn collapse(mut pyramid: Vec<Tex2d<RGBA, f32>>) -> Tex2d<RGBA, f32> {
-	let mut add = Shader::pure((mesh__2d_screen_vs, shd::add));
+	let mut add = Shader::pure([vs_mesh__2d_screen, ps_pyramid___add]);
 	let linear = &Sampler::linear();
 
 	let mut img1 = pyramid.pop().unwrap();
@@ -58,21 +58,19 @@ pub fn collapse(mut pyramid: Vec<Tex2d<RGBA, f32>>) -> Tex2d<RGBA, f32> {
 	img1
 }
 
-mod shd {
-	SHADER!(
-		sub,
-		r"in vec2 glTexCoord;
-		layout(location = 0) out vec4 glFragColor;
-		uniform sampler2D tex1, tex2;
+SHADER!(
+	ps_pyramid___sub,
+	r"in vec2 glTexCoord;
+	layout(location = 0) out vec4 glFragColor;
+	uniform sampler2D tex1, tex2;
 
-		void main() { glFragColor = texture(tex1, glTexCoord) - texture(tex2, glTexCoord); }"
-	);
-	SHADER!(
-		add,
-		r"in vec2 glTexCoord;
-		layout(location = 0) out vec4 glFragColor;
-		uniform sampler2D tex1, tex2;
+	void main() { glFragColor = texture(tex1, glTexCoord) - texture(tex2, glTexCoord); }"
+);
+SHADER!(
+	ps_pyramid___add,
+	r"in vec2 glTexCoord;
+	layout(location = 0) out vec4 glFragColor;
+	uniform sampler2D tex1, tex2;
 
-		void main() { glFragColor = texture(tex1, glTexCoord) + texture(tex2, glTexCoord); }"
-	);
-}
+	void main() { glFragColor = texture(tex1, glTexCoord) + texture(tex2, glTexCoord); }"
+);

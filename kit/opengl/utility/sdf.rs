@@ -10,9 +10,9 @@ pub struct SdfGenerator {
 }
 impl SdfGenerator {
 	pub fn new() -> Self {
-		let dst_t = Shader::pure((mesh__2d_screen_vs, sdf__distance_transform_v_ps));
-		let dt_h = Shader::pure((mesh__2d_screen_vs, sdf__distance_transform_ps));
-		let render = Shader::pure((mesh__2d_screen_vs, mesh__2d_screen_ps));
+		let dst_t = Shader::pure([vs_mesh__2d_screen, ps_sdf__distance_transform_v]);
+		let dt_h = Shader::pure([vs_mesh__2d_screen, ps_sdf__distance_transform]);
+		let render = Shader::pure([vs_mesh__2d_screen, ps_mesh__2d_screen]);
 		let sampl = Sampler::linear();
 		Self { dst_t, dt_h, render, sampl }
 	}
@@ -21,7 +21,7 @@ impl SdfGenerator {
 		let TexParam { w, h, .. } = tex.param;
 		GLSave!(BLEND, MULTISAMPLE, DEPTH_WRITEMASK);
 		GLDisable!(BLEND, MULTISAMPLE, DEPTH_WRITEMASK);
-		let Self { dst_t, dt_h, render, sampl } = self;
+		let Self { dst_t, dt_h, render, ref sampl } = self;
 		let tex = {
 			let mut surf_out = Fbo::<RGBA, f32>::new((w, h));
 			let mut surf_in = Fbo::<RGBA, f32>::new((w, h));
@@ -60,7 +60,7 @@ impl SdfGenerator {
 }
 
 SHADER!(
-	sdf__distance_transform_v_ps,
+	ps_sdf__distance_transform_v,
 	r"in vec2 glTexCoord;
 	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D tex;
@@ -83,7 +83,7 @@ SHADER!(
 );
 
 SHADER!(
-	sdf__distance_transform_ps,
+	ps_sdf__distance_transform,
 	r"in vec2 glTexCoord;
 	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D tex_i, tex_o;

@@ -121,7 +121,6 @@ impl<T> UpdArgs1<T> for &[T] {
 		(self, 0, 0).geta1()
 	}
 }
-impl_for_asref!(UpdArgs1, geta1, UArgs1);
 
 type UArgs2 = (*const GLvoid, i32, i32, i32, usize);
 pub trait UpdArgs2<T> {
@@ -163,7 +162,6 @@ impl<T> UpdArgs2<T> for &[T] {
 		(self, 0).geta2()
 	}
 }
-impl_for_asref!(UpdArgs2, geta2, UArgs2);
 
 type UArgs3 = (*const GLvoid, i32, i32, i32, i32, usize);
 pub trait UpdArgs3<T> {
@@ -205,4 +203,3 @@ impl<T> UpdArgs3<T> for &[T] {
 		(self, 0).geta3()
 	}
 }
-impl_for_asref!(UpdArgs3, geta3, UArgs3);

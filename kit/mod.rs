@@ -23,9 +23,11 @@ mod sync_pre {
 		pub use smol::{block_on, future::poll_once, spawn, Timer};
 	}
 	pub use smol::{future, prelude::*, stream, Task};
-	pub use std::sync::{atomic::*, Arc, OnceLock};
+	pub use std::sync::{atomic::*, OnceLock};
 	pub use std::thread::{self, JoinHandle};
 }
+#[cfg(not(feature = "adv_fs"))]
+pub mod ser {}
 #[cfg(feature = "adv_fs")]
 pub mod ser {
 	pub mod SERDE {
@@ -38,7 +40,7 @@ pub mod ser {
 pub mod stdlib {
 	pub use std::cell::{Cell, RefCell, UnsafeCell};
 	pub use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
-	pub use std::{char, fmt::Debug, iter, mem, ops::Range, ptr, rc::Rc, rc::Weak, slice, time};
+	pub use std::{char, fmt::Debug, iter, mem, ops::Range, ptr, rc::Rc, rc::Weak, slice, sync::Arc, time};
 	pub use std::{cmp::Ordering as ord, marker::PhantomData as Dummy};
 }
 pub mod lib {

@@ -10,7 +10,7 @@ pub struct EnvTex {
 impl<T: Borrow<Environment>> From<T> for EnvTex {
 	fn from(e: T) -> Self {
 		let e = e.borrow();
-		let specular = CubeTex::from(&e.specular);
+		let specular = CubeTex::from(&e.specular[..]);
 		let irradiance = (&e.diffuse).into();
 		let mip_levels = f32(specular.param.l);
 		Self { mip_levels, specular, irradiance }
@@ -18,14 +18,14 @@ impl<T: Borrow<Environment>> From<T> for EnvTex {
 }
 
 derive_common_OBJ! {pub struct Environment {
-	specular: Vec<[fImage<RGB>; 6]>,
+	specular: Box<[[fImage<RGB>; 6]]>,
 	diffuse: [fImage<RGB>; 6],
 }}
 impl Environment {
 	#[cfg(all(feature = "adv_fs", feature = "hdr"))]
 	pub fn new_cached(name: &str) -> Res<Self> {
-		let cache = &format!("{name}.hdr.z");
-		if let Ok(d) = FS::Load::Archive(cache) {
+		let cache = format!("{name}.hdr.z");
+		if let Ok(d) = FS::Load::Archive(&cache) {
 			if let Ok(env) = SERDE::FromVec(&d) {
 				return Ok(env);
 			}
@@ -54,7 +54,7 @@ impl Environment {
 		lut.into()
 	}
 	pub fn lut() -> fImage<RG> {
-		let mut lut = Shader::pure((mesh__2d_screen_vs, env__gen_lut_ps));
+		let mut lut = Shader::pure([vs_mesh__2d_screen, ps_env__gen_lut]);
 		let mut surf = Fbo::<RGBA, f32>::new((512, 512));
 		{
 			Screen::Prepare();
@@ -82,9 +82,9 @@ impl Environment {
 		};
 
 		let sampl = &Sampler::linear();
-		let mut equirect_shd = Shader::pure((env__gen_vs, env__unwrap_equirect_ps));
-		let mut irradiance_shd = Shader::pure((env__gen_vs, env__gen_irradiance_ps));
-		let mut specular_shd = Shader::pure((env__gen_vs, env__gen_spec_ps));
+		let mut equirect_shd = Shader::pure([vs_env__gen, ps_env__unwrap_equirect]);
+		let mut irradiance_shd = Shader::pure([vs_env__gen, ps_env__gen_irradiance]);
+		let mut specular_shd = Shader::pure([vs_env__gen, ps_env__gen_spec]);
 
 		let color = VP_mats
 			.iter()
@@ -134,14 +134,14 @@ impl Environment {
 					})
 					.collect_vec(),
 			)
-			.collect_vec();
+			.collect();
 
 		Self { diffuse, specular }
 	}
 }
 
 SHADER!(
-	env__gen_vs,
+	vs_env__gen,
 	r"layout(location = 0) in vec3 Position;
 	uniform mat4 MVPMat;
 	out vec3 glTexCoord;
@@ -154,7 +154,7 @@ SHADER!(
 );
 
 SHADER!(
-	env__unwrap_equirect_ps,
+	ps_env__unwrap_equirect,
 	r"in vec3 glTexCoord;
 	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D equirect_tex;
@@ -168,7 +168,7 @@ SHADER!(
 );
 
 SHADER!(
-	env__gen_irradiance_ps,
+	ps_env__gen_irradiance,
 	r"in vec3 glTexCoord;
 	layout(location = 0) out vec4 glFragColor;
 	uniform samplerCube env_cubetex;
@@ -229,7 +229,7 @@ const TRANSFORM: STR = r"
 	}";
 
 SHADER!(
-	env__gen_spec_ps,
+	ps_env__gen_spec,
 	r"in vec3 glTexCoord;
 	layout(location = 0) out vec4 glFragColor;
 	uniform samplerCube env_cubetex;
@@ -262,7 +262,7 @@ SHADER!(
 );
 
 SHADER!(
-	env__gen_lut_ps,
+	ps_env__gen_lut,
 	r"in vec2 glTexCoord;
 	layout(location = 0) out vec4 glFragColor;
 	uniform uint iSamples;

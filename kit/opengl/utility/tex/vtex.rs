@@ -8,15 +8,15 @@ pub struct VTex2d<S, F> {
 }
 impl<S, F> PartialEq for VTex2d<S, F> {
 	fn eq(&self, r: &Self) -> bool {
-		let Self { region, tex } = self;
-		Rc::ptr_eq(tex, &r.tex) && *region == r.region
+		let &Self { region, ref tex } = self;
+		Rc::ptr_eq(tex, &r.tex) && region == r.region
 	}
 }
 impl<S, F> Eq for VTex2d<S, F> {}
 impl<S, F> Clone for VTex2d<S, F> {
 	fn clone(&self) -> Self {
-		let Self { region, tex } = self;
-		let (region, tex) = (*region, tex.clone());
+		let &Self { region, ref tex } = self;
+		let (region, tex) = (region, tex.clone());
 		Self { region, tex }
 	}
 }
@@ -35,7 +35,7 @@ impl<S: TexSize> TexAtlas<S> {
 			Baked(_) => ERROR!("Trying to load into finalized atals"),
 			Fresh(reqs) => {
 				let k = u32(reqs.len());
-				let name = format!("res/{name}");
+				let name: Astr = format!("res/{name}").into();
 				reqs.push((name.clone(), Lazy::new(FS::Lazy::File(name))));
 				Prefetched::new(k, self)
 			}
@@ -102,7 +102,7 @@ impl<S: TexSize> Fetcher<u32, VTex2d<S, u8>> for TexAtlas<S> {
 }
 
 enum State<S> {
-	Fresh(Vec<(String, Lazy<Vec<u8>>)>),
+	Fresh(Vec<(Astr, Lazy<Vec<u8>>)>),
 	Baked(VTexMap<S>),
 }
 use State::*;

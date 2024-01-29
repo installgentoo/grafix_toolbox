@@ -31,10 +31,7 @@ pub struct Slab<S, F> {
 }
 impl<S: TexSize, F: TexFmt> Slab<S, F> {
 	pub fn new(args: impl FboArgs) -> Self {
-		Self {
-			src: Fbo::new(args),
-			tgt: Fbo::new(args),
-		}
+		Self { src: Fbo::new(args), tgt: Fbo::new(args) }
 	}
 	pub fn swap(&mut self) {
 		mem::swap(&mut self.src, &mut self.tgt);

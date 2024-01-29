@@ -8,7 +8,10 @@ pub struct Objects {
 	pub first_transparent: usize,
 }
 impl Objects {
-	pub fn get(&mut self, at: u32) -> &mut Primitive {
+	pub fn get(&self, at: u32) -> &Primitive {
+		self.objs.at(at)
+	}
+	pub fn get_mut(&mut self, at: u32) -> &mut Primitive {
 		self.objs.at_mut(at)
 	}
 	pub fn shrink(&mut self, to: u32) {
@@ -32,7 +35,7 @@ impl Objects {
 			.enumerate()
 			.find(|(n, Primitive { state, o, .. })| {
 				let overlapping = || state.contains(State::XYZW) && o.obj().ordered() && overlaps(o, u32(*n));
-				state.contains(State::TYPE) || overlapping()
+				state.contains(State::MISMATCH) || overlapping()
 			})
 			.map(|(n, _)| n)
 		{
@@ -72,16 +75,18 @@ impl Objects {
 				let (batch_size, s) = b.redraw(aspect, objs);
 				state |= s;
 
-				if state.contains(State::RESIZED) {
+				if state.contains(State::BATCH_RESIZED) {
 					flush.0.get_or_insert(idx_start);
 					let mut indices = b.typ(objs).obj().gen_idxs(usVec2((batch_start, batch_size)));
 					if idx_start + indices.len() > MAXIDX {
 						WARN!("GUI batch too saturated with polygons, dropping some");
-						indices.truncate(MAXIDX - idx_start);
+						let mut i = indices.into_vec();
+						i.truncate(MAXIDX - idx_start);
+						indices = i.into();
 					}
 					b.idx_range = usVec2((idx_start, indices.len()));
 					idxs.truncate(usize(idx_start));
-					idxs.append(&mut indices);
+					idxs.extend_from_slice(&indices);
 				}
 
 				fn update<T: Copy>(changed: bool, ordered: bool, dim: usize, v: &mut Vec<T>, at: usize, upd: &[T], flush: &mut Option<usize>) {

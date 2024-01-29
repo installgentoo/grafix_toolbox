@@ -128,10 +128,10 @@ impl<S, F, T: TexType> Tex<S, F, T> {
 		GLCheck!(glGenMipmaps(T::TYPE, self.tex.obj));
 		self
 	}
-	pub fn Save<RS: TexSize, RF: TexFmt>(&self, lvl: u32) -> Vec<RF> {
+	pub fn Save<RS: TexSize, RF: TexFmt>(&self, lvl: u32) -> Box<[RF]> {
 		ASSERT!(T::TYPE != gl::TEXTURE_CUBE_MAP && T::TYPE != gl::TEXTURE_CUBE_MAP_ARRAY, "unimpl");
 		let size = self.param.size(lvl) * usize(RS::SIZE);
-		let v = vec![Def(); size];
+		let v = vec![Def(); size].into_boxed_slice();
 		let size = i32(size * type_size!(RF));
 		GL::PixelStorePack::Set(1);
 		GLCheck!(glGetTexture(T::TYPE, self.tex.obj, i32(lvl), RS::TYPE, RF::TYPE, size, v.as_ptr() as *mut GLvoid));

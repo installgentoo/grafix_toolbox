@@ -13,15 +13,11 @@ pub mod TexState {
 	fn bound_units() -> &'static mut Units {
 		LocalStatic!(Units, {
 			let len = u32(GL::MAX_TEXTURE_IMAGE_UNITS().min(GL::MAX_COMBINED_TEXTURE_IMAGE_UNITS()));
-			Units {
-				at: 0,
-				len,
-				units: vec![(0, 0, 0); usize(len)],
-			}
+			Units { at: 0, len, units: vec![(0, 0, 0); usize(len)] }
 		})
 	}
 	fn garbage_collect<T: TexType>() -> u32 {
-		let Units { at, len, units } = bound_units();
+		let Units { at, ref len, units } = bound_units();
 
 		let npos = 1 + *len;
 		let mut empty = npos;
@@ -51,7 +47,7 @@ pub mod TexState {
 		*counter -= 1;
 	}
 	pub fn Bind<T: TexType>(obj: u32, s: u32, hint: u32) -> u32 {
-		let Units { at, len, units } = bound_units();
+		let Units { at, ref len, units } = bound_units();
 
 		let (h_obj, samp, counter) = units.at_mut(hint);
 		if *h_obj == obj && *samp == s {
@@ -96,7 +92,7 @@ pub mod TexState {
 		u
 	}
 	pub fn BindAny<T: TexType>(obj: u32, hint: u32) -> u32 {
-		let Units { at, len, units } = bound_units();
+		let Units { at, ref len, units } = bound_units();
 
 		let (h_obj, _, counter) = units.at_mut(hint);
 		if *h_obj == obj {
@@ -136,7 +132,7 @@ pub mod TexState {
 		u
 	}
 	pub fn drop_tex(obj: u32) {
-		let Units { at, len, units } = bound_units();
+		let Units { at, ref len, units } = bound_units();
 		for i in 0..*len {
 			let (unit, _, _counter) = units.at_mut(i);
 			if obj == *unit {
@@ -149,7 +145,7 @@ pub mod TexState {
 		}
 	}
 	pub fn drop_samp(s: u32) {
-		let Units { len, units, .. } = bound_units();
+		let Units { ref len, units, .. } = bound_units();
 		for i in 0..*len {
 			let (_, samp, _) = units.at_mut(i);
 			if s == *samp {

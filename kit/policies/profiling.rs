@@ -151,11 +151,7 @@ impl Stop for GLTimer {
 		let mut res = 0;
 		crate::GLCheck!(gl::GetQueryObjecti64v(self.o.obj, gl::QUERY_RESULT, &mut res));
 		let Self { o, total, iters } = *self;
-		Box(Self {
-			o,
-			total: total + res,
-			iters: iters + 1,
-		})
+		Box(Self { o, total: total + res, iters: iters + 1 })
 	}
 }
 impl New for GLTimer {
@@ -172,11 +168,7 @@ struct CPUTimerStopped {
 impl Start for CPUTimerStopped {
 	fn start(self: Box<Self>) -> Started {
 		let Self { total, iters } = *self;
-		Box(CPUTimerStarted {
-			total,
-			iters,
-			stamp: time::Instant::now(),
-		})
+		Box(CPUTimerStarted { total, iters, stamp: time::Instant::now() })
 	}
 	fn get_res(self: Box<Self>) -> (u128, u128) {
 		(self.total.as_nanos(), self.iters)
@@ -190,10 +182,7 @@ struct CPUTimerStarted {
 impl Stop for CPUTimerStarted {
 	fn stop(self: Box<Self>) -> Done {
 		let Self { total, iters, stamp } = *self;
-		Box(CPUTimerStopped {
-			total: total + stamp.elapsed(),
-			iters: iters + 1,
-		})
+		Box(CPUTimerStopped { total: total + stamp.elapsed(), iters: iters + 1 })
 	}
 }
 impl New for CPUTimerStopped {

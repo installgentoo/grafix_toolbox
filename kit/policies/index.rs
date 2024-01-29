@@ -63,6 +63,11 @@ impl<T> LastIdx for &[T] {
 		self.len().max(1) - 1
 	}
 }
+impl<T> LastIdx for [T] {
+	fn last_idx(&self) -> usize {
+		(&self).last_idx()
+	}
+}
 impl<T> LastIdx for Vec<T> {
 	fn last_idx(&self) -> usize {
 		self.as_slice().last_idx()

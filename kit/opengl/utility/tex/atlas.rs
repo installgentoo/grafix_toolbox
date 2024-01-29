@@ -56,7 +56,7 @@ where
 
 	let max_h = atlas.len() / usize(max_w * c);
 
-	let tex = Rc::new(Tex2d::<S, F>::new((max_w, max_h), &atlas));
+	let tex = Rc::new(Tex2d::<S, F>::new((max_w, max_h), &atlas[..]));
 	let packed = packed
 		.into_iter()
 		.map(|(id, reg)| {

@@ -16,13 +16,13 @@ impl<S: TexSize, F: TexFmt, RS, RF> From<Tex2d<RS, RF>> for Image<S, F> {
 impl<S: TexSize, F: TexFmt, T: Borrow<Image<S, F>>> From<T> for Tex2d<S, F> {
 	fn from(img: T) -> Self {
 		let img = img.borrow();
-		Tex2d::new((img.w, img.h), &img.data)
+		Tex2d::new((img.w, img.h), &img.data[..])
 	}
 }
 impl<S: TexSize, F: TexFmt> Tex2d<S, F> {
 	pub fn from_type<RS: TexSize, RF: TexFmt>(img: &Image<RS, RF>) -> Self {
 		let mut t = Tex2d::new_empty((img.w, img.h));
-		t.UpdateCustom::<RS, RF, _>(&img.data);
+		t.UpdateCustom::<RS, RF, _>(&img.data[..]);
 		t
 	}
 }
@@ -51,14 +51,9 @@ impl<S: TexSize, F: TexFmt> From<&[&Cube<S, F>]> for CubeTex<S, F> {
 		t
 	}
 }
-impl<S: TexSize, F: TexFmt> From<&Vec<Cube<S, F>>> for CubeTex<S, F> {
-	fn from(m: &Vec<Cube<S, F>>) -> Self {
+impl<S: TexSize, F: TexFmt> From<&[Cube<S, F>]> for CubeTex<S, F> {
+	fn from(m: &[Cube<S, F>]) -> Self {
 		m.iter().collect_vec().as_slice().into()
-	}
-}
-impl<S: TexSize, F: TexFmt> From<Vec<Cube<S, F>>> for CubeTex<S, F> {
-	fn from(m: Vec<Cube<S, F>>) -> Self {
-		m.into()
 	}
 }
 impl<S: TexSize, F: TexFmt> From<&Cube<S, F>> for CubeTex<S, F> {

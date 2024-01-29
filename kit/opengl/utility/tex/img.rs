@@ -9,14 +9,14 @@ pub type fImage<S> = Image<S, f16>;
 pub struct Image<S, F> {
 	pub w: u32,
 	pub h: u32,
-	pub data: Vec<F>,
+	pub data: Box<[F]>,
 	pub s: Dummy<S>,
 }
 impl<S: TexSize, F: TexFmt> Eq for Image<S, F> {}
 impl<S: TexSize, F: TexFmt> PartialEq for Image<S, F> {
 	fn eq(&self, r: &Self) -> bool {
-		let Self { w, h, data, .. } = self;
-		*w != r.w && *h != r.h && data.iter().eq(&r.data)
+		let &Self { w, h, ref data, .. } = self;
+		w != r.w && h != r.h && data.iter().eq(&r.data[..])
 	}
 }
 impl<S: TexSize, F: TexFmt> Tile<F> for Image<S, F> {
@@ -27,17 +27,17 @@ impl<S: TexSize, F: TexFmt> Tile<F> for Image<S, F> {
 		i32(self.h)
 	}
 	fn data(&self) -> &[F] {
-		self.data.as_slice()
+		&self.data
 	}
 }
 
 impl<S: TexSize, F: TexFmt> Image<S, F> {
-	pub fn new<T>(size: T, data: Vec<F>) -> Self
+	pub fn new<T>(size: T, data: impl Into<Box<[F]>>) -> Self
 	where
 		uVec2: Cast<T>,
 	{
 		let (w, h) = uVec2(size);
-		Self { w, h, data, s: Dummy }
+		Self { w, h, data: data.into(), s: Dummy }
 	}
 }
 
@@ -50,7 +50,7 @@ impl<S: TexSize> uImage<S> {
 				.map_err(|e| format!("Cannot decode image: {e:?}"))?
 		};
 		image::imageops::flip_vertical_in_place(&mut img);
-		let ((w, h), data): (_, Vec<_>) = match S::TYPE {
+		let ((w, h), data) = match S::TYPE {
 			gl::RED => {
 				let img = img.into_luma8();
 				(img.dimensions(), img.pixels().flat_map(|image::Luma(p)| p).copied().collect())
@@ -88,7 +88,7 @@ impl Image<RGB, f32> {
 		let m = img.metadata();
 		let (w, h) = (m.width, m.height);
 		let img = img.read_image_hdr().map_err(|e| format!("Cannot read hdr pixels: {e:?}"))?;
-		let data = img.chunks(usize(w)).rev().flat_map(|l| l.iter().flat_map(|image::Rgb(p)| p)).copied().collect_vec();
+		let data = img.chunks(usize(w)).rev().flat_map(|l| l.iter().flat_map(|image::Rgb(p)| p)).copied().collect();
 		Ok(Self { w, h, data, s: Dummy })
 	}
 }

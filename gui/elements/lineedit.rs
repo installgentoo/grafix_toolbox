@@ -23,13 +23,13 @@ impl LineEdit {
 		r.draw(Rect { pos, size, color: t.bg });
 
 		let id = LUID(self);
-		let Self { offset, scale, caret, text, .. } = self;
+		let &mut Self { offset, scale, ref mut caret, ref mut text, .. } = self;
 
 		if r.focused(id) {
-			let x = util::caret_x(text, t, *scale, *caret, CUR_PAD);
+			let x = util::caret_x(text, t, scale, *caret, CUR_PAD);
 			r.draw(Rect {
 				pos: offset.sum(pos).sum((x, 0.)),
-				size: (CUR_PAD, *scale),
+				size: (CUR_PAD, scale),
 				color: t.highlight,
 			});
 		}
@@ -37,7 +37,7 @@ impl LineEdit {
 		r.draw(Text {
 			pos: offset.sum(pos),
 			color: t.text,
-			scale: *scale,
+			scale,
 			text,
 			font: &t.font,
 		});
@@ -46,14 +46,14 @@ impl LineEdit {
 			move |e, focused, mouse_pos| {
 				let mut _text = typed_ptr!(text);
 				let clamp = |c, o| util::move_caret(&[(text as &str)], (c, 0), (o, 0), true).0;
-				let click = || util::caret_to_cursor(&[(text as &str)], (0., 0.), t, *scale, (pos.x() + offset.x(), 0.), mouse_pos).0;
+				let click = || util::caret_to_cursor(&[(text as &str)], (0., 0.), t, scale, (pos.x() + offset.x(), 0.), mouse_pos).0;
 				let idx = |o| {
 					let (pos, o) = ilVec2((*caret, o));
 					(text as &str).len_at_char(usize((pos + o).max(0)))
 				};
 				let text = _text.get_mut();
 
-				match e {
+				match *e {
 					OfferFocus => return Accept,
 					MouseButton { state, .. } if state.pressed() => *caret = click(),
 					Keyboard { key, state } if focused && state.pressed() => match key {
@@ -73,7 +73,7 @@ impl LineEdit {
 					},
 					Char { ch } if focused => {
 						let i = idx(-1);
-						text.str().insert(i, *ch);
+						text.str().insert(i, ch);
 						*caret = clamp(*caret, 1);
 					}
 					_ => (),
