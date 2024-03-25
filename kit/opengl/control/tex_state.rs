@@ -24,7 +24,7 @@ pub mod TexState {
 		for i in 0..*len {
 			let (unit, _, counter) = units.at_mut(i);
 			if *counter == 0 {
-				DEBUG!("Unbing GL {} {unit} from unit {i}", type_name!(Texture<T>));
+				DEBUG!("Unbing GL {} {unit} from unit {i}", type_name::<Texture<T>>());
 				*unit = 0;
 				if empty == npos {
 					empty = i;
@@ -81,11 +81,11 @@ pub mod TexState {
 		*counter += 1;
 		*unit = obj;
 		let u = empty;
-		DEBUG!("Binding GL {} {obj} to unit {u}", type_name!(Texture<T>));
+		DEBUG!("Binding GL {} {obj} to unit {u}", type_name::<Texture<T>>());
 		GLCheck!(glBindTextureUnit(T::TYPE, u, obj));
 		if *samp != s {
 			*samp = s;
-			DEBUG!("Binding GL {} {s} to unit {u}", type_name!(SamplObj));
+			DEBUG!("Binding GL {} {s} to unit {u}", type_name::<SamplObj>());
 			GLCheck!(gl::BindSampler(u, s));
 		}
 		DEBUG!("GL texture units: {units:?}");
@@ -126,7 +126,7 @@ pub mod TexState {
 		*counter += 1;
 		*unit = obj;
 		let u = empty;
-		DEBUG!("Binding GL {} {obj} to unit {u}", type_name!(Texture<T>));
+		DEBUG!("Binding GL {} {obj} to unit {u}", type_name::<Texture<T>>());
 		GLCheck!(glBindTextureUnit(T::TYPE, u, obj));
 		DEBUG!("GL texture units: {units:?}");
 		u

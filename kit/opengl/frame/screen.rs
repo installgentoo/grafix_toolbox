@@ -1,4 +1,5 @@
 use super::{Frame, GL::window::*, *};
+use crate::math::*;
 
 impl Frame for Window {
 	fn ClearColor(&self, args: impl ClearArgs) {
@@ -12,13 +13,13 @@ impl Frame for Window {
 		GLCheck!(glClearFramebuff(0, gl::DEPTH, 0, &f32(d) as *const f32));
 	}
 	fn size(&self) -> uVec2 {
-		Self::_size()
+		self.info().size
 	}
 	fn aspect(&self) -> Vec2 {
-		Self::_aspect()
+		self.info().aspect
 	}
 	fn pixel(&self) -> Vec2 {
-		Self::_pixel()
+		self.info().pixel
 	}
 	fn bind(&mut self) -> Binding<Framebuff> {
 		let (w, h) = self.size();
@@ -33,5 +34,20 @@ impl Window {
 	}
 	pub fn Bind(&self) -> Binding<Framebuff> {
 		Binding::<Framebuff>::zero()
+	}
+}
+
+pub struct FrameInfo {
+	pub size: uVec2,
+	pub aspect: Vec2,
+	pub pixel: Vec2,
+}
+impl FrameInfo {
+	pub fn new((w, h): uVec2) -> Self {
+		let size = (w, h);
+		let (w, h, min) = Vec3((w, h, w.min(h)));
+		let aspect = (min, min).div((w, h));
+		let pixel = (1., 1.).div((w, h));
+		Self { size, aspect, pixel }
 	}
 }

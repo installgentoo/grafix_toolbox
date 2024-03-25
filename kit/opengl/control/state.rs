@@ -27,10 +27,10 @@ pub trait State {
 		debug_assert!({
 			if let Ok(_pos) = Self::crossbindcheck_map()
 				.get(obj)
-				.unwrap_or_else(|| ASSERT!(false, "No {} buffer bound to GL object {obj}", type_name!(Self)))
+				.unwrap_or_else(|| ASSERT!(false, "No {} buffer bound to GL object {obj}", type_name::<Self>()))
 				.binary_search(&0)
 			{
-				ASSERT!(false, "{} buffer bound to GL object {obj} at position {_pos} was invalidated", type_name!(Self));
+				ASSERT!(false, "{} buffer bound to GL object {obj} at position {_pos} was invalidated", type_name::<Self>());
 			}
 			true
 		});
@@ -39,7 +39,7 @@ pub trait State {
 	fn Lock(obj: u32) {
 		debug_assert!({
 			let _tracked = *Self::tracked_obj();
-			ASSERT!(_tracked == 0, "Tried to bind GL {} object {obj} while {_tracked} ", type_name!(Self));
+			ASSERT!(_tracked == 0, "Tried to bind GL {} object {obj} while {_tracked} ", type_name::<Self>());
 			*Self::tracked_obj() = obj;
 			true
 		});
@@ -53,25 +53,25 @@ pub trait State {
 	fn New() -> u32 {
 		let mut obj = 0;
 		GLCheck!(Self::gen(&mut obj));
-		ASSERT!(obj != 0, "GL {} not initilized", type_name!(Self));
-		DEBUG!("Created GL {} obj {obj}", type_name!(Self));
+		ASSERT!(obj != 0, "GL {} not initilized", type_name::<Self>());
+		DEBUG!("Created GL {} obj {obj}", type_name::<Self>());
 		obj
 	}
 	fn Bind(obj: u32) {
 		let bound_obj = Self::bound_obj();
 		if *bound_obj != obj {
-			DEBUG!("Binding GL {} obj {obj}", type_name!(Self));
+			DEBUG!("Binding GL {} obj {obj}", type_name::<Self>());
 			*bound_obj = obj;
 			GLCheck!(Self::bind(obj));
 		}
 	}
 	fn Drop(obj: u32) {
-		ASSERT!(obj != 0, "GL {} zero before drop", type_name!(Self));
+		ASSERT!(obj != 0, "GL {} zero before drop", type_name::<Self>());
 		if *Self::bound_obj() == obj {
 			*Self::bound_obj() = 0;
 		}
 		let mut obj = obj;
-		DEBUG!("Deleting GL {} obj {obj}", type_name!(Self));
+		DEBUG!("Deleting GL {} obj {obj}", type_name::<Self>());
 		GLCheck!(Self::del(&mut obj));
 	}
 }

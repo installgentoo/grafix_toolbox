@@ -300,6 +300,5 @@ fn formatDepth45to33(fmt: GLenum) -> i32 {
 }
 
 fn bound_tex33() -> &'static mut u32 {
-	static mut STATE: u32 = 0;
-	unsafe { &mut STATE }
+	LocalStatic!(u32, { 0 })
 }

@@ -66,7 +66,7 @@ impl MappingArgs for GLenum {
 pub fn get_mapping_args<T: State, D>(o: &ArrObject<T, D>, args: impl MappingArgs) -> (isize, usize, GLenum) {
 	let (offset, len, access) = args.get();
 	let len = len.or_val(len >= 1, isize(o.len) - offset);
-	ASSERT!(isize(o.len) >= offset + len && len > 0, "Buffer {}({}) mapped out of bounds", o.obj, type_name!(T));
-	let tsize = isize(type_size!(D));
+	ASSERT!(isize(o.len) >= offset + len && len > 0, "Buffer {}({}) mapped out of bounds", o.obj, type_name::<T>());
+	let tsize = isize(type_size::<D>());
 	(offset * tsize, usize(len * tsize), access)
 }

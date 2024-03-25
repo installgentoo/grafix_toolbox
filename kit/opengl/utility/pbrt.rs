@@ -144,23 +144,23 @@ SHADER!(
 	vs_env__gen,
 	r"layout(location = 0) in vec3 Position;
 	uniform mat4 MVPMat;
-	out vec3 glTexCoord;
+	out vec3 glTexUV;
 
 	void main() {
 		vec4 pos = vec4(Position, 1);
 		gl_Position = MVPMat * pos;
-		glTexCoord = Position;
+		glTexUV = Position;
 	}"
 );
 
 SHADER!(
 	ps_env__unwrap_equirect,
-	r"in vec3 glTexCoord;
+	r"in vec3 glTexUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D equirect_tex;
 
 	void main() {
-		vec3 v = normalize(glTexCoord);
+		vec3 v = normalize(glTexUV);
 		vec2 uv = vec2(atan(v.z, v.x), asin(v.y)) * vec2(.1591, .3183) + vec2(.5);
 		vec3 c = texture(equirect_tex, uv).rgb;
 		glFragColor = vec4(c, 1);
@@ -169,7 +169,7 @@ SHADER!(
 
 SHADER!(
 	ps_env__gen_irradiance,
-	r"in vec3 glTexCoord;
+	r"in vec3 glTexUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform samplerCube env_cubetex;
 	uniform float iDelta;
@@ -177,7 +177,7 @@ SHADER!(
 	const float PI = 3.14159265358979323846;
 
 	void main() {
-		vec3 normal = normalize(glTexCoord);
+		vec3 normal = normalize(glTexUV);
 		vec3 right = cross(vec3(0, 1, 0), normal);
 		vec3 up = cross(normal, right);
 
@@ -230,7 +230,7 @@ const TRANSFORM: STR = r"
 
 SHADER!(
 	ps_env__gen_spec,
-	r"in vec3 glTexCoord;
+	r"in vec3 glTexUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform samplerCube env_cubetex;
 	uniform float iRoughness;
@@ -240,7 +240,7 @@ SHADER!(
 	r"
 	void main()
 		{
-		vec3 N = normalize(glTexCoord);
+		vec3 N = normalize(glTexUV);
 
 		float totalWeight = 0;
 		vec3 prefilteredColor = vec3(0);
@@ -263,7 +263,7 @@ SHADER!(
 
 SHADER!(
 	ps_env__gen_lut,
-	r"in vec2 glTexCoord;
+	r"in vec2 glTexUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform uint iSamples;
 	",
@@ -314,5 +314,5 @@ SHADER!(
 		return vec2(A, B);
 	}
 
-	void main() { glFragColor = vec4(IntegrateBRDF(glTexCoord.x, glTexCoord.y), 0, 1); }"
+	void main() { glFragColor = vec4(IntegrateBRDF(glTexUV.x, glTexUV.y), 0, 1); }"
 );

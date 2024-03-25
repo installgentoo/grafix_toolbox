@@ -4,12 +4,10 @@ use crate::lib::*;
 macro_rules! m_STATE {
 	() => {
 		fn bound_obj() -> &'static mut u32 {
-			static mut STATE: u32 = 0;
-			unsafe { &mut STATE }
+			LocalStatic!(u32)
 		}
 		fn tracked_obj() -> &'static mut u32 {
-			static mut STATE: u32 = 0;
-			unsafe { &mut STATE }
+			LocalStatic!(u32)
 		}
 	};
 }

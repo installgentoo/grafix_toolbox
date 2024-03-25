@@ -66,13 +66,13 @@ impl Object for Frame9Impl {
 SHADER!(
 	ps_gui__frame,
 	r"in vec4 glColor;
-	in vec2 glTexCoord;
+	in vec2 glTexUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D tex;
 	uniform vec3 iThemeCoords;
 
 	void main() {
-		float d = min(.9, length(glTexCoord));
+		float d = min(.9, length(glTexUV));
 		vec4 c = texture(tex, iThemeCoords.xy + vec2(d * iThemeCoords.z, 0));
 		glFragColor = glColor * c;
 	}"

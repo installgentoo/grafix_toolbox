@@ -76,6 +76,9 @@ impl<'l> ShaderBinding<'l> {
 		ShaderProg::Bind(o.prog.obj);
 		Self { shd: o }
 	} //TODO uniform blocks
+	pub fn is_fresh(&self) -> bool {
+		self.shd.uniforms.is_empty()
+	}
 	pub fn Uniform(&mut self, (id, name): (u32, &str), args: impl UniformArgs) {
 		ASSERT!(crate::GL::macro_uses::uniforms_use::id(name).0 == id, "Use Uniforms!() macro to set uniforms");
 		let addr = if let Some(found) = self.shd.uniforms.get(&id) {

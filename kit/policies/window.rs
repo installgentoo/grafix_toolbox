@@ -1,10 +1,6 @@
-use crate::{event::*, lib::*, math::*, sync::*, GL};
+use crate::{event::*, lib::*, math::*, sync::*, GL, GL::FrameInfo};
 
 pub trait WindowSpec {
-	fn _size() -> uVec2;
-	fn _aspect() -> Vec2;
-	fn _pixel() -> Vec2;
-
 	unsafe fn clipboard(&self) -> String;
 	fn set_clipboard(&mut self, str: &str);
 	fn resize(&mut self, size: uVec2);
@@ -20,6 +16,7 @@ pub struct GlfwWindow {
 	window: glfw::PWindow,
 	events: glfw::GlfwReceiver<(f64, glfw::WindowEvent)>,
 	resized_hint: bool,
+	info: FrameInfo,
 }
 impl GlfwWindow {
 	pub fn get(args: impl WINSize, title: &str) -> Res<Self> {
@@ -61,39 +58,14 @@ impl GlfwWindow {
 			GL::EnableDebugContext(GL::DebugLevel::All);
 		}
 
-		Self::set_size((w, h));
-		Ok(Self { window, events, resized_hint: true })
+		let info = FrameInfo::new((w, h));
+		Ok(Self { window, events, resized_hint: true, info })
 	}
-
-	fn set_size((w, h): uVec2) {
-		*Self::size() = (w, h);
-		let (w, h, min) = Vec3((w, h, w.min(h)));
-		*Self::aspect() = (min, min).div((w, h));
-		*Self::pixel() = (1., 1.).div((w, h));
-	}
-	fn size() -> &'static mut uVec2 {
-		static mut S: uVec2 = (0, 0);
-		unsafe { &mut S }
-	}
-	fn aspect() -> &'static mut Vec2 {
-		static mut A: Vec2 = (0., 0.);
-		unsafe { &mut A }
-	}
-	fn pixel() -> &'static mut Vec2 {
-		static mut P: Vec2 = (0., 0.);
-		unsafe { &mut P }
+	pub fn info(&self) -> &FrameInfo {
+		&self.info
 	}
 }
 impl WindowSpec for GlfwWindow {
-	fn _size() -> uVec2 {
-		*Self::size()
-	}
-	fn _aspect() -> Vec2 {
-		*Self::aspect()
-	}
-	fn _pixel() -> Vec2 {
-		*Self::pixel()
-	}
 	unsafe fn clipboard(&self) -> String {
 		self.window.get_clipboard_string().unwrap_or_default()
 	}
@@ -101,10 +73,11 @@ impl WindowSpec for GlfwWindow {
 		self.window.set_clipboard_string(s)
 	}
 	fn resize(&mut self, size: uVec2) {
-		Self::set_size(size);
+		let Self { window, resized_hint, info, .. } = self;
+		*info = FrameInfo::new(size);
 		let (w, h) = iVec2(size);
-		self.window.set_size(w, h);
-		self.resized_hint = true;
+		window.set_size(w, h);
+		*resized_hint = true;
 	}
 	fn spawn_offhand_gl(&mut self, f: impl FnOnce() + SendStat) -> JoinHandle<()> {
 		use glfw::{WindowHint::*, *};
@@ -152,7 +125,7 @@ impl WindowSpec for GlfwWindow {
 			check(glfw::Modifiers::Shift, Mod::SHIFT) | check(glfw::Modifiers::Control, Mod::CTRL) | check(glfw::Modifiers::Alt, Mod::ALT) | check(glfw::Modifiers::Super, Mod::WIN)
 		};
 
-		let Self { window, events, resized_hint, .. } = self;
+		let Self { window, events, resized_hint, info, .. } = self;
 		window.glfw.poll_events();
 		let collect_mods = || {
 			use {glfw::*, Key::*};
@@ -171,7 +144,7 @@ impl WindowSpec for GlfwWindow {
 		let mut events = glfw::flush_messages(events)
 			.filter_map(|(_, event)| match event {
 				glfw::WindowEvent::CursorPos(x, y) => {
-					let ((x, y), (w, h)) = ((2., 2.).mul((x, y)), Vec2(Self::_size()));
+					let ((x, y), (w, h)) = ((2., 2.).mul((x, y)), Vec2(info.size));
 					let at = (x - w, h - y).div(w.min(h));
 					let state = collect_mods();
 					Some(Event::MouseMove { at, state })
@@ -195,7 +168,7 @@ impl WindowSpec for GlfwWindow {
 				glfw::WindowEvent::Char(ch) => Some(Event::Char { ch }),
 
 				glfw::WindowEvent::Size(w, h) => {
-					Self::set_size(uVec2((w, h)));
+					*info = FrameInfo::new(uVec2((w, h)));
 					None
 				}
 				e => {
@@ -206,7 +179,7 @@ impl WindowSpec for GlfwWindow {
 			.collect_vec();
 		if *resized_hint {
 			*resized_hint = false;
-			let ((x, y), (w, h)) = ((2., 2.).mul(window.get_cursor_pos()), Vec2(Self::_size()));
+			let ((x, y), (w, h)) = ((2., 2.).mul(window.get_cursor_pos()), Vec2(info.size));
 			let at = (x - w, h - y).div(w.min(h));
 			let state = collect_mods();
 			events.push(Event::MouseMove { at, state })

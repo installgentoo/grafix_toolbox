@@ -2,10 +2,16 @@
 pub use {sampl_pool::*, texbuff::*, texture::*};
 pub mod chans {
 	pub use super::format::{RED, RG, RGB, RGBA};
+	pub type GREEN = RG;
+	pub type BLUE = RGB;
+	pub type ALPHA = RGBA;
 }
 pub mod spec {
-	pub use super::format::{TexFmt, TexSize};
-	pub use super::tex_type::*;
+	use super::*;
+	pub type Tex2d<S, F> = Tex<S, F, GL_TEXTURE_2D>;
+	pub type CubeTex<S, F> = Tex<S, F, GL_TEXTURE_CUBE_MAP>;
+	pub use format::{TexFmt, TexSize};
+	pub use tex_type::*;
 }
 
 pub type Sampler = Object<SamplObj>;

@@ -9,6 +9,13 @@ macro_rules! Sampler {
 }};
 }
 
+impl<S: AsRef<[(GLenum, GLenum)]>> From<S> for Sampler {
+	fn from(args: S) -> Self {
+		let mut s = Self::new();
+		args.as_ref().iter().for_each(|&(p, v)| s.Parameter(p, v));
+		s
+	}
+}
 impl Sampler {
 	pub fn pooled(id: u32, args: &[(GLenum, GLenum)]) -> Rc<Self> {
 		let p = LocalStatic!(HashMap<u32, Weak<Sampler>>);
@@ -21,9 +28,7 @@ impl Sampler {
 			}
 		}
 
-		let mut s = Self::new();
-		args.iter().for_each(|&(p, v)| s.Parameter(p, v));
-		let s = Rc::new(s);
+		let s = Rc::new(args.into());
 		p.insert(id, Rc::downgrade(&s));
 		s
 	}

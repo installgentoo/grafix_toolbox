@@ -1,4 +1,4 @@
-use super::{math::*, type_tools};
+use super::{math::*, type_name};
 
 pub type Res<T> = Result<T, String>;
 
@@ -17,7 +17,7 @@ impl<T> Cast<Option<T>> for Result<T, String> {
 impl<T, E: std::fmt::Display> Cast<Result<T, E>> for Result<T, String> {
 	fn to(v: Result<T, E>) -> Self {
 		v.map_err(|e| {
-			let t = type_name!(T);
+			let t = type_name::<T>();
 			if "String" == t {
 				e.to_string()
 			} else {

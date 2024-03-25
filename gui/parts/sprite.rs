@@ -85,20 +85,20 @@ SHADER!(
 	layout(location = 1) in vec4 Color;
 	layout(location = 2) in vec2 TexCoord;
 	out vec4 glColor;
-	out vec2 glTexCoord;
+	out vec2 glTexUV;
 
 	void main() {
 		gl_Position = vec4(Position.xyz, 1);
 		glColor = Color;
-		glTexCoord = TexCoord;
+		glTexUV = TexCoord;
 	}"
 );
 SHADER!(
 	ps_gui__col_tex,
 	r"in vec4 glColor;
-	in vec2 glTexCoord;
+	in vec2 glTexUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D tex;
 
-	void main() { glFragColor = glColor * texture(tex, glTexCoord); }"
+	void main() { glFragColor = glColor * texture(tex, glTexUV); }"
 );

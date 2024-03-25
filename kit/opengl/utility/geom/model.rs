@@ -158,9 +158,9 @@ mod serde {
 impl Model {
 	pub fn to_bytes(&self) -> Box<[u8]> {
 		let Self { idxs, xyz, uv, norm } = self;
-		let il: [_; 8] = (idxs.len() * type_size!(u32)).to_le_bytes();
-		let cl: [_; 8] = (xyz.len() * type_size!(f32)).to_le_bytes();
-		let tl: [_; 8] = (uv.len() * type_size!(f16)).to_le_bytes();
+		let il: [_; 8] = (idxs.len() * type_size::<u32>()).to_le_bytes();
+		let cl: [_; 8] = (xyz.len() * type_size::<f32>()).to_le_bytes();
+		let tl: [_; 8] = (uv.len() * type_size::<f16>()).to_le_bytes();
 		let (_, i, _) = unsafe { idxs.align_to() };
 		let (_, c, _) = unsafe { xyz.align_to() };
 		let (_, t, _) = unsafe { uv.align_to() };

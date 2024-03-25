@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use super::{super::super::index::*, super::*, logging};
 
 impl<T: Copy> Cast<&[T]> for vec2<T> {

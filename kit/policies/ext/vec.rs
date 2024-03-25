@@ -1,4 +1,3 @@
-use super::super::logging;
 use std::{collections::HashMap, hash::Hash};
 
 pub trait Utf8Len {
@@ -33,6 +32,9 @@ pub trait CollectVec<T>: Sized + Iterator<Item = T> {
 		self.collect()
 	}
 	fn collect_arr<const N: usize>(self) -> [T; N] {
+		#![allow(unused_imports)]
+		use super::super::logging;
+
 		let vec = self.collect_vec();
 		ASSERT!(vec.len() == N, "Collecting into array of wrong length");
 		unsafe { vec.try_into().unwrap_unchecked() }

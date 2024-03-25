@@ -32,7 +32,7 @@ pub mod ser {}
 pub mod ser {
 	pub mod SERDE {
 		pub use bincode::{deserialize as FromVec, serialize as ToVec};
-		pub use serde_json::{from_str as FromStr, to_string as ToStr};
+		pub use serde_json::{from_str as FromStr, to_string as ToStr, to_vec as ToU8};
 	}
 	pub use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 	pub use std::fmt;
@@ -41,11 +41,11 @@ pub mod stdlib {
 	pub use std::cell::{Cell, RefCell, UnsafeCell};
 	pub use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 	pub use std::{char, fmt::Debug, iter, mem, ops::Range, ptr, rc::Rc, rc::Weak, slice, sync::Arc, time};
-	pub use std::{cmp::Ordering as ord, marker::PhantomData as Dummy};
+	pub use std::{cmp::Ordering as ord, marker::PhantomData as Dummy, mem::size_of as type_size};
 }
 pub mod lib {
 	pub use super::policies::ext::{cached::*, cached_str::*, n_iter::*, *};
-	pub use super::policies::{chksum, derives::*, index::*, logging, math::*, pointer::*, result::*, type_tools};
+	pub use super::policies::{chksum, derives::*, index::*, logging, math::*, pointer::*, result::*, type_name};
 	pub use super::{stdlib::*, GL::types::*};
 	pub use {bitflags::bitflags, const_format, num_cpus};
 }

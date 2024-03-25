@@ -25,28 +25,23 @@ impl Logger {
 		T: AsyncWrite + Unpin + Send,
 		F: Future<Output = T> + Send,
 	{
-		Self::logger(out, l);
+		Self::init_logger(out, l);
 		Self
 	}
 	#[inline(always)]
 	pub fn log(l: Level, msg: String) {
 		if (l as i32) <= Self::level() {
-			Self::logger(check_order, Level::INFO)
-				.get()
+			Self::init_logger(check_order, Level::INFO);
+
+			unsafe { LOGGER.get() }
 				.expect("E| Logger already exited")
 				.sender
 				.send(Message::M(msg))
 				.expect("E| Failed to send log");
 		}
 	}
-	pub fn add_postmortem(f: impl FnOnce() + 'static) {
-		Self::logger(check_order, Level::INFO)
-			.get()
-			.expect("E| Logger already exited")
-			.postmortem
-			.lock()
-			.unwrap()
-			.push(Box(f));
+	pub fn shutdown_hook(f: impl FnOnce() + SendStat) {
+		POSTMORTEM.lock().unwrap().push(Box(f));
 	}
 
 	pub fn level() -> i32 {
@@ -55,15 +50,14 @@ impl Logger {
 	pub fn set_level(l: Level) {
 		unsafe { LEVEL = l }
 	}
-	fn logger<T, F>(out: impl FnOnce() -> F + SendStat, l: Level) -> &'static mut OnceLock<LoggerState>
+	fn init_logger<T, F>(out: impl FnOnce() -> F + SendStat, l: Level)
 	where
 		T: AsyncWrite + Unpin + Send,
 		F: Future<Output = T> + Send,
 	{
-		static mut LOGGER: OnceLock<LoggerState> = OnceLock::new();
 		unsafe {
-			LEVEL = l;
 			LOGGER.get_or_init(move || {
+				LEVEL = l;
 				let (sender, reciever) = chan::unbounded::<Message>();
 				let handle = task::spawn(async move {
 					let mut out = out().await;
@@ -76,20 +70,18 @@ impl Logger {
 						}
 					}
 				});
-				LoggerState { handle, sender, postmortem: Def() }
+				LoggerState { handle, sender }
 			});
-			&mut LOGGER
 		}
 	}
 }
 impl Drop for Logger {
 	fn drop(&mut self) {
-		let s = Self::logger(check_order, Level::INFO);
-		s.get().expect("E| Logger already exited").postmortem.lock().unwrap().drain(..).for_each(|f| f());
-
-		let LoggerState { handle, sender, .. } = s.take().unwrap();
+		Self::init_logger(check_order, Level::INFO);
+		POSTMORTEM.lock().unwrap().drain(..).for_each(|f| f());
+		let LoggerState { handle, sender } = unsafe { LOGGER.take() }.unwrap();
 		sender.send(Message::Close).expect("E| Failed to close log");
-		task::block_on(handle)
+		task::block_on(handle);
 	}
 }
 
@@ -101,11 +93,12 @@ pub enum Level {
 	DEBUG = 3,
 }
 static mut LEVEL: Level = Level::INFO;
+static mut LOGGER: OnceLock<LoggerState> = OnceLock::new();
+static POSTMORTEM: sync::Mutex<Vec<Box<dyn FnOnce() + Send + 'static>>> = sync::Mutex::new(vec![]);
 
 struct LoggerState {
 	handle: Task<()>,
 	sender: Sender<Message>,
-	postmortem: sync::Mutex<Vec<Box<dyn FnOnce() + 'static>>>,
 }
 
 enum Message {

@@ -88,10 +88,10 @@ macro_rules! impl_tex {
 				self.UpdateCustom::<S, F, _>(args);
 			}
 			pub fn UpdateCustom<RS: TexSize, RF: TexFmt, T: $arg_u<RF>>(&mut self, args: T) {
-				let mip_size = |lvl, len| {
+				let mip_size = |lvl, _len| {
 					ASSERT!(
-						len <= self.param.size(u32(lvl)) * usize(S::SIZE),
-						"GL Texture data out of bounds at level {lvl}, size should be {}, given {len}",
+						_len <= self.param.size(u32(lvl)) * usize(S::SIZE),
+						"GL Texture data out of bounds at level {lvl}, size should be {}, given {_len}",
 						self.param.size(u32(lvl)) * usize(S::SIZE)
 					);
 					self.param.dim(lvl)
@@ -132,7 +132,7 @@ impl<S, F, T: TexType> Tex<S, F, T> {
 		ASSERT!(T::TYPE != gl::TEXTURE_CUBE_MAP && T::TYPE != gl::TEXTURE_CUBE_MAP_ARRAY, "unimpl");
 		let size = self.param.size(lvl) * usize(RS::SIZE);
 		let v = vec![Def(); size].into_boxed_slice();
-		let size = i32(size * type_size!(RF));
+		let size = i32(size * type_size::<RF>());
 		GL::PixelStorePack::Set(1);
 		GLCheck!(glGetTexture(T::TYPE, self.tex.obj, i32(lvl), RS::TYPE, RF::TYPE, size, v.as_ptr() as *mut GLvoid));
 		v

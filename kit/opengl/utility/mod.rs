@@ -1,4 +1,4 @@
-pub use {font::*, geom::*, pbrt::*, pyramid::*, tex::*};
+pub use {font::*, geom::*, pbrt::*, pyramid::*, sdf::*, tex::*};
 
 mod font;
 mod geom;

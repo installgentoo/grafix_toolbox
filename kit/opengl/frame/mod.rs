@@ -1,4 +1,4 @@
-pub use {fbo::*, frame::*, framebuff::*};
+pub use {fbo::*, frame::*, framebuff::*, screen::FrameInfo};
 
 mod args;
 mod fbo;

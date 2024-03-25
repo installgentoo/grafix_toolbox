@@ -1,5 +1,26 @@
-use crate::{lib::*, GL::tex::*};
+use crate::{glsl::*, lib::*, math::*, GL::mesh::Screen, GL::*};
 use std::borrow::Borrow;
+
+impl<S, F> Tex2d<S, F> {
+	pub fn Cast<RS: TexSize, RF: TexFmt>(&self, minification: i32) -> Tex2d<RS, RF> {
+		let s = LocalStatic!(Shader, { Shader::pure([vs_mesh__2d_screen, ps_mesh__2d_screen]) });
+		let sampl = &Sampler::linear();
+
+		GLSave!(BLEND, MULTISAMPLE, DEPTH_WRITEMASK);
+		GLDisable!(BLEND, MULTISAMPLE, DEPTH_WRITEMASK);
+
+		let TexParam { w, h, .. } = self.param;
+
+		let mut out = Fbo::<RS, RF>::new((w, h).div(minification).max((1, 1)));
+		let t = self.Bind(sampl);
+		let _ = Uniforms!(s, ("tex", &t));
+		out.bind();
+		Screen::Draw();
+
+		GLRestore!(BLEND, MULTISAMPLE, DEPTH_WRITEMASK);
+		out.tex
+	}
+}
 
 impl<S: TexSize, F: TexFmt, RS, RF> From<&Tex2d<RS, RF>> for Image<S, F> {
 	fn from(tex: &Tex2d<RS, RF>) -> Self {

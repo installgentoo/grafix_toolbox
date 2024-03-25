@@ -76,7 +76,7 @@ pub mod Save {
 				}
 			});
 
-			logging::Logger::add_postmortem(move || {
+			logging::Logger::shutdown_hook(move || {
 				sender().send(("".into(), MessageType::Close, vec![].into())).expect("E| Failed to close write");
 				task::block_on(handle);
 			});
@@ -152,8 +152,9 @@ fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader: impl Fn
 	stream::unfold(None, move |w| {
 		let (p, l, _sn, rx) = (p.clone(), loader.clone(), sn.clone(), rx.clone());
 		async move {
+			let first = w.is_none();
 			if let Some(_w) = w {
-				rx.recv_async().await.ok().sink();
+				let _ = rx.recv_async().await;
 			}
 
 			let w = {
@@ -170,6 +171,12 @@ fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader: impl Fn
 					}
 					.map_err(|e| FAIL!("Watch {p:?}: {e}"))
 					.ok();
+
+					if !first {
+						while !p.exists() {
+							task::Timer::after(time::Duration::from_millis(100)).await;
+						}
+					}
 
 					w.as_mut().map(|w| w.watch(&p, RecursiveMode::NonRecursive).unwrap_or_else(|_| FAIL!("Cannot watch {p:?}")));
 					Some(w)

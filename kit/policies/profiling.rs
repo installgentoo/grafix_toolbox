@@ -73,7 +73,7 @@ macro_rules! PROFILER {
 				static mut MAP: OnceLock<Mutex<HashMap<&str, Timer>>> = OnceLock::new();
 				unsafe {
 					MAP.get_or_init(|| {
-						logging::Logger::add_postmortem(PrintAll);
+						logging::Logger::shutdown_hook(PrintAll);
 						Def()
 					});
 					MAP.get_mut().unwrap()

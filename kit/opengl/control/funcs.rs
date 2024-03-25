@@ -32,12 +32,10 @@ pub struct $n;
 #[allow(unused_parens)]
 impl $n {
 	fn state() -> &'static mut ($($t),+) {
-		static mut STATE: ($($t),+) = ($(0 as $t),+);
-		unsafe { &mut STATE }
+		LocalStatic!(($($t),+), { ($(0 as $t),+) })
 	}
 	fn saved_state() -> &'static mut ($($t),+) {
-		static mut STATE: ($($t),+) = ($(0 as $t),+);
-		unsafe { &mut STATE }
+		LocalStatic!(($($t),+), { ($(0 as $t),+) })
 	}
 
 	pub fn Set(state: ($($t),+)) {
@@ -131,8 +129,7 @@ macro_rules! SWITCH_IMPL {
 		pub struct $n;
 		impl $n {
 			fn state() -> &'static mut u64 {
-				static mut STATE: u64 = $i;
-				unsafe { &mut STATE }
+				LocalStatic!(u64, { $i })
 			}
 
 			pub fn Enable() {

@@ -24,7 +24,7 @@ pub mod opengl {
 	}
 	pub mod fbo {
 		use super::super::*;
-		pub use frame::{Fbo, Frame, Framebuffer, RenderTgt, Renderbuffer, Slab};
+		pub use frame::{Fbo, Frame, FrameInfo, Framebuffer, RenderTgt, Renderbuffer, Slab};
 	}
 	pub mod shader {
 		pub use super::super::shader::{Shader, ShaderManager};
@@ -33,8 +33,6 @@ pub mod opengl {
 		pub use super::super::{consts_def::*, funcs_def::*};
 	}
 	pub mod tex {
-		pub type Tex2d<S, F> = Tex<S, F, GL_TEXTURE_2D>;
-		pub type CubeTex<S, F> = Tex<S, F, GL_TEXTURE_CUBE_MAP>;
 		use super::super::*;
 		pub use texture::{chans::*, spec::*, Sampler, Tex, TexBuffer, TexParam};
 		pub use utility::{fImage, uImage, Image};
@@ -56,6 +54,9 @@ pub mod opengl {
 	}
 	pub mod offhand {
 		pub use super::super::offhand::Offhand;
+	}
+	pub mod sdf {
+		pub use super::super::utility::SdfGenerator;
 	}
 	pub mod laplacian {
 		pub use super::super::utility::{collapse, pyramid};

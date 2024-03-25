@@ -7,13 +7,13 @@ impl<T: Buffer, D> ArrObject<T, D> {
 	pub fn new(args: impl AllocArgs<D>) -> Self {
 		let (ptr, size, usage) = args.geta();
 		let o = Self::new_empty(size);
-		GLCheck!(glBufferStorage(T::TYPE, o.obj, isize(size * type_size!(D)), ptr, usage));
+		GLCheck!(glBufferStorage(T::TYPE, o.obj, isize(size * type_size::<D>()), ptr, usage));
 		o
 	}
 	pub fn Update(&mut self, args: impl UpdateArgs<D>) {
 		let (ptr, size, offset) = args.getu();
-		ASSERT!(self.len >= offset + size, "Buffer {}({}) updated out of bounds", self.obj, type_name!(T));
-		let s = type_size!(D);
+		ASSERT!(self.len >= offset + size, "Buffer {}({}) updated out of bounds", self.obj, type_name::<T>());
+		let s = type_size::<D>();
 		GLCheck!(glBufferSubData(T::TYPE, self.obj, isize(offset * s), isize(size * s), ptr));
 	}
 	//TODO Async Mappings

@@ -33,13 +33,17 @@ pub fn compiler(data_rx: Receiver<ShaderTask>, res_sn: Sender<(ShdResult, Fence)
 						mem::take(p.get())
 							.drain(..)
 							.filter_map(|ShdSrc { name, src, .. }| {
-								let s = sources.get_mut(&name).unwrap();
-								if matches!(s, Source { src: s } | Compiled { src: s, .. } if *s == src) {
-									return None;
+								if let Some(s) = sources.get_mut(&name) {
+									if matches!(s, Source { src: s } | Compiled { src: s, .. } if *s == src) {
+										return None;
+									}
+
+									*s = Source { src };
+									return Some(name);
 								}
 
-								*s = Source { src };
-								Some(name)
+								sources.insert(name, Source { src });
+								None
 							})
 							.collect()
 					})
@@ -61,7 +65,6 @@ pub fn compiler(data_rx: Receiver<ShaderTask>, res_sn: Sender<(ShdResult, Fence)
 
 				sources.insert(name, Source { src: source });
 			}
-
 			Create(name) => send(name, &mut sources, &mut files),
 			Load(file) => files.push(file),
 			Clean => sources.iter_mut().for_each(|(_, v)| {

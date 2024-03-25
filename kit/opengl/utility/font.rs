@@ -73,7 +73,7 @@ impl Font {
 		DEBUG!("Font kerning: {kerning:?}");
 
 		let mut glyphs = vec![];
-		let mut sdf = SdfGenerator::new();
+		let mut sdf = SdfGenerator::default();
 		let mut topline = 0.;
 		let mut bottomline = 0.;
 		let alphabet = alphabet()
@@ -94,13 +94,15 @@ impl Font {
 					let (w, h, data) = {
 						let mut data = vec![0; w * h];
 						g.draw(|x, y, v| data[w * (b + usize(y)) + b + usize(x)] = u8((v * 255.).min(255.)));
-						let sdf = sdf.generate(Tex2d::<RED, u8>::new((w, h), &data[..]), supersample, border * 2);
+						let sdf = sdf
+							.generate::<RED, u8, RED>(&Tex2d::new((w, h), &data[..]), supersample, border)
+							.Cast::<RED, u8>(supersample);
 						let p = sdf.param;
 						(p.w, p.h, sdf.Save::<RED, u8>(0))
 					};
 					let (x, y) = {
-						let (x, y, b) = Vec3((bb.min.x, -bb.max.y, b));
-						(x - lsb, y).sub(b).mul(divisor)
+						let (x, y) = Vec2((bb.min.x, -bb.max.y));
+						(x - lsb, y).mul(divisor)
 					};
 					let (x1, y1, x2, y2) = (x, y, x, y).sum((0., 0., f32(w), f32(h)).mul(glyph_divisor));
 					glyphs.push((c, ImgBox { w, h, data }));
