@@ -6,8 +6,8 @@ impl<S, F> Tex2d<S, F> {
 		let s = LocalStatic!(Shader, { Shader::pure([vs_mesh__2d_screen, ps_mesh__2d_screen]) });
 		let sampl = &Sampler::linear();
 
-		GLSave!(BLEND, MULTISAMPLE, DEPTH_WRITEMASK);
-		GLDisable!(BLEND, MULTISAMPLE, DEPTH_WRITEMASK);
+		GLSave!(BLEND);
+		GLDisable!(BLEND);
 
 		let TexParam { w, h, .. } = self.param;
 
@@ -17,7 +17,7 @@ impl<S, F> Tex2d<S, F> {
 		out.bind();
 		Screen::Draw();
 
-		GLRestore!(BLEND, MULTISAMPLE, DEPTH_WRITEMASK);
+		GLRestore!(BLEND);
 		out.tex
 	}
 }

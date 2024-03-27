@@ -6,7 +6,7 @@ pub struct Shader {
 	name: ShdName,
 	prog: ShdProg,
 	uniforms: HashMap<u32, i32>,
-	tex_cache: HashMap<i32, i32>,
+	binds_cache: HashMap<i32, i32>,
 	dynamic: bool,
 }
 impl Shader {
@@ -19,9 +19,9 @@ impl Shader {
 
 		sn.send(Create(name)).unwrap();
 		let ShdResult { prog, name } = rx.recv().unwrap().wait();
-		let (uniforms, tex_cache, dynamic) = Def();
+		let (uniforms, binds_cache, dynamic) = Def();
 
-		Ok(Self { name, prog: prog?, uniforms, tex_cache, dynamic })
+		Ok(Self { name, prog: prog?, uniforms, binds_cache, dynamic })
 	}
 	pub fn watch(args: impl ShaderArgs) -> Res<Self> {
 		let ShaderManager { sn, .. } = ShaderManager::get();
@@ -41,14 +41,14 @@ impl Shader {
 				let ShdResult { name, prog } = msg.wait();
 				mailbox.insert(name, Some(prog));
 			}
-			let Self { name, prog, uniforms, tex_cache, .. } = self;
+			let Self { name, prog, uniforms, binds_cache, .. } = self;
 			if let Some(p @ Some(_)) = mailbox.get_mut(name) {
 				let p = p.take().unwrap();
 				match p {
 					Err(e) => WARN!(e),
 					Ok(p) => {
 						*prog = p;
-						(*uniforms, *tex_cache) = Def();
+						(*uniforms, *binds_cache) = Def();
 					}
 				}
 			}
@@ -75,38 +75,53 @@ impl<'l> ShaderBinding<'l> {
 		ShaderProg::Lock(o.prog.obj);
 		ShaderProg::Bind(o.prog.obj);
 		Self { shd: o }
-	} //TODO uniform blocks
+	}
 	pub fn is_fresh(&self) -> bool {
 		self.shd.uniforms.is_empty()
 	}
 	pub fn Uniform(&mut self, (id, name): (u32, &str), args: impl UniformArgs) {
-		ASSERT!(crate::GL::macro_uses::uniforms_use::id(name).0 == id, "Use Uniforms!() macro to set uniforms");
-		let addr = if let Some(found) = self.shd.uniforms.get(&id) {
-			let _collision_map = LocalStatic!(HashMap<u32, String>);
-			ASSERT!(_collision_map.entry(id).or_insert(name.into()) == name, "Unifrom collision at entry {name}");
-			*found
-		} else {
-			let c_name = match CString::new(name) {
-				Ok(str) => str,
-				Err(e) => {
-					FAIL!(e);
-					return;
+		let Shader { name: shd_name, prog, uniforms, binds_cache, .. } = self.shd;
+		let addr = match args.kind() {
+			ArgsKind::Uniform => get_addr(uniforms, (id, name), |n| {
+				let addr = GLCheck!(gl::GetUniformLocation(prog.obj, n.as_ptr()));
+				if addr == -1 {
+					INFO!("No uniform {name:?} in shader {:?}, or it was optimized out", shd_name.join(" "));
 				}
-			};
-			let addr = GLCheck!(gl::GetUniformLocation(self.shd.prog.obj, c_name.as_ptr()));
-			if addr == -1 {
-				INFO!("No uniform {name:?} in shader {:?}, or uniform was optimized out", self.shd.name.join(" "));
+				addr
+			}),
+			ArgsKind::UBO => get_addr(uniforms, (id, name), |n| {
+				let addr = GLCheck!(gl::GetUniformBlockIndex(prog.obj, n.as_ptr()));
+				if addr == gl::INVALID_INDEX {
+					INFO!("No UBO {name:?} in shader {:?}, or it was optimized out", shd_name.join(" "));
+					return -1;
+				}
+				i32(addr)
+			}),
+			ArgsKind::SSBO => {
+				DEBUG!("GL SSBO {name:?} bound, shader {:?}", shd_name.join(" "));
+				-1
 			}
-			self.shd.uniforms.insert(id, addr);
-			addr
 		};
-
-		args.get(addr, &mut self.shd.tex_cache);
+		if addr != -1 {
+			args.pass(addr, binds_cache);
+		}
 	}
 }
 impl Drop for ShaderBinding<'_> {
 	fn drop(&mut self) {
 		ShaderProg::Unlock();
+	}
+}
+fn get_addr(u: &mut HashMap<u32, i32>, (id, name): (u32, &str), addr: impl Fn(CString) -> i32) -> i32 {
+	ASSERT!(uniforms_use::id(name).0 == id, "Use Uniforms!()/Unibuffers!() macro to set uniforms");
+	if let Some(addr) = u.get(&id) {
+		let _collision_map = LocalStatic!(HashMap<u32, String>);
+		ASSERT!(_collision_map.entry(id).or_insert(name.into()) == name, "Unifrom collision at entry {name}");
+		*addr
+	} else {
+		let addr = addr(CString::new(name).unwrap());
+		u.insert(id, addr);
+		addr
 	}
 }
 

@@ -1,4 +1,4 @@
-use super::{super::texture::TextureBinding, *};
+use super::{GL, *};
 
 #[macro_export]
 macro_rules! Uniform {
@@ -64,50 +64,85 @@ impl_uniform_type!(mat, Mat4x2, UniformMatrix4x2fv);
 impl_uniform_type!(mat, Mat3x4, UniformMatrix3x4fv);
 impl_uniform_type!(mat, Mat4x3, UniformMatrix4x3fv);
 
-pub trait UniformArgs {
-	fn get(self, _: i32, _: &mut HashMap<i32, i32>);
+#[allow(clippy::upper_case_acronyms)]
+pub enum ArgsKind {
+	Uniform,
+	UBO,
+	SSBO,
 }
-impl<T: TexType> UniformArgs for &TextureBinding<'_, T> {
-	fn get(self, name: i32, tex_cache: &mut HashMap<i32, i32>) {
-		let u = i32(self.u);
-		let ent = tex_cache.entry(name).or_insert(-1);
-		if *ent != u {
-			DEBUG!("Updating GL tex {ent} to {u} in shader {}", { ShaderProg::bound_obj() });
-			GLCheck!(gl::Uniform1i(name, u));
-			*ent = u;
-		}
+pub trait UniformArgs {
+	fn pass(self, _: i32, _: &mut BindCache);
+	fn kind(&self) -> ArgsKind {
+		ArgsKind::Uniform
 	}
 }
 impl<T> UniformArgs for &T
 where
 	T: UniformImpl,
 {
-	fn get(self, name: i32, _: &mut HashMap<i32, i32>) {
-		self.apply(name);
+	fn pass(self, addr: i32, _: &mut BindCache) {
+		self.apply(addr);
 	}
 }
 impl<T> UniformArgs for T
 where
 	[T]: UniformImpl,
 {
-	fn get(self, name: i32, _: &mut HashMap<i32, i32>) {
-		[self].apply(name);
+	fn pass(self, addr: i32, _: &mut BindCache) {
+		[self].apply(addr);
 	}
 }
 impl<T> UniformArgs for &[T]
 where
 	[T]: UniformImpl,
 {
-	fn get(self, name: i32, _: &mut HashMap<i32, i32>) {
-		self.apply(name);
+	fn pass(self, addr: i32, _: &mut BindCache) {
+		self.apply(addr);
 	}
 }
 impl<T, const L: usize> UniformArgs for [T; L]
 where
 	[T]: UniformImpl,
 {
-	fn get(self, name: i32, _: &mut HashMap<i32, i32>) {
-		self.apply(name);
+	fn pass(self, addr: i32, _: &mut BindCache) {
+		self.apply(addr);
+	}
+}
+
+impl<T: TexType> UniformArgs for &GL::TextureBinding<'_, T> {
+	fn pass(self, addr: i32, binds_cache: &mut BindCache) {
+		let u = i32(self.u);
+		let unit = binds_cache.entry(addr).or_insert(-1);
+		if *unit != u {
+			DEBUG!("Binding GL texture {addr} to {u} in shader {}, was {unit}", ShaderProg::bound_obj());
+			GLCheck!(gl::Uniform1i(addr, u));
+			*unit = u;
+		}
+	}
+}
+
+impl UniformArgs for &GL::ShdArrBinding<'_, Uniform> {
+	fn pass(self, addr: i32, binds_cache: &mut BindCache) {
+		let l = i32(self.l);
+		let loc = binds_cache.entry(addr + i32::MAX / 2).or_insert(-1);
+		if *loc != l {
+			let prog = *ShaderProg::bound_obj();
+			DEBUG!("Binding GL UBO {addr} to {l} in shader {prog}, was {loc}",);
+			GLCheck!(gl::UniformBlockBinding(prog, u32(addr), u32(l)));
+			*loc = l;
+		}
+	}
+	fn kind(&self) -> ArgsKind {
+		ArgsKind::UBO
+	}
+}
+
+impl UniformArgs for &GL::ShdArrBinding<'_, ShdStorage> {
+	fn pass(self, _: i32, _: &mut BindCache) {
+		unreachable!();
+	}
+	fn kind(&self) -> ArgsKind {
+		ArgsKind::SSBO
 	}
 }
 
@@ -116,3 +151,5 @@ pub mod uniforms_use {
 		(super::chksum::const_fnv1(s.as_bytes()), s)
 	}
 }
+
+type BindCache = HashMap<i32, i32>;

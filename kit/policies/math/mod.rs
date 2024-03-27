@@ -1,4 +1,4 @@
-pub use cast::{func::*, Cast};
+pub use cast::{func::*, *};
 pub use half::f16;
 pub mod ext;
 pub mod la;

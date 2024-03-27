@@ -1,6 +1,6 @@
-use crate::GL::{mesh::*, *};
-use crate::{glsl::*, lib::*, math::*, ser::*, FS};
+use crate::{glsl::*, lib::*, math::*, *};
 use std::borrow::Borrow;
+use GL::{mesh::*, *};
 
 pub struct EnvTex {
 	pub mip_levels: f32,
@@ -26,7 +26,7 @@ impl Environment {
 	pub fn new_cached(name: &str) -> Res<Self> {
 		let cache = format!("{name}.hdr.z");
 		if let Ok(d) = FS::Load::Archive(&cache) {
-			if let Ok(env) = SERDE::FromVec(&d) {
+			if let Ok(env) = ser::SERDE::FromVec(&d) {
 				return Ok(env);
 			}
 		}
@@ -35,7 +35,7 @@ impl Environment {
 			let file = FS::Load::File(format!("res/{name}.hdr"))?;
 			let equirect = Tex2d::from(Image::<RGB, f32>::load(file)?);
 			let env = Self::new(equirect);
-			let _ = SERDE::ToVec(&env).map(|v| FS::Save::Archive((cache, v)));
+			let _ = ser::SERDE::ToVec(&env).map(|v| FS::Save::Archive((cache, v)));
 			Ok(env)
 		})();
 		env
@@ -44,20 +44,19 @@ impl Environment {
 	pub fn lut_cached() -> Tex2d<RG, f16> {
 		let cache = "brdf_lut.pbrt.z";
 		if let Ok(d) = FS::Load::Archive(cache) {
-			if let Ok(lut) = SERDE::FromVec(&d) {
+			if let Ok(lut) = ser::SERDE::FromVec(&d) {
 				return fImage::into(lut);
 			}
 		}
 
 		let lut = Self::lut();
-		let _ = SERDE::ToVec(&lut).map(|v| FS::Save::Archive((cache, v)));
+		let _ = ser::SERDE::ToVec(&lut).map(|v| FS::Save::Archive((cache, v)));
 		lut.into()
 	}
 	pub fn lut() -> fImage<RG> {
 		let mut lut = Shader::pure([vs_mesh__2d_screen, ps_env__gen_lut]);
 		let mut surf = Fbo::<RGBA, f32>::new((512, 512));
 		{
-			Screen::Prepare();
 			let _ = Uniforms!(lut, ("iSamples", 4096_u32));
 			surf.bind();
 			Screen::Draw();
@@ -65,7 +64,6 @@ impl Environment {
 		surf.tex.into()
 	}
 	pub fn new<S, F>(equirect: Tex2d<S, F>) -> Self {
-		Screen::Prepare();
 		let VP_mats = {
 			let vec3 = la::Vec3::new;
 			let s = |to, up| la::look_at(vec3(0., 0., 0.), to, up);

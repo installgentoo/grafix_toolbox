@@ -45,6 +45,7 @@ pub mod object;
 pub mod policy;
 pub mod state;
 pub mod tex_state;
+pub mod uniform_state;
 
 pub fn gl_was_initialized(set: bool) -> bool {
 	*LocalStatic!(bool, { set })

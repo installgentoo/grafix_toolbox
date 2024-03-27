@@ -1,6 +1,6 @@
 [package]
 name = "grafix-toolbox"
-version = "0.8.13"
+version = "0.8.14"
 authors = ["Alexander Drozdoff"]
 edition = "2021"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
@@ -40,10 +40,10 @@ bincode = { version = "^1", optional = true }
 bitflags = "^2"
 const_format = "^0.2"
 crossbeam-channel = "^0.5"
-flume = "^0.11"
 fastrand = { version = "^2", optional = true }
+flume = "^0.11"
 gl = "^0.14"
-glfw = "^0.54"
+glfw = "^0.55"
 half = "^2"
 image = { version = "^0.24", default-features = false }
 nalgebra = { version = "^0.32", features = ["std"], default-features = false }

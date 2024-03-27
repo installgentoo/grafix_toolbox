@@ -3,33 +3,68 @@ pub use {format::*, mapping::*, vao::*};
 pub type AttrArr<D> = ArrObject<Attribute, D>;
 pub type IdxArr<D> = ArrObject<Index, D>;
 
-impl<T: Buffer, D> ArrObject<T, D> {
+pub type UniformArr<D> = ShdArrObj<Uniform, D>;
+pub type ShdStorageArr<D> = ShdArrObj<ShdStorage, D>;
+
+pub struct ShdArrObj<T: ShdBuffType, D> {
+	pub array: ArrObject<T, D>,
+	loc: Cell<u32>,
+}
+impl<T: ShdBuffType, D> ShdArrObj<T, D> {
 	pub fn new(args: impl AllocArgs<D>) -> Self {
-		let (ptr, size, usage) = args.geta();
-		let o = Self::new_empty(size);
-		GLCheck!(glBufferStorage(T::TYPE, o.obj, isize(size * type_size::<D>()), ptr, usage));
-		o
+		ArrObject::new(args).into()
 	}
-	pub fn Update(&mut self, args: impl UpdateArgs<D>) {
-		let (ptr, size, offset) = args.getu();
-		ASSERT!(self.len >= offset + size, "Buffer {}({}) updated out of bounds", self.obj, type_name::<T>());
-		let s = type_size::<D>();
-		GLCheck!(glBufferSubData(T::TYPE, self.obj, isize(offset * s), isize(size * s), ptr));
+}
+impl<T: ShdBuffType, D> Drop for ShdArrObj<T, D> {
+	fn drop(&mut self) {
+		UniformState::<T>::drop(self.array.obj);
 	}
-	//TODO Async Mappings
-	pub fn Map(&mut self) -> Mapping<T, D> {
-		self.MapRange(0)
+}
+impl<T: ShdBuffType, D> From<ArrObject<T, D>> for ShdArrObj<T, D> {
+	fn from(array: ArrObject<T, D>) -> Self {
+		let (size, max) = (array.size(), T::max_size());
+		if size > max {
+			FAIL!("GL {} buffer({}|{size}) exceeds maximum size {max}", type_name::<T>(), array.obj);
+		}
+		Self { array, loc: Def() }
 	}
-	pub fn MapMut(&mut self) -> MappingMut<T, D> {
-		self.MapRangeMut(0)
+}
+impl<D> UniformArr<D> {
+	pub fn Bind(&self) -> ShdArrBinding<Uniform> {
+		let loc = self.loc.take();
+		let (b, l) = ShdArrBinding::<Uniform>::new(self, loc);
+		self.loc.set(l);
+		b
 	}
-	pub fn MapRange(&mut self, args: impl MappingArgs) -> Mapping<T, D> {
-		let (offset, len, access) = get_mapping_args(self, args);
-		Mapping::new(self, offset, len, access | gl::MAP_READ_BIT)
+}
+impl<D> ShdStorageArr<D> {
+	pub fn Bind(&self, loc: u32) -> Option<ShdArrBinding<ShdStorage>> {
+		ShdArrBinding::<ShdStorage>::new(self, loc)
 	}
-	pub fn MapRangeMut(&mut self, args: impl MappingArgs) -> MappingMut<T, D> {
-		let (offset, len, access) = get_mapping_args(self, args);
-		MappingMut::new(self, offset, len, access | gl::MAP_WRITE_BIT)
+}
+
+pub struct ShdArrBinding<'l, T: ShdBuffType> {
+	t: Dummy<&'l T>,
+	pub l: u32,
+}
+impl<'l> ShdArrBinding<'l, Uniform> {
+	pub fn new<D>(o: &'l UniformArr<D>, hint: u32) -> (Self, u32) {
+		let l = UniformState::<Uniform>::Bind(o.array.obj, hint);
+		(Self { t: Dummy, l }, l)
+	}
+}
+impl<'l> ShdArrBinding<'l, ShdStorage> {
+	pub fn new<D>(o: &'l ShdStorageArr<D>, loc: u32) -> Option<Self> {
+		if UniformState::<ShdStorage>::BindLocation(o.array.obj, loc) {
+			Some(Self { t: Dummy, l: loc })
+		} else {
+			None
+		}
+	}
+}
+impl<T: ShdBuffType> Drop for ShdArrBinding<'_, T> {
+	fn drop(&mut self) {
+		UniformState::<T>::Unbind(self.l);
 	}
 }
 

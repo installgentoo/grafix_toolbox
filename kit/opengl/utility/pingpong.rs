@@ -49,17 +49,17 @@ macro_rules! ComputeShader {
 }
 
 impl<T: UniformArgs> UniformArgs for (T, &Sampler) {
-	fn get(self, name: i32, tex_cache: &mut HashMap<i32, i32>) {
-		self.0.get(name, tex_cache);
+	fn pass(self, addr: i32, tex_cache: &mut HashMap<i32, i32>) {
+		self.0.pass(addr, tex_cache);
 	}
 }
 impl<S, F> UniformArgs for (&Tex<S, F, GL_TEXTURE_2D>, &Sampler) {
-	fn get(self, name: i32, tex_cache: &mut HashMap<i32, i32>) {
-		self.0.Bind(self.1).get(name, tex_cache);
+	fn pass(self, addr: i32, tex_cache: &mut HashMap<i32, i32>) {
+		self.0.Bind(self.1).pass(addr, tex_cache);
 	}
 }
 impl<S, F> UniformArgs for (&Fbo<S, F>, &Sampler) {
-	fn get(self, name: i32, tex_cache: &mut HashMap<i32, i32>) {
-		(&self.0.tex, self.1).get(name, tex_cache);
+	fn pass(self, addr: i32, tex_cache: &mut HashMap<i32, i32>) {
+		(&self.0.tex, self.1).pass(addr, tex_cache);
 	}
 }

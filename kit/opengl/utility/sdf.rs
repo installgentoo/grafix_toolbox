@@ -20,8 +20,8 @@ impl SdfGenerator {
 		ASSERT!(FROM::SIZE <= S::SIZE, "Wrong sdf source channel");
 		let thickness = thickness * scale;
 		let TexParam { w, h, .. } = tex.param;
-		GLSave!(BLEND, MULTISAMPLE, DEPTH_WRITEMASK);
-		GLDisable!(BLEND, MULTISAMPLE, DEPTH_WRITEMASK);
+		GLSave!(BLEND, DEPTH_TEST);
+		GLDisable!(BLEND, DEPTH_TEST);
 		let Self { dst_t, dt_h, ref sampl, .. } = self;
 		let mut surf_out = Fbo::<RED, f16>::new((w, h));
 		let mut surf_in = Fbo::<RED, f16>::new((w, h));
@@ -45,7 +45,7 @@ impl SdfGenerator {
 			out.bind();
 			Screen::Draw();
 		}
-		GLRestore!(BLEND, MULTISAMPLE, DEPTH_WRITEMASK);
+		GLRestore!(BLEND, DEPTH_TEST);
 
 		out.tex
 	}

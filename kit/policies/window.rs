@@ -57,6 +57,7 @@ impl GlfwWindow {
 		if GL::unigl::IS_DEBUG {
 			GL::EnableDebugContext(GL::DebugLevel::All);
 		}
+		crate::GLCheck!(gl::Disable(gl::DITHER));
 
 		let info = FrameInfo::new((w, h));
 		Ok(Self { window, events, resized_hint: true, info })

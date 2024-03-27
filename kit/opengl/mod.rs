@@ -15,12 +15,12 @@ pub mod opengl {
 	}
 	pub mod bind {
 		use super::super::*;
-		pub use buffer::{Mapping, MappingMut, VaoBinding};
+		pub use buffer::{Mapping, MappingMut, ShdArrBinding, VaoBinding};
 		pub use shader::ShaderBinding;
 		pub use texture::{TexBuffBinding, TextureBinding};
 	}
 	pub mod buffer {
-		pub use super::super::buffer::{AttrArr, IdxArr, Vao};
+		pub use super::super::buffer::{AttrArr, IdxArr, ShdStorageArr, UniformArr, Vao};
 	}
 	pub mod fbo {
 		use super::super::*;
@@ -73,7 +73,7 @@ pub mod opengl {
 }
 
 mod internal {
-	pub use super::control::{object::*, policy::*, state::*, tex_state::*, universion::*};
+	pub use super::control::{object::*, policy::*, state::*, tex_state::*, uniform_state::*, universion::*};
 }
 
 #[macro_use]

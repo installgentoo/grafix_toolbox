@@ -32,6 +32,27 @@ impl Buffer for Index {
 	const TYPE: GLenum = gl::ELEMENT_ARRAY_BUFFER;
 }
 
+pub trait ShdBuffType: Buffer {
+	fn max_bindings() -> i32;
+	fn max_size() -> usize;
+}
+
+derive_common_VAL! { pub struct Uniform; }
+impl State for Uniform {
+	m_STATE!();
+}
+impl Buffer for Uniform {
+	const TYPE: GLenum = gl::UNIFORM_BUFFER;
+}
+
+derive_common_VAL! { pub struct ShdStorage; }
+impl State for ShdStorage {
+	m_STATE!();
+}
+impl Buffer for ShdStorage {
+	const TYPE: GLenum = gl::SHADER_STORAGE_BUFFER;
+}
+
 macro_rules! impl_shd {
 	($n: ident, $t: ident) => {
 		#[derive(Default, Debug)]
@@ -148,7 +169,6 @@ impl<T: TexType> State for Texture<T> {
 		glDeleteTexture(obj);
 	}
 }
-
 pub trait TexType: TrivialBound {
 	const TYPE: GLenum;
 }

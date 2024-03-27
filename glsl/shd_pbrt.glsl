@@ -64,12 +64,20 @@ in vec2 glTexUV;
 in vec3 glNormal;
 in vec3 glNormalWorld;
 layout(location = 0) out vec4 glFragColor;
+
+struct Light {
+	vec3 Pos;
+	vec4 Color;
+};
+layout(std140) uniform iLights {
+	float iLightsNum;
+	Light iLight[ 20 ];
+};
+
 uniform samplerCube irradiance_cubetex;
 uniform samplerCube specular_cubetex;
 uniform sampler2D brdf_lut_tex;
 uniform vec3 iCameraWorld;
-uniform vec3 iLightPos[ 4 ];
-uniform vec4 iLightColor[ 4 ];
 
 uniform vec3 iAlbedo;
 uniform float iMetallicity;
@@ -125,11 +133,11 @@ void main() {
 
 	vec3 Lo = vec3(0);
 	for (int i = 0; i < 4; ++i) {
-		vec3 light_vec = normalize(iLightPos[ i ] - glPos);
+		vec3 light_vec = normalize(iLight[ i ].Pos - glPos);
 		vec3 half_vec = normalize(eye_vec + light_vec);
 
-		float dist = length(iLightPos[ i ] - glPos);
-		vec3 radiance = iLightColor[ i ].xyz * iLightColor[ i ].a / (dist * dist);
+		float dist = length(iLight[ i ].Pos - glPos);
+		vec3 radiance = iLight[ i ].Color.xyz * iLight[ i ].Color.a / (dist * dist);
 
 		float NDF = DistributionGGX(normal, half_vec);
 		float G = GeometrySmith(normal, eye_vec, light_vec);

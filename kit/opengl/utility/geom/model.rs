@@ -1,6 +1,7 @@
 use super::mesh::*;
-use crate::{lib::*, math::*, ser::*, FS, GL::buffer::*};
+use crate::{lib::*, math::*, *};
 use std::borrow::Borrow;
+use GL::buffer::*;
 
 #[derive(Debug, Default, Clone)]
 pub struct Model {
@@ -59,14 +60,14 @@ impl Model {
 	pub fn new_cached(name: &str) -> Res<Self> {
 		let cache = format!("{name}.obj.z");
 		if let Ok(d) = FS::Load::Archive(&cache) {
-			if let Ok(model) = SERDE::FromVec(&d) {
+			if let Ok(model) = ser::SERDE::FromVec(&d) {
 				return Ok(model);
 			}
 		}
 
 		let model: Res<Self> = (|| {
 			let m = Self::load_models(name, 1.)?.into_iter().next().ok_or("Empty models file")?;
-			let _ = SERDE::ToVec(&m).map(|v| FS::Save::Archive((cache, v)));
+			let _ = ser::SERDE::ToVec(&m).map(|v| FS::Save::Archive((cache, v)));
 			Ok(m)
 		})();
 		model
@@ -130,7 +131,7 @@ impl Mesh<u16, f32, f16, f32> {
 
 #[cfg(feature = "adv_fs")]
 mod serde {
-	use super::*;
+	use super::{ser::*, *};
 	impl Serialize for Model {
 		fn serialize<SE: Serializer>(&self, serializer: SE) -> Result<SE::Ok, SE::Error> {
 			serializer.serialize_bytes(&self.to_bytes())

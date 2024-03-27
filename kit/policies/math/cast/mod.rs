@@ -15,6 +15,7 @@ pub trait Cast<T> {
 	fn to(val: T) -> Self;
 }
 
+pub use vector::FlattenCast;
 pub mod func;
 
 mod bool;

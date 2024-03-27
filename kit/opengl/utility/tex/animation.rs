@@ -1,5 +1,5 @@
-use crate::GL::{atlas::*, tex::*};
-use crate::{lib::*, math::*, slicing::*, FS};
+use crate::{lib::*, math::*, slicing::*, *};
+use GL::{atlas::*, tex::*};
 
 pub struct Animation<'a, S: TexSize> {
 	frames: Box<[(Vec2, VTex2dEntry<'a, S>)]>,

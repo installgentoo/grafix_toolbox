@@ -1,4 +1,4 @@
-use super::{args::*, format::*, tex_type::*, *};
+use super::{args::*, format::*, spec::*, *};
 
 derive_common_VAL! {
 pub struct TexParam {
@@ -81,8 +81,7 @@ macro_rules! impl_tex {
 					}};
 				}
 				let param = tex_new!($arg_n);
-				let unit = Cell::new(0);
-				Self { param, tex, unit, s, f }
+				Self { param, tex, unit: Def(), s, f }
 			}
 			pub fn Update(&mut self, args: impl $arg_u<F>) {
 				self.UpdateCustom::<S, F, _>(args);

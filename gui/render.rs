@@ -231,10 +231,10 @@ impl Renderer {
 
 		GL::BlendFunc::Save();
 		GL::DepthFunc::Save();
-		GLSave!(CULL_FACE, DEPTH_TEST, DEPTH_WRITEMASK, BLEND);
+		GLSave!(CULL_FACE, DEPTH_TEST, DEPTH_WRITABLE, BLEND);
 
 		GLDisable!(CULL_FACE);
-		GLEnable!(DEPTH_TEST, DEPTH_WRITEMASK);
+		GLEnable!(DEPTH_TEST, DEPTH_WRITABLE);
 		GL::BlendFunc::Set((gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA));
 		GL::DepthFunc::Set(gl::LEQUAL);
 
@@ -247,7 +247,7 @@ impl Renderer {
 			objs.draw_transparent_batches(&v);
 		}
 
-		GLRestore!(CULL_FACE, DEPTH_TEST, DEPTH_WRITEMASK, BLEND);
+		GLRestore!(CULL_FACE, DEPTH_TEST, DEPTH_WRITABLE, BLEND);
 		GL::BlendFunc::Restore();
 		GL::DepthFunc::Restore();
 

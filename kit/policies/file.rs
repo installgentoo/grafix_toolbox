@@ -152,7 +152,7 @@ fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader: impl Fn
 	stream::unfold(None, move |w| {
 		let (p, l, _sn, rx) = (p.clone(), loader.clone(), sn.clone(), rx.clone());
 		async move {
-			let first = w.is_none();
+			let _first = w.is_none();
 			if let Some(_w) = w {
 				let _ = rx.recv_async().await;
 			}
@@ -172,7 +172,7 @@ fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader: impl Fn
 					.map_err(|e| FAIL!("Watch {p:?}: {e}"))
 					.ok();
 
-					if !first {
+					if !_first {
 						while !p.exists() {
 							task::Timer::after(time::Duration::from_millis(100)).await;
 						}

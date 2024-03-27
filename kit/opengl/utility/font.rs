@@ -1,4 +1,4 @@
-use crate::{lib::*, ser::*, FS, GL};
+use crate::{lib::*, *};
 use GL::{atlas::*, Tex2d, RED};
 
 derive_common_OBJ! {
@@ -8,7 +8,7 @@ pub struct Glyph {
 	pub uv: Vec4,
 }}
 
-#[cfg_attr(feature = "adv_fs", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "adv_fs", derive(ser::Serialize, ser::Deserialize))]
 #[derive(Default)]
 pub struct Font {
 	pub glyphs: HashMap<char, Glyph>,
@@ -35,7 +35,7 @@ impl Font {
 		let alph_chksum = chksum::const_fnv1(alphabet.as_bytes()).to_string();
 		let cache = format!("{name}.{alph_chksum}.font.z");
 		if let Ok(d) = FS::Load::Archive(&cache) {
-			if let Ok(font) = SERDE::FromVec(&d) {
+			if let Ok(font) = ser::SERDE::FromVec(&d) {
 				return font;
 			}
 		}
@@ -43,7 +43,7 @@ impl Font {
 		let font: Res<_> = (|| {
 			let file = FS::Load::File(format!("res/{name}.ttf"))?;
 			let font = Self::new(&file, alphabet)?;
-			let _ = SERDE::ToVec(&font).map(|v| FS::Save::Archive((cache, v)));
+			let _ = ser::SERDE::ToVec(&font).map(|v| FS::Save::Archive((cache, v)));
 			Ok(font)
 		})();
 		OR_DEFAULT!(font, "Could not load font {name}: {}")

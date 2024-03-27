@@ -57,6 +57,14 @@ where
 		(isize(self.0), isize(self.1), self.2)
 	}
 }
+impl<O, L> MappingArgs for (O, L)
+where
+	isize: Cast<O> + Cast<L>,
+{
+	fn get(self) -> RArgs {
+		(self.0, self.1, 0).get()
+	}
+}
 impl MappingArgs for GLenum {
 	fn get(self) -> RArgs {
 		(0, 0, self).get()

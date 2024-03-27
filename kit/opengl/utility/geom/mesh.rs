@@ -8,6 +8,8 @@ pub mod Screen {
 		_xyuv: AttrArr<i8>,
 	}
 	pub fn Draw() {
+		GLSave!(DEPTH_TEST);
+		GLDisable!(DEPTH_TEST);
 		LocalStatic!(Model, {
 			#[rustfmt::skip]
 			let _xyuv = AttrArr::new(&[ -1, -1, 0, 0,  3, -1, 2, 0,  -1, 3, 0, 2 ][..]);
@@ -18,11 +20,7 @@ pub mod Screen {
 		.vao
 		.Bind()
 		.DrawUnindexed(3);
-	}
-	pub fn Prepare() {
-		GLEnable!(DEPTH_TEST, BLEND, MULTISAMPLE, DEPTH_WRITEMASK);
-		GL::BlendFunc::Set((gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA));
-		GL::DepthFunc::Set(gl::LESS);
+		GLRestore!(DEPTH_TEST);
 	}
 }
 

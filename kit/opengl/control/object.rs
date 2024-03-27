@@ -1,5 +1,5 @@
 use super::state::*;
-use crate::stdlib::Dummy;
+use crate::stdlib::*;
 
 #[derive(Debug)]
 pub struct Object<T: State> {
@@ -54,6 +54,9 @@ impl<T: State, D> ArrObject<T, D> {
 	pub fn new_empty(len: usize) -> Self {
 		let (t, d, obj) = (Dummy, Dummy, T::New());
 		Self { t, d, obj, len }
+	}
+	pub fn size(&self) -> usize {
+		self.len * type_size::<D>()
 	}
 }
 impl<T: State, D> Drop for ArrObject<T, D> {
