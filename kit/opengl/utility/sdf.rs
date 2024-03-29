@@ -65,7 +65,7 @@ SHADER!(
 	uniform int iThickness;
 	uniform float iSide;
 
-	vec2 iStep = vec2(0., 1.) / textureSize(tex, 0);
+	vec2 iStep = vec2(0, 1) / textureSize(tex, 0);
 
 	float get_tex(in vec2 p) {
 		if (1 == iChannel) return texture(tex, glTexUV + p).r;
@@ -85,7 +85,7 @@ SHADER!(
 			}
 		}
 
-		glFragColor = 1.;
+		glFragColor = 1;
 	}"
 );
 
@@ -96,7 +96,7 @@ SHADER!(
 	uniform sampler2D tex_i, tex_o;
 	uniform int iThickness;
 
-	vec2 iStep = vec2(1., 0.) / textureSize(tex_i, 0);
+	vec2 iStep = vec2(1, 0) / textureSize(tex_i, 0);
 
 	void main() {
 		float d_i = texture(tex_i, glTexUV).r;

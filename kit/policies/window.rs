@@ -3,6 +3,7 @@ use crate::{event::*, lib::*, math::*, sync::*, GL, GL::FrameInfo};
 pub trait WindowSpec {
 	unsafe fn clipboard(&self) -> String;
 	fn set_clipboard(&mut self, str: &str);
+	fn set_vsync(&mut self, enabled: bool);
 	fn resize(&mut self, size: uVec2);
 
 	fn spawn_offhand_gl(&mut self, _: impl FnOnce() + SendStat) -> JoinHandle<()>;
@@ -72,6 +73,10 @@ impl WindowSpec for GlfwWindow {
 	}
 	fn set_clipboard(&mut self, s: &str) {
 		self.window.set_clipboard_string(s)
+	}
+	fn set_vsync(&mut self, e: bool) {
+		use glfw::SwapInterval::*;
+		self.window.glfw.set_swap_interval(if e { Sync(1) } else { None });
 	}
 	fn resize(&mut self, size: uVec2) {
 		let Self { window, resized_hint, info, .. } = self;

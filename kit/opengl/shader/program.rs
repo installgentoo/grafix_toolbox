@@ -49,6 +49,7 @@ impl Shader {
 					Ok(p) => {
 						*prog = p;
 						(*uniforms, *binds_cache) = Def();
+						PRINT!("Rebuilt shader {}", name.join(" "))
 					}
 				}
 			}

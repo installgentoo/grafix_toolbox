@@ -70,7 +70,7 @@ struct Light {
 	vec4 Color;
 };
 layout(std140) uniform iLights {
-	float iLightsNum;
+	int iLightsNum;
 	Light iLight[ 20 ];
 };
 
@@ -89,7 +89,7 @@ const float gamma = 2.2;
 const float ao = .1;
 const float refractive_index = .1;
 
-const float PI = 3.14159265358979323846;
+const float PI = 3.1415927;
 
 vec3 fresnelSchlick(float cos_theta, vec3 F0) { return F0 + (max(vec3(1. - iRoughness), F0) - F0) * pow(1. - cos_theta, 5); }
 
@@ -132,7 +132,7 @@ void main() {
 	vec3 F0 = mix(vec3(.04), iAlbedo, iMetallicity);
 
 	vec3 Lo = vec3(0);
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < iLightsNum; ++i) {
 		vec3 light_vec = normalize(iLight[ i ].Pos - glPos);
 		vec3 half_vec = normalize(eye_vec + light_vec);
 
@@ -174,7 +174,7 @@ void main() {
 	vec3 ambient = (kD * diffuse + specular) * ao;
 	vec3 c = ambient + Lo;
 
-	c = vec3(1.) - exp(-c * iExposure);
+	c = vec3(1) - exp(-c * iExposure);
 	c = pow(c, vec3(1. / gamma));
 
 	glFragColor = vec4(c, 1);

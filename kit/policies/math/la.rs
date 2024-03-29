@@ -9,8 +9,11 @@ pub type Mat4 = na::Matrix4<f32>;
 pub fn identity() -> Mat4 {
 	Mat4::identity()
 }
-pub fn inverse_transpose(m: Mat3) -> Mat3 {
-	m.try_inverse().unwrap_or_else(Mat3::zeros).transpose()
+pub fn inverse3(m: Mat3) -> Mat3 {
+	m.try_inverse().unwrap_or_else(Mat3::identity)
+}
+pub fn inverse4(m: Mat4) -> Mat4 {
+	m.try_inverse().unwrap_or_else(Mat4::identity)
 }
 pub fn crop_3x3(m: &Mat4) -> Mat3 {
 	m.fixed_resize(0.)

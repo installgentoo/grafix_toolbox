@@ -1,25 +1,6 @@
 #![allow(unused_imports)]
 use super::{super::super::index::*, super::*, logging};
 
-pub trait FlattenCast<T> {
-	fn flatten(self) -> Vec<T>;
-}
-impl<T: Copy> FlattenCast<T> for &[vec2<T>] {
-	fn flatten(self) -> Vec<T> {
-		self.iter().flat_map(|&(x, y)| [x, y]).collect()
-	}
-}
-impl<T: Copy> FlattenCast<T> for &[vec3<T>] {
-	fn flatten(self) -> Vec<T> {
-		self.iter().flat_map(|&(x, y, z)| [x, y, z]).collect()
-	}
-}
-impl<T: Copy> FlattenCast<T> for &[vec4<T>] {
-	fn flatten(self) -> Vec<T> {
-		self.iter().flat_map(|&(x, y, z, a)| [x, y, z, a]).collect()
-	}
-}
-
 impl<T: Copy> Cast<&[T]> for vec2<T> {
 	fn to(v: &[T]) -> Self {
 		ASSERT!(v.len() > 1, "Slice is too short for Vec2");

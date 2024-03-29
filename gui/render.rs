@@ -105,6 +105,18 @@ impl<'l> RenderLock<'l> {
 		r.render(w);
 		r
 	}
+	pub fn unlock_skip_render(self, _: &mut impl Frame, events: &mut Vec<Event>) -> Renderer {
+		debug_assert!({
+			super::sugar::borrow_map().clear();
+			true
+		});
+		let Self { mut r, logics, n, .. } = self;
+		if n < u32(r.objs.objs.len()) {
+			r.objs.shrink(n);
+		}
+		r.consume_events(logics, events);
+		r
+	}
 }
 
 #[derive(Default)]

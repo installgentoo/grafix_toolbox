@@ -43,11 +43,11 @@ impl Camera {
 		Mat4(self.view_proj * model)
 	}
 	pub fn N(&self, model: &M4) -> Mat3 {
-		Mat3(la::inverse_transpose(la::crop_3x3(model)))
+		Mat3(la::inverse3(la::crop_3x3(model)).transpose())
 	}
 	pub fn NV(&self, model: &M4) -> Mat3 {
 		let m = self.view * model;
-		Mat3(la::inverse_transpose(la::crop_3x3(&m)))
+		Mat3(la::inverse3(la::crop_3x3(&m).transpose()))
 	}
 }
 use la::Mat4 as M4;

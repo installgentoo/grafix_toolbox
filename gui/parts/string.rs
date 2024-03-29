@@ -197,16 +197,16 @@ SHADER!(
 
 		float toPixels = 10. * inversesqrt(dx * dx + dy * dy);
 
-		vec2 step = vec2(dFdx(glTexUV.x) * .5, 0.);
+		vec2 step = vec2(dFdx(glTexUV.x) * .5, 0);
 
 		float l = texture(tex, glTexUV - step).r;
 		float c = texture(tex, glTexUV).r;
 		float r = texture(tex, glTexUV + step).r;
-		float n = texture(tex, glTexUV + step * 2.).r;
+		float n = texture(tex, glTexUV + step * 2).r;
 
-		vec4 p = clamp((vec4(l, c, r, n) - vec4(.5)) * toPixels + vec4(1.), vec4(0.), vec4(1.));
+		vec4 p = clamp((vec4(l, c, r, n) - vec4(.5)) * toPixels + vec4(1), vec4(0), vec4(1));
 
-		vec4 correction = vec4(p.x, p.z, p.a, (p.x + p.y + p.z) / 3.);
+		vec4 correction = vec4(p.x, p.z, p.a, (p.x + p.y + p.z) / 3);
 
 		glFragColor = glColor * correction;
 	}"
