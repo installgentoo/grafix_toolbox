@@ -18,8 +18,8 @@ pub fn compiler(data_rx: Receiver<ShaderTask>, res_sn: Sender<(ShdResult, Fence)
 		match msg {
 			Watch(name) => name.iter().for_each(|n| watched.entry(n.clone()).or_default().push(name.clone())),
 			Forget(name) => name.iter().for_each(|n| {
-				let w = watched.get_mut(n).unwrap();
-				let idx = w.iter().position(|n| *n == name).unwrap();
+				let w = watched.get_mut(n).valid();
+				let idx = w.iter().position(|n| *n == name).valid();
 				w.swap_remove(idx);
 			}),
 			Rebuild => {

@@ -113,7 +113,7 @@ fn check_borrow(id: u32) {
 	ASSERT!(
 		borrow_map().get(&id).is_none(),
 		"An element {:?} cannot be drawn more than once per frame",
-		chksum::collision_map().get(&id).unwrap()
+		chksum::collision_map().get(&id).valid()
 	);
 	borrow_map().insert(id);
 }

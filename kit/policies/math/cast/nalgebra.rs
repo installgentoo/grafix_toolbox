@@ -1,4 +1,4 @@
-use super::super::*;
+use super::super::{super::ext::UnwrapValid, *};
 
 macro_rules! array_recast {
 	($from: ty, $to: ty, $dim: literal) => {
@@ -50,7 +50,7 @@ macro_rules! mat_recast {
 		}
 		impl Cast<$from> for $to {
 			fn to(v: $from) -> Self {
-				let m: [_; $l] = v.as_slice().try_into().unwrap();
+				let m: [_; $l] = v.as_slice().try_into().valid();
 				let m: [[_; $r]; $c] = unsafe { std::mem::transmute(m) };
 				m.map(Into::into).into()
 			}

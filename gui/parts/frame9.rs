@@ -51,7 +51,7 @@ impl Object for Frame9Impl {
 		let tex = unsafe { &*self.tex };
 		let t = tex.tex.Bind(sampler());
 		let (x, y, w, _) = tex.region;
-		let _ = Uniforms!(s, ("tex", &t), ("iThemeCoords", (x, y, w - x)));
+		let _ = Uniforms!(s, ("tex", t), ("iThemeCoords", (x, y, w - x)));
 		b.Draw((num, offset, gl::TRIANGLES));
 	}
 

@@ -29,7 +29,7 @@ impl<O: SendStat> Offhand<O> {
 }
 impl<O> Drop for Offhand<O> {
 	fn drop(&mut self) {
-		self.handle.take().unwrap().join().unwrap();
+		self.handle.take().valid().join().valid();
 	}
 }
 

@@ -1,5 +1,4 @@
 use super::super::shader::uniform::*;
-use crate::lib::*;
 use crate::GL::{tex::*, Fbo};
 
 #[macro_export]
@@ -43,23 +42,23 @@ macro_rules! ComputeShader {
 		$fbo.bind();
 		let s = $shd.Bind();
 		let b = $t0.Bind(&$s0);
-		let _ = Uniform!(s, ($n0, &b));
+		let _ = Uniform!(s, ($n0, b));
 		let _ = ComputeShader!($shd, $fbo, $($args),+);
 	}};
 }
 
 impl<T: UniformArgs> UniformArgs for (T, &Sampler) {
-	fn pass(self, addr: i32, tex_cache: &mut HashMap<i32, i32>) {
-		self.0.pass(addr, tex_cache);
+	fn apply(&self, addr: i32, c: UniCache) {
+		self.0.apply(addr, c);
 	}
 }
 impl<S, F> UniformArgs for (&Tex<S, F, GL_TEXTURE_2D>, &Sampler) {
-	fn pass(self, addr: i32, tex_cache: &mut HashMap<i32, i32>) {
-		self.0.Bind(self.1).pass(addr, tex_cache);
+	fn apply(&self, addr: i32, c: UniCache) {
+		self.0.Bind(self.1).apply(addr, c);
 	}
 }
 impl<S, F> UniformArgs for (&Fbo<S, F>, &Sampler) {
-	fn pass(self, addr: i32, tex_cache: &mut HashMap<i32, i32>) {
-		(&self.0.tex, self.1).pass(addr, tex_cache);
+	fn apply(&self, addr: i32, c: UniCache) {
+		(&self.0.tex, self.1).apply(addr, c);
 	}
 }

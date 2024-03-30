@@ -91,9 +91,8 @@ impl WindowSpec for GlfwWindow {
 		let ctx = &mut *self.window as *mut Window as usize;
 		make_context_current(None);
 		let ret = {
-			thread::Builder::new()
-				.name("gl_offhand".into())
-				.spawn({
+			EXPECT!(
+				thread::Builder::new().name("gl_offhand".into()).spawn({
 					let l = ctx_lock.clone();
 					move || {
 						let mut ctx = {
@@ -113,8 +112,9 @@ impl WindowSpec for GlfwWindow {
 						GL::macro_uses::gl_was_initialized(true);
 						f();
 					}
-				})
-				.unwrap()
+				}),
+				"Failed to spawn offhand"
+			)
 		};
 		ctx_lock.wait();
 		self.window.make_current();

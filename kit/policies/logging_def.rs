@@ -59,7 +59,7 @@ macro_rules! ASSERT {
 macro_rules! ASSERT_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
-		Logger::log(Level::PRINT, ["A| ", &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
+		Logger::log(["A| ", &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
 		panic!();
 	}};
 }
@@ -73,9 +73,9 @@ macro_rules! ERROR {
 #[macro_export]
 macro_rules! ERROR_IMPL {
 	($($t: tt)+) => {{
-		let bt = std::backtrace::Backtrace::force_capture();
 		use logging::*;
-		Logger::log(Level::PRINT, [&format!("E| BACKTRACE\n{bt}  ↑\nE| "), &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
+		let bt = std::backtrace::Backtrace::force_capture();
+		Logger::log([&format!("E| BACKTRACE\n{bt}  ↑\nE| "), &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
 		panic!();
 	}};
 }
@@ -101,7 +101,9 @@ macro_rules! WARN {
 macro_rules! WARN_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
-		Logger::log(Level::WARNING, ["W| ", &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
+		if Level::WARNING as i32 <= Logger::level() {
+			Logger::log(["W| ", &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
+		}
 	}};
 }
 
@@ -115,7 +117,9 @@ macro_rules! INFO {
 macro_rules! INFO_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
-		Logger::log(Level::INFO, ["I| ", &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
+		if Level::INFO as i32 <= Logger::level() {
+			Logger::log(["I| ", &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
+		}
 	}};
 }
 
@@ -135,7 +139,9 @@ macro_rules! DEBUG {
 macro_rules! DEBUG_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
-		Logger::log(Level::DEBUG, ["D| ", &format!($($t)+), "\n"].concat());
+		if Level::DEBUG as i32 <= Logger::level() {
+			Logger::log( ["D| ", &format!($($t)+), "\n"].concat());
+		}
 	}};
 }
 
@@ -148,9 +154,11 @@ macro_rules! PRINT {
 #[macro_export]
 macro_rules! PRINT_IMPL {
 	($($t: tt)+) => {{
-		let mut msg = format!($($t)+);
-		msg.push('\n');
 		use logging::*;
-		Logger::log(Level::PRINT, msg);
+		if Level::PRINT as i32 <= Logger::level() {
+			let mut msg = format!($($t)+);
+			msg.push('\n');
+			Logger::log( msg);
+		}
 	}};
 }

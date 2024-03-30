@@ -38,8 +38,12 @@ pub trait State {
 
 	fn Lock(obj: u32) {
 		debug_assert!({
-			let _tracked = *Self::tracked_obj();
-			ASSERT!(_tracked == 0, "Tried to bind GL {} object {obj} while {_tracked} ", type_name::<Self>());
+			ASSERT!(
+				*Self::tracked_obj() == 0,
+				"Tried to bind GL {} object {obj} while {} still in use",
+				type_name::<Self>(),
+				Self::tracked_obj()
+			);
 			*Self::tracked_obj() = obj;
 			true
 		});

@@ -86,9 +86,9 @@ impl Environment {
 
 		let color = VP_mats
 			.iter()
-			.map(|cam| {
+			.map(|&cam| {
 				let e = equirect.Bind(sampl);
-				let _ = Uniforms!(equirect_shd, ("equirect_tex", &e), ("MVPMat", cam));
+				let _ = Uniforms!(equirect_shd, ("equirect_tex", e), ("MVPMat", cam));
 				let mut surf = Fbo::<RGBA, f32>::new((512, 512));
 				surf.bind();
 				Skybox::Draw();
@@ -99,9 +99,9 @@ impl Environment {
 
 		let diffuse = VP_mats
 			.iter()
-			.map(|cam| {
+			.map(|&cam| {
 				let e = cubemap.Bind(sampl);
-				let _ = Uniforms!(irradiance_shd, ("env_cubetex", &e), ("MVPMat", cam), ("iDelta", 0.025));
+				let _ = Uniforms!(irradiance_shd, ("env_cubetex", e), ("MVPMat", cam), ("iDelta", 0.025));
 				let mut surf = Fbo::<RGBA, f32>::new((64, 64));
 				surf.bind();
 				Skybox::Draw();
@@ -119,9 +119,9 @@ impl Environment {
 						let wh = cubemap.param.dim_unchecked(u32(l)).xy();
 						let mip = VP_mats
 							.iter()
-							.map(|cam| {
+							.map(|&cam| {
 								let e = cubemap.Bind(sampl);
-								let _ = Uniforms!(specular_shd, ("env_cubetex", &e), ("MVPMat", cam), ("iSamples", 4096_u32), ("iRoughness", r));
+								let _ = Uniforms!(specular_shd, ("env_cubetex", e), ("MVPMat", cam), ("iSamples", 4096_u32), ("iRoughness", r));
 								let mut surf = Fbo::<RGBA, f32>::new(wh);
 								surf.bind();
 								Skybox::Draw();
@@ -159,7 +159,7 @@ SHADER!(
 
 	void main() {
 		vec3 v = normalize(glTexUV);
-		vec2 uv = vec2(atan(v.z, v.x), asin(v.y)) * vec2(.1591, .3183) + vec2(.5);
+		vec2 uv = vec2(atan(v.z, v.x), asin(v.y)) * vec2(.1591, .3183) + .5;
 		vec3 c = texture(equirect_tex, uv).rgb;
 		glFragColor = vec4(c, 1);
 	}"

@@ -16,7 +16,7 @@ pub fn pyramid(img: impl Into<Tex2d<RGBA, f32>>) -> Vec<Tex2d<RGBA, f32>> {
 		let img2 = {
 			let mut out = Fbo::<RGBA, f32>::new((w, h).div(l + 1));
 			let b = img1.Bind(linear);
-			let _ = Uniforms!(render, ("tex", &b));
+			let _ = Uniforms!(render, ("tex", b));
 			out.bind();
 			Screen::Draw();
 			out.tex
@@ -25,7 +25,7 @@ pub fn pyramid(img: impl Into<Tex2d<RGBA, f32>>) -> Vec<Tex2d<RGBA, f32>> {
 			let mut out = Fbo::<RGBA, f32>::new((w, h).div(l));
 			let b1 = img1.Bind(linear);
 			let b2 = img2.Bind(linear);
-			let _ = Uniforms!(sub, ("tex1", &b1), ("tex2", &b2));
+			let _ = Uniforms!(sub, ("tex1", b1), ("tex2", b2));
 			out.bind();
 			Screen::Draw();
 			out.tex
@@ -41,14 +41,14 @@ pub fn collapse(mut pyramid: Vec<Tex2d<RGBA, f32>>) -> Tex2d<RGBA, f32> {
 	let mut add = Shader::pure([vs_mesh__2d_screen, ps_pyramid___add]);
 	let linear = &Sampler::linear();
 
-	let mut img1 = pyramid.pop().unwrap();
+	let mut img1 = pyramid.pop().valid();
 	for img2 in pyramid.into_iter().rev().skip(1) {
 		let (w, h) = (img2.param.w, img2.param.h);
 		img1 = {
 			let mut out = Fbo::<RGBA, f32>::new((w, h));
 			let b1 = img1.Bind(linear);
 			let b2 = img2.Bind(linear);
-			let _ = Uniforms!(add, ("tex1", &b1), ("tex2", &b2));
+			let _ = Uniforms!(add, ("tex1", b1), ("tex2", b2));
 			out.bind();
 			Screen::Draw();
 			out.tex

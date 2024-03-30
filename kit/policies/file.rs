@@ -5,14 +5,14 @@ pub mod Save {
 	use super::*;
 
 	pub fn Write(p: impl Into<Astr>, data: impl Into<Arc<[u8]>>) {
-		sender().send((p.into(), MessageType::Write, data.into())).expect(FAILED_WRITE);
+		EXPECT!(sender().send((p.into(), MessageType::Write, data.into())), FAILED_WRITE);
 	}
 	pub fn Append(p: impl Into<Astr>, data: impl Into<Arc<[u8]>>) {
-		sender().send((p.into(), MessageType::Append, data.into())).expect(FAILED_WRITE);
+		EXPECT!(sender().send((p.into(), MessageType::Append, data.into())), FAILED_WRITE);
 	}
 	pub fn Archive(args: impl CompressArgs) {
 		let (p, data, level) = args.get();
-		sender().send((p, MessageType::ComprW(level), data)).expect(FAILED_WRITE);
+		EXPECT!(sender().send((p, MessageType::ComprW(level), data)), FAILED_WRITE);
 	}
 
 	type Args = (Astr, Arc<[u8]>, i32);
@@ -77,7 +77,9 @@ pub mod Save {
 			});
 
 			logging::Logger::shutdown_hook(move || {
-				sender().send(("".into(), MessageType::Close, vec![].into())).expect("E| Failed to close write");
+				sender()
+					.send(("".into(), MessageType::Close, vec![].into()))
+					.expect("E| Failed to close async write system");
 				task::block_on(handle);
 			});
 

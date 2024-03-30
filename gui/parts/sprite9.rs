@@ -13,12 +13,12 @@ pub struct Sprite9<'r, S> {
 impl<S: TexSize> Sprite9<'_, S> {
 	#[inline(always)]
 	pub fn compare(&self, crop: &Crop, r: &Sprite9Impl<S>) -> State {
-		let &Self { pos, size, corner, color, tex } = self;
+		let &Self { pos, size, corner, color, tex: tex_new } = self;
 		let xyzw = (State::XYZW | State::UV).or_def(geom_cmp(pos, size, crop, &r.base) || corner != r.corner);
 		let rgba = State::RGBA.or_def(color != r.base.color);
-		let _tex = State::UV.or_def(!ptr::eq(tex, r.tex));
-		let ord = State::MISMATCH.or_def((!_tex.is_empty() && atlas_cmp(tex, r.tex)) || (!rgba.is_empty() && ordering_cmp::<S, _>(color, r)));
-		ord | xyzw | rgba | _tex
+		let tex = State::UV.or_def(!ptr::eq(tex_new, r.tex));
+		let ord = State::MISMATCH.or_def((!tex.is_empty() && atlas_cmp(tex_new, r.tex)) || (!rgba.is_empty() && ordering_cmp::<S, _>(color, r)));
+		ord | xyzw | rgba | tex
 	}
 	pub fn obj(self, crop: Crop) -> Sprite9Impl<S> {
 		let Self { pos, size, corner, color, tex } = self;
@@ -48,7 +48,7 @@ impl<S: TexSize> Object for Sprite9Impl<S> {
 		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__col_tex]) });
 
 		let t = unsafe { &*self.tex }.tex.Bind(sampler());
-		let _ = Uniforms!(s, ("src", &t));
+		let _ = Uniforms!(s, ("src", t));
 		b.Draw((num, offset, gl::TRIANGLES));
 	}
 

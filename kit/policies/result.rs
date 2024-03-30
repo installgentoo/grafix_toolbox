@@ -1,4 +1,4 @@
-use super::{math::*, type_name};
+use super::{ext::UnwrapValid, math::*, type_name};
 
 pub type Res<T> = Result<T, String>;
 
@@ -58,6 +58,6 @@ impl<T: Default, R: std::fmt::Display> UniformUnwrapOrDefault<T> for Result<T, R
 		self.is_err()
 	}
 	fn uni_err(self) -> (T, String) {
-		(T::default(), self.err().unwrap().to_string())
+		(T::default(), self.err().valid().to_string())
 	}
 }

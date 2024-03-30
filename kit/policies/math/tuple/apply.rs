@@ -1,4 +1,4 @@
-use super::args::*;
+use super::{super::super::ext::UnwrapValid, args::*};
 
 pub trait TupleApply<RA, A>: Sized {
 	type R<B>;
@@ -100,7 +100,7 @@ impl<A, const N: usize> TupleMap<A> for [A; N] {
 impl<A, const N: usize> TupleFold<A> for [A; N] {
 	fn fold<F: Fn(A, A) -> A>(self, op: F) -> A {
 		let mut i = self.into_iter();
-		let h = i.next().unwrap();
+		let h = i.next().valid();
 		i.fold(h, op)
 	}
 }

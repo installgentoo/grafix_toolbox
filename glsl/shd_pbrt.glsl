@@ -25,7 +25,7 @@ const float gamma = 2.2;
 
 void main() {
 	vec3 c = textureLod(skybox_tex, glTexUV, 0).rgb;
-	c = vec3(1) - exp(-c * iExposure);
+	c = 1 - exp(-c * iExposure);
 	c = pow(c, vec3(1. / gamma));
 	glFragColor = vec4(c, 1);
 }
@@ -144,7 +144,7 @@ void main() {
 		vec3 F = fresnelSchlick(max(dot(half_vec, eye_vec), 0), F0);
 
 		vec3 kS = F;
-		vec3 kD = vec3(1) - kS;
+		vec3 kD = 1 - kS;
 		kD *= 1. - iMetallicity;
 
 		vec3 numerator = NDF * G * F;
@@ -174,7 +174,7 @@ void main() {
 	vec3 ambient = (kD * diffuse + specular) * ao;
 	vec3 c = ambient + Lo;
 
-	c = vec3(1) - exp(-c * iExposure);
+	c = 1 - exp(-c * iExposure);
 	c = pow(c, vec3(1. / gamma));
 
 	glFragColor = vec4(c, 1);

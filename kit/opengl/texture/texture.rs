@@ -57,8 +57,11 @@ macro_rules! impl_tex {
 				let (tex, f, s) = (Object::new(), Dummy, Dummy);
 				let fmt = normalize_internal_fmt(get_internal_fmt::<S, F>());
 				let check = |m, _l| {
-					let _m = TexParam::mip_levels(m);
-					ASSERT!(_l > 0 && _l <= _m, "GL Texture can only have {_m} levels, asked for {_l}");
+					ASSERT!(
+						_l > 0 && _l <= TexParam::mip_levels(m),
+						"GL Texture can only have {} levels, asked for {_l}",
+						TexParam::mip_levels(m)
+					);
 				};
 				macro_rules! tex_new {
 					(NewArgs1) => {{

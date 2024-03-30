@@ -27,7 +27,7 @@ impl SdfGenerator {
 		let mut surf_in = Fbo::<RED, f16>::new((w, h));
 		{
 			let t = tex.Bind(sampl);
-			let s = Uniforms!(dst_t, ("tex", &t), ("iChannel", FROM::SIZE), ("iThickness", thickness));
+			let s = Uniforms!(dst_t, ("tex", t), ("iChannel", FROM::SIZE), ("iThickness", thickness));
 
 			let s = Uniform!(s, ("iSide", 1.));
 			surf_out.bind();
@@ -41,7 +41,7 @@ impl SdfGenerator {
 		{
 			let to = surf_out.tex.Bind(sampl);
 			let ti = surf_in.tex.Bind(sampl);
-			let _ = Uniforms!(dt_h, ("tex_o", &to), ("tex_i", &ti), ("iThickness", thickness));
+			let _ = Uniforms!(dt_h, ("tex_o", to), ("tex_i", ti), ("iThickness", thickness));
 			out.bind();
 			Screen::Draw();
 		}

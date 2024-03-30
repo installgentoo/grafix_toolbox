@@ -29,19 +29,17 @@ impl Logger {
 		Self
 	}
 	#[inline(always)]
-	pub fn log(l: Level, msg: String) {
-		if (l as i32) <= Self::level() {
-			Self::init_logger(check_order, Level::INFO);
+	pub fn log(msg: String) {
+		Self::init_logger(check_order, Level::INFO);
 
-			unsafe { LOGGER.get() }
-				.expect("E| Logger already exited")
-				.sender
-				.send(Message::M(msg))
-				.expect("E| Failed to send log");
-		}
+		unsafe { LOGGER.get() }
+			.expect("E| Logger already exited")
+			.sender
+			.send(Message::M(msg))
+			.expect("E| Failed to send log");
 	}
 	pub fn shutdown_hook(f: impl FnOnce() + SendStat) {
-		POSTMORTEM.lock().unwrap().push(Box(f));
+		POSTMORTEM.lock().expect("Shutdown hook add failed").push(Box(f));
 	}
 
 	pub fn level() -> i32 {
@@ -78,19 +76,20 @@ impl Logger {
 impl Drop for Logger {
 	fn drop(&mut self) {
 		Self::init_logger(check_order, Level::INFO);
-		POSTMORTEM.lock().unwrap().drain(..).for_each(|f| f());
-		let LoggerState { handle, sender } = unsafe { LOGGER.take() }.unwrap();
-		sender.send(Message::Close).expect("E| Failed to close log");
+		POSTMORTEM.lock().expect("Shutdown hooks failed").drain(..).for_each(|f| f());
+		let LoggerState { handle, sender } = unsafe { LOGGER.take() }.valid();
+		sender.send(Message::Close).expect("E| Failed to close logging system");
 		task::block_on(handle);
 	}
 }
 
 #[derive(Clone, Copy)]
 pub enum Level {
-	PRINT = 0,
-	WARNING = 1,
-	INFO = 2,
-	DEBUG = 3,
+	SILENT = 0,
+	PRINT = 1,
+	WARNING = 2,
+	INFO = 3,
+	DEBUG = 4,
 }
 static mut LEVEL: Level = Level::INFO;
 static mut LOGGER: OnceLock<LoggerState> = OnceLock::new();

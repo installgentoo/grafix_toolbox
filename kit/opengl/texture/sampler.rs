@@ -22,8 +22,10 @@ impl Sampler {
 
 		if let Some(w) = p.get(&id) {
 			if let Some(s) = w.upgrade() {
-				let _collision_map = LocalStatic!(HashMap<u32, Vec<(u32, u32)>>);
-				ASSERT!(_collision_map.entry(id).or_insert(args.to_vec()).iter().eq(args.iter()), "Sampler param collision");
+				ASSERT!(
+					LocalStatic!(HashMap<u32, Vec<(u32, u32)>>).entry(id).or_insert(args.to_vec()).iter().eq(args.iter()),
+					"Sampler param collision"
+				);
 				return s;
 			}
 		}

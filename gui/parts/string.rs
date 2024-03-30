@@ -169,7 +169,7 @@ impl Object for TextImpl {
 		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui_sdftext]) });
 
 		let t = self.font.tex().Bind(sampler());
-		let _ = Uniforms!(s, ("tex", &t));
+		let _ = Uniforms!(s, ("tex", t));
 		b.Draw((num, offset, gl::TRIANGLES));
 	}
 
@@ -204,7 +204,7 @@ SHADER!(
 		float r = texture(tex, glTexUV + step).r;
 		float n = texture(tex, glTexUV + step * 2).r;
 
-		vec4 p = clamp((vec4(l, c, r, n) - vec4(.5)) * toPixels + vec4(1), vec4(0), vec4(1));
+		vec4 p = clamp((vec4(l, c, r, n) - .5) * toPixels + 1, vec4(0), vec4(1));
 
 		vec4 correction = vec4(p.x, p.z, p.a, (p.x + p.y + p.z) / 3);
 

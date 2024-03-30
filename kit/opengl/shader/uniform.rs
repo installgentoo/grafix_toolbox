@@ -19,19 +19,38 @@ macro_rules! Uniforms {
 }};
 }
 
-pub trait UniformImpl {
-	fn apply(&self, _: i32);
+#[allow(clippy::upper_case_acronyms)]
+pub enum ArgsKind {
+	Uniform,
+	UBO,
+	SSBO,
 }
+pub trait UniformArgs {
+	fn apply(&self, _: i32, _: UniCache);
+	fn kind(&self) -> ArgsKind {
+		ArgsKind::Uniform
+	}
+}
+
 macro_rules! impl_uniform_type {
-	($v: ident, $t: ty, $f: ident) => {
-		impl UniformImpl for $t {
-			fn apply(&self, name: i32) {
-				$v(gl::$f, name, &[*self]);
-			}
-		}
-		impl UniformImpl for [$t] {
-			fn apply(&self, name: i32) {
-				$v(gl::$f, name, self);
+	($v: ident, $t: ident, $f: ident) => {
+		impl UniformArgs for $t {
+			fn apply(&self, addr: i32, cached: UniCache) {
+				let apply = || {
+					DEBUG!("Setting GL Uniform {addr} to {self:?} in shader {}", ShaderProg::bound_obj());
+					let s = &[*self];
+					$v(gl::$f, addr, s);
+				};
+
+				if let Some(CachedUni::$t(v)) = cached {
+					if **v != *self {
+						**v = *self;
+						apply();
+					}
+				} else {
+					apply();
+					*cached = Some(CachedUni::$t(Box(*self)));
+				}
 			}
 		}
 	};
@@ -64,72 +83,44 @@ impl_uniform_type!(mat, Mat4x2, UniformMatrix4x2fv);
 impl_uniform_type!(mat, Mat3x4, UniformMatrix3x4fv);
 impl_uniform_type!(mat, Mat4x3, UniformMatrix4x3fv);
 
-#[allow(clippy::upper_case_acronyms)]
-pub enum ArgsKind {
-	Uniform,
-	UBO,
-	SSBO,
-}
-pub trait UniformArgs {
-	fn pass(self, _: i32, _: &mut BindCache);
-	fn kind(&self) -> ArgsKind {
-		ArgsKind::Uniform
-	}
-}
-impl<T> UniformArgs for &T
-where
-	T: UniformImpl,
-{
-	fn pass(self, addr: i32, _: &mut BindCache) {
-		self.apply(addr);
-	}
-}
-impl<T> UniformArgs for T
-where
-	[T]: UniformImpl,
-{
-	fn pass(self, addr: i32, _: &mut BindCache) {
-		[self].apply(addr);
-	}
-}
-impl<T> UniformArgs for &[T]
-where
-	[T]: UniformImpl,
-{
-	fn pass(self, addr: i32, _: &mut BindCache) {
-		self.apply(addr);
-	}
-}
-impl<T, const L: usize> UniformArgs for [T; L]
-where
-	[T]: UniformImpl,
-{
-	fn pass(self, addr: i32, _: &mut BindCache) {
-		self.apply(addr);
-	}
-}
-
-impl<T: TexType> UniformArgs for &GL::TextureBinding<'_, T> {
-	fn pass(self, addr: i32, binds_cache: &mut BindCache) {
+impl<T: TexType> UniformArgs for GL::TextureBinding<'_, T> {
+	fn apply(&self, addr: i32, cached: UniCache) {
 		let u = i32(self.u);
-		let unit = binds_cache.entry(addr).or_insert(-1);
-		if *unit != u {
-			DEBUG!("Binding GL texture {addr} to {u} in shader {}, was {unit}", ShaderProg::bound_obj());
+		let apply = || {
+			DEBUG!("Binding GL texture {addr} to unit {u} in shader {}", ShaderProg::bound_obj());
 			GLCheck!(gl::Uniform1i(addr, u));
-			*unit = u;
+		};
+
+		if let Some(CachedUni::TexUnit(unit)) = cached {
+			if **unit != u {
+				apply();
+				**unit = u;
+			}
+		} else {
+			apply();
+			*cached = Some(CachedUni::TexUnit(Box(u)));
 		}
 	}
 }
 
-impl UniformArgs for &GL::ShdArrBinding<'_, Uniform> {
-	fn pass(self, addr: i32, binds_cache: &mut BindCache) {
+impl UniformArgs for GL::ShdArrBinding<'_, Uniform> {
+	fn apply(&self, addr: i32, cached: UniCache) {
 		let l = i32(self.l);
-		let loc = binds_cache.entry(addr + i32::MAX / 2).or_insert(-1);
-		if *loc != l {
+		let apply = || {
 			let prog = *ShaderProg::bound_obj();
-			DEBUG!("Binding GL UBO {addr} to {l} in shader {prog}, was {loc}",);
+			let addr = -2 - addr;
+			DEBUG!("Binding GL UBO {addr} to location {l} in shader {prog}");
 			GLCheck!(gl::UniformBlockBinding(prog, u32(addr), u32(l)));
-			*loc = l;
+		};
+
+		if let Some(CachedUni::UboLoc(loc)) = cached {
+			if **loc != l {
+				apply();
+				**loc = l;
+			}
+		} else {
+			apply();
+			*cached = Some(CachedUni::UboLoc(Box(l)));
 		}
 	}
 	fn kind(&self) -> ArgsKind {
@@ -137,8 +128,8 @@ impl UniformArgs for &GL::ShdArrBinding<'_, Uniform> {
 	}
 }
 
-impl UniformArgs for &GL::ShdArrBinding<'_, ShdStorage> {
-	fn pass(self, _: i32, _: &mut BindCache) {
+impl UniformArgs for GL::ShdArrBinding<'_, ShdStorage> {
+	fn apply(&self, _: i32, _: UniCache) {
 		unreachable!();
 	}
 	fn kind(&self) -> ArgsKind {
@@ -152,4 +143,30 @@ pub mod uniforms_use {
 	}
 }
 
-type BindCache = HashMap<i32, i32>;
+pub type UniCache<'a> = &'a mut Option<CachedUni>;
+
+pub enum CachedUni {
+	u32(Box<u32>),
+	uVec2(Box<uVec2>),
+	uVec3(Box<uVec3>),
+	uVec4(Box<uVec4>),
+	i32(Box<i32>),
+	iVec2(Box<iVec2>),
+	iVec3(Box<iVec3>),
+	iVec4(Box<iVec4>),
+	f32(Box<f32>),
+	Vec2(Box<Vec2>),
+	Vec3(Box<Vec3>),
+	Vec4(Box<Vec4>),
+	Mat2(Box<Mat2>),
+	Mat3(Box<Mat3>),
+	Mat4(Box<Mat4>),
+	Mat2x3(Box<Mat2x3>),
+	Mat3x2(Box<Mat3x2>),
+	Mat2x4(Box<Mat2x4>),
+	Mat4x2(Box<Mat4x2>),
+	Mat3x4(Box<Mat3x4>),
+	Mat4x3(Box<Mat4x3>),
+	TexUnit(Box<i32>),
+	UboLoc(Box<i32>),
+}

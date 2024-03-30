@@ -13,7 +13,7 @@ impl<S, F> Tex2d<S, F> {
 
 		let mut out = Fbo::<RS, RF>::new((w, h).div(minification).max((1, 1)));
 		let t = self.Bind(sampl);
-		let _ = Uniforms!(s, ("tex", &t));
+		let _ = Uniforms!(s, ("tex", t));
 		out.bind();
 		Screen::Draw();
 

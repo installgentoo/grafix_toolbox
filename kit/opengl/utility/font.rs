@@ -134,7 +134,7 @@ impl Font {
 			})
 			.collect();
 
-		let tex = Some(Rc::try_unwrap(Res(tex)?).unwrap());
+		let tex = Some(Rc::try_unwrap(Res(tex)?).valid());
 
 		Ok(Self { glyphs, kerning, midline, tex })
 	}

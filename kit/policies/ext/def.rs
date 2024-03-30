@@ -5,7 +5,7 @@ impl<T> UnwrapValid<T> for Option<T> {
 	fn valid(self) -> T {
 		#[cfg(debug_assertions)]
 		{
-			self.unwrap()
+			self.expect("E: Not valid: None")
 		}
 		#[cfg(not(debug_assertions))]
 		{
@@ -17,7 +17,7 @@ impl<T, E: std::fmt::Debug> UnwrapValid<T> for Result<T, E> {
 	fn valid(self) -> T {
 		#[cfg(debug_assertions)]
 		{
-			self.unwrap()
+			self.expect("E: Not valid: Err")
 		}
 		#[cfg(not(debug_assertions))]
 		{

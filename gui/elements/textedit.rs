@@ -127,7 +127,7 @@ impl TextEdit {
 				if changes.is_none() {
 					*changes = Some((lines.clone().into_vec(), vec![]));
 				}
-				let (lines, line_cache) = changes.as_mut().unwrap();
+				let (lines, line_cache) = changes.as_mut().valid();
 				let mut _lines = typed_ptr!(lines);
 				let pip = pip_pos.get_mut();
 				let clampx = |c| util::clamp(lines, c);
@@ -318,7 +318,7 @@ impl TextEdit {
 							text.str().insert(b, ch);
 						}
 						line_cache.push([lines[beg.y()], &ins].concat().into());
-						lines[beg.y()] = line_cache.last().unwrap();
+						lines[beg.y()] = line_cache.last().valid();
 
 						history.push(Insert(ins.into(), b, beg));
 						*caret = beg.sum((1, 0));
