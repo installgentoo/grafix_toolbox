@@ -106,12 +106,9 @@ fn check_and_load<T: SendStat + Default>(blocking: bool, lazy: &mut Lazy<T>) -> 
 		}
 	};
 
-	let mut s = TempNone;
-	mem::swap(&mut s, &mut *state);
-
-	let (s, changed) = match s {
+	let (s, changed) = match mem::take(state) {
 		TempNone => unreachable!(),
-		Quit(_) => {
+		s @ Quit(_) => {
 			loaded.store(false, Ordering::Relaxed);
 			(s, false)
 		}
@@ -138,10 +135,12 @@ fn check_and_load<T: SendStat + Default>(blocking: bool, lazy: &mut Lazy<T>) -> 
 	changed
 }
 
+#[derive(Default)]
 enum State<T> {
 	Init(Task<(Option<T>, Source<T>)>),
 	Loading(T, Task<(Option<T>, Source<T>)>),
 	Quit(T),
+	#[default]
 	TempNone,
 }
 use State::*;

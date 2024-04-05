@@ -13,7 +13,6 @@ impl<T: Buffer, D> ArrObject<T, D> {
 		let s = type_size::<D>();
 		GLCheck!(glBufferSubData(T::TYPE, self.obj, isize(offset * s), isize(size * s), ptr));
 	}
-	//TODO Async Mappings
 	pub fn Map(&self) -> Mapping<T, D> {
 		self.MapRange(0)
 	}

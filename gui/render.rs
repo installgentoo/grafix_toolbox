@@ -2,7 +2,7 @@ use super::{objects::*, parts::*};
 use crate::{event::*, lib::*, math::*, GL};
 use GL::{spec, Frame, Vao, RGB, RGBA};
 
-macro_rules! DRAW {
+macro_rules! DRAWABLE {
 	($t: ty, $draw_spec: ident) => {
 		impl<'l> DrawablePrimitive<'l> for $t {
 			fn draw(self, obj_n: u32, clip: &Crop, r: &mut Renderer) {
@@ -33,15 +33,14 @@ macro_rules! DRAW {
 pub trait DrawablePrimitive<'l> {
 	fn draw(self, _: u32, _: &Crop, _: &mut Renderer);
 }
-DRAW!(Rect, Rect);
-DRAW!(Sprite<'l, RGB>, ImgRGB);
-DRAW!(Sprite<'l, RGBA>, ImgRGBA);
-DRAW!(Sprite9<'l, RGB>, Img9RGB);
-DRAW!(Sprite9<'l, RGBA>, Img9RGBA);
-DRAW!(Frame9<'l>, Frame9);
-DRAW!(Text<'l, '_>, Text);
+DRAWABLE!(Rect, Rect);
+DRAWABLE!(Sprite<'l, RGB>, ImgRGB);
+DRAWABLE!(Sprite<'l, RGBA>, ImgRGBA);
+DRAWABLE!(Sprite9<'l, RGB>, Img9RGB);
+DRAWABLE!(Sprite9<'l, RGBA>, Img9RGBA);
+DRAWABLE!(Frame9<'l>, Frame9);
+DRAWABLE!(Text<'l, '_>, Text);
 
-#[derive(Default)]
 pub struct RenderLock<'l> {
 	r: Renderer,
 	n: u32,
@@ -89,14 +88,10 @@ impl<'l> RenderLock<'l> {
 	pub fn mouse_pos(&self) -> Vec2 {
 		self.r.mouse_pos
 	}
-	pub fn aspect(&self) -> Vec2 {
-		self.r.aspect
+	pub fn to_clip(&self) -> Vec2 {
+		self.r.to_clip
 	}
 	pub fn unlock(self, w: &mut impl Frame, events: &mut Vec<Event>) -> Renderer {
-		debug_assert!({
-			super::sugar::borrow_map().clear();
-			true
-		});
 		let Self { mut r, logics, n, .. } = self;
 		if n < u32(r.objs.objs.len()) {
 			r.objs.shrink(n);
@@ -106,10 +101,6 @@ impl<'l> RenderLock<'l> {
 		r
 	}
 	pub fn unlock_skip_render(self, _: &mut impl Frame, events: &mut Vec<Event>) -> Renderer {
-		debug_assert!({
-			super::sugar::borrow_map().clear();
-			true
-		});
 		let Self { mut r, logics, n, .. } = self;
 		if n < u32(r.objs.objs.len()) {
 			r.objs.shrink(n);
@@ -129,7 +120,7 @@ pub struct Renderer {
 	objs: Objects,
 	flush: State,
 	status: State,
-	aspect: Vec2,
+	to_clip: Vec2,
 	focus: LogicId,
 	mouse_pos: Vec2,
 }
@@ -226,11 +217,11 @@ impl Renderer {
 		});
 	}
 	fn render(&mut self, frame: &mut impl Frame) {
-		let Self { vao, idxs, xyzw, uv, rgba, objs, flush, status, aspect, .. } = self;
+		let Self { vao, idxs, xyzw, uv, rgba, objs, flush, status, to_clip, .. } = self;
 
 		if !flush.is_empty() {
 			objs.batch();
-			let flush = objs.flush(frame.aspect(), &mut idxs.buff, &mut xyzw.buff, &mut rgba.buff, &mut uv.buff);
+			let flush = objs.flush(frame.to_clip(), &mut idxs.buff, &mut xyzw.buff, &mut rgba.buff, &mut uv.buff);
 
 			idxs.flush(flush.0, |o| vao.BindIdxs(o));
 			xyzw.flush(flush.1, |o| vao.AttribFmt(o, (0, 4)));
@@ -264,8 +255,8 @@ impl Renderer {
 		GL::DepthFunc::Restore();
 
 		*flush = State::empty();
-		*status = State::XYZW.or_def(frame.aspect() != *aspect);
-		*aspect = frame.aspect();
+		*status = State::XYZW.or_def(frame.to_clip() != *to_clip);
+		*to_clip = frame.to_clip();
 	}
 }
 

@@ -113,7 +113,7 @@ impl Object for TextImpl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, aspect: Vec2, BatchedObj { z, state, mut xyzw, mut rgba, mut uv }: BatchedObj) {
+	fn write_mesh(&self, to_clip: Vec2, BatchedObj { z, state, mut xyzw, mut rgba, mut uv }: BatchedObj) {
 		if self.text.is_empty() {
 			return;
 		}
@@ -127,7 +127,7 @@ impl Object for TextImpl {
 		} = self;
 
 		if state.contains(State::XYZW) {
-			let (aspect, s) = (aspect, scale);
+			let (to_clip, s) = (to_clip, scale);
 
 			let (mut x, mut last_c) = (-0.5 * first_glyph(font, text).x(), 0 as char);
 			for c in text.chars() {
@@ -139,8 +139,8 @@ impl Object for TextImpl {
 						let xy1 = pos.sum((x + x1, y1).mul(s));
 						let xy2 = pos.sum((x + x2, y2).mul(s));
 						let uv = bound_uv((crop1, crop2), (xy1, xy2), u);
-						let xy1 = xy1.clmp(crop1, crop2).mul(aspect);
-						let xy2 = xy2.clmp(crop1, crop2).mul(aspect);
+						let xy1 = xy1.clmp(crop1, crop2).mul(to_clip);
+						let xy2 = xy2.clmp(crop1, crop2).mul(to_clip);
 						(xy1, xy2, uv)
 					});
 					const O: f16 = f16::ZERO;

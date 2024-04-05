@@ -59,7 +59,7 @@ fn val<T, S>(f: unsafe fn(i32, i32, *const T), name: i32, slice: &[S]) {
 	GLCheck!(f(name, i32(slice.len()), slice.as_ptr() as *const T));
 }
 fn mat<S>(f: unsafe fn(i32, i32, GLbool, *const f32), name: i32, slice: &[S]) {
-	GLCheck!(f(name, i32(slice.len()), gl::FALSE, slice.as_ptr() as *const f32));
+	GLCheck!(f(name, i32(slice.len()), gl::FALSE, slice.as_ptr() as *const f32)); // coulmn-major
 }
 impl_uniform_type!(val, u32, Uniform1uiv);
 impl_uniform_type!(val, uVec2, Uniform2uiv);
@@ -82,6 +82,26 @@ impl_uniform_type!(mat, Mat2x4, UniformMatrix2x4fv);
 impl_uniform_type!(mat, Mat4x2, UniformMatrix4x2fv);
 impl_uniform_type!(mat, Mat3x4, UniformMatrix3x4fv);
 impl_uniform_type!(mat, Mat4x3, UniformMatrix4x3fv);
+
+macro_rules! impl_la_adapter {
+	($t: ident) => {
+		impl UniformArgs for la::$t {
+			fn apply(&self, addr: i32, cached: UniCache) {
+				$t(*self).apply(addr, cached)
+			}
+		}
+		impl UniformArgs for &la::$t {
+			fn apply(&self, addr: i32, cached: UniCache) {
+				(*self).apply(addr, cached)
+			}
+		}
+	};
+}
+impl_la_adapter!(Vec2);
+impl_la_adapter!(Vec3);
+impl_la_adapter!(Vec4);
+impl_la_adapter!(Mat3);
+impl_la_adapter!(Mat4);
 
 impl<T: TexType> UniformArgs for GL::TextureBinding<'_, T> {
 	fn apply(&self, addr: i32, cached: UniCache) {

@@ -1,53 +1,59 @@
 use super::args::*;
 use crate::lib::*;
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct Camera {
 	proj: M4,
 	view: M4,
 	view_proj: M4,
 }
 impl Camera {
-	pub fn new(cargs: impl CameraArgs, pargs: impl PosArgs) -> Self {
-		let proj = cargs.get();
-		let view = pargs.getp();
+	pub fn new(pargs: impl ProjArgs, cargs: impl CamArgs) -> Self {
+		let proj = pargs.getp();
+		let view = cargs.getc();
 		Self { proj, view, view_proj: proj * view }
 	}
-	pub fn zero(cargs: impl CameraArgs) -> Self {
+	pub fn zero(pargs: impl ProjArgs) -> Self {
 		Self {
-			proj: cargs.get(),
+			proj: pargs.getp(),
 			view: M4::identity(),
 			view_proj: M4::identity(),
 		}
 	}
-	pub fn set_proj(&mut self, p: impl CameraArgs) {
-		let p = p.get();
+	pub fn set_proj(&mut self, p: impl ProjArgs) {
+		let p = p.getp();
 		self.proj = p;
 		self.view_proj = p * self.view;
 	}
-	pub fn set_view(&mut self, v: impl PosArgs) {
-		let v = v.getp();
+	pub fn set_view(&mut self, v: impl CamArgs) {
+		let v = v.getc();
 		self.view = v;
 		self.view_proj = self.proj * v;
 	}
-	pub fn V(&self) -> Mat4 {
-		Mat4(self.view)
+	pub fn V(&self) -> &M4 {
+		&self.view
 	}
-	pub fn VP(&self) -> Mat4 {
-		Mat4(self.view_proj)
+	pub fn P(&self) -> &M4 {
+		&self.proj
 	}
-	pub fn MV(&self, model: &M4) -> Mat4 {
-		Mat4(self.view * model)
+	pub fn VP(&self) -> &M4 {
+		&self.view_proj
 	}
-	pub fn MVP(&self, model: &M4) -> Mat4 {
-		Mat4(self.view_proj * model)
+	pub fn MV(&self, model: &M4) -> M4 {
+		self.view * model
 	}
-	pub fn N(&self, model: &M4) -> Mat3 {
-		Mat3(la::inverse3(la::crop_3x3(model)).transpose())
+	pub fn MVP(&self, model: &M4) -> M4 {
+		self.view_proj * model
 	}
-	pub fn NV(&self, model: &M4) -> Mat3 {
+	pub fn N(&self, model: &M4) -> M3 {
+		la::inverse3(la::crop_3x3(model)).transpose()
+	}
+	pub fn NV(&self, model: &M4) -> M3 {
 		let m = self.view * model;
-		Mat3(la::inverse3(la::crop_3x3(&m).transpose()))
+		la::inverse3(la::crop_3x3(&m).transpose())
+	}
+	pub fn view(args: impl CamArgs) -> M4 {
+		args.getc()
 	}
 }
-use la::Mat4 as M4;
+use {la::Mat3 as M3, la::Mat4 as M4};

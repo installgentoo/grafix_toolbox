@@ -8,9 +8,9 @@ mod sugar;
 pub use {
 	elements::*,
 	render::{RenderLock, Renderer},
-	sugar::{hex_to_rgba, GuiStorage, Theme},
+	sugar::{gui, hex_to_rgba, Theme},
 };
 
-pub mod primitives {
+pub mod prim {
 	pub use super::parts::{Frame9, Rect, Sprite, Sprite9, Text};
 }

@@ -28,10 +28,10 @@ macro_rules! LocalStatic {
 	};
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug)]
 pub struct TPtr<T: Send + Sync> {
-	t: Dummy<T>,
 	ptr: usize,
+	t: Dummy<T>,
 }
 impl<T: Send + Sync> TPtr<T> {
 	pub unsafe fn new(t: &mut T) -> Self {
@@ -43,6 +43,12 @@ impl<T: Send + Sync> TPtr<T> {
 	}
 	pub fn get_mut(&mut self) -> &'static mut T {
 		unsafe { &mut *(self.ptr as *mut T) }
+	}
+}
+impl<T: Send + Sync> Copy for TPtr<T> {}
+impl<T: Send + Sync> Clone for TPtr<T> {
+	fn clone(&self) -> Self {
+		*self
 	}
 }
 use std::marker::PhantomData as Dummy;

@@ -1,5 +1,39 @@
 use super::super::*;
 
+impl<T: Copy> Cast<mat4<T>> for mat3<T> {
+	fn to(((v11, v12, v13, _), (v21, v22, v23, _), (v31, v32, v33, _), _): mat4<T>) -> Self {
+		((v11, v12, v13), (v21, v22, v23), (v31, v32, v33))
+	}
+}
+impl<T: Copy> Cast<mat4<T>> for mat2<T> {
+	fn to(((v11, v12, _, _), (v21, v22, _, _), _, _): mat4<T>) -> Self {
+		((v11, v12), (v21, v22))
+	}
+}
+impl<T: Copy> Cast<mat3<T>> for mat2<T> {
+	fn to(((v11, v12, _), (v21, v22, _), _): mat3<T>) -> Self {
+		((v11, v12), (v21, v22))
+	}
+}
+impl<T: Copy + Cast<u32>> Cast<mat2<T>> for mat3<T> {
+	fn to(((v11, v12), (v21, v22)): mat2<T>) -> Self {
+		let (z, o) = <(T, T)>::to((0, 1));
+		((v11, v12, z), (v21, v22, z), (z, z, o))
+	}
+}
+impl<T: Copy + Cast<u32>> Cast<mat2<T>> for mat4<T> {
+	fn to(((v11, v12), (v21, v22)): mat2<T>) -> Self {
+		let (z, o) = <(T, T)>::to((0, 1));
+		((v11, v12, z, z), (v21, v22, z, z), (z, z, o, z), (z, z, z, o))
+	}
+}
+impl<T: Copy + Cast<u32>> Cast<mat3<T>> for mat4<T> {
+	fn to(((v11, v12, v13), (v21, v22, v23), (v31, v32, v33)): mat3<T>) -> Self {
+		let (z, o) = <(T, T)>::to((0, 1));
+		((v11, v12, v13, z), (v21, v22, v23, z), (v31, v32, v33, z), (z, z, z, o))
+	}
+}
+
 pub trait FlattenCast<T> {
 	fn flatten(self) -> Vec<T>;
 }

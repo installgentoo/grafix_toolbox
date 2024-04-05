@@ -36,14 +36,14 @@ impl<S: TexSize> Object for SpriteImpl<S> {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, aspect: Vec2, BatchedObj { z, state, xyzw, rgba, uv }: BatchedObj) {
+	fn write_mesh(&self, to_clip: Vec2, BatchedObj { z, state, xyzw, rgba, uv }: BatchedObj) {
 		if state.contains(State::XYZW | State::UV) {
 			let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <_>::to({
-				let (aspect, (crop1, crop2), &Base { pos, size, .. }) = (aspect, self.base.bound_box(), self.base());
+				let (to_clip, (crop1, crop2), &Base { pos, size, .. }) = (to_clip, self.base.bound_box(), self.base());
 				let (xy1, xy2, uv) = (pos, pos.sum(size), unsafe { &*self.tex }.region);
 				let uv = bound_uv((crop1, crop2), (xy1, xy2), uv);
 
-				(crop1.mul(aspect), crop2.mul(aspect), uv)
+				(crop1.mul(to_clip), crop2.mul(to_clip), uv)
 			});
 			const O: f16 = f16::ZERO;
 

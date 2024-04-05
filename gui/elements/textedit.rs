@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct TextEdit {
 	offset: Vec2,
 	size: Vec2,
@@ -60,7 +60,7 @@ impl TextEdit {
 			let p = move |x, n| pos.sum((x, line_pos(n)));
 			(p, vis_range)
 		};
-		let (start, len) = ulVec2(vis_range); // TODO weird caret scroll.
+		let (start, len) = ulVec2(vis_range);
 
 		let _c = r.clip(pos, size);
 
@@ -343,12 +343,12 @@ impl TextEdit {
 	}
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Debug, Clone)]
 struct History {
 	changes: Vec<Change>,
 	at: usize,
 }
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 enum Change {
 	Insert(Str, usize, Caret),
 	Delete(Str, usize, Caret),

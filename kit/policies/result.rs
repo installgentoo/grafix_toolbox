@@ -23,7 +23,7 @@ impl<T, E: std::fmt::Display> Cast<Result<T, E>> for Result<T, String> {
 			} else {
 				format!("{t}: {e}")
 			}
-		}) //TODO specialization
+		})
 	}
 }
 

@@ -60,12 +60,7 @@ pub const fn const_fnv1_u32(s: &[u32]) -> u32 {
 macro_rules! ID {
 	($n: expr) => {{
 		const ID: u32 = chksum::const_fnv1($n.as_bytes());
-		ASSERT!(chksum::collision_map().entry(ID).or_insert($n.into()) == $n, "Collision at {}", $n);
+		ASSERT!(LazyStatic!(std::collections::HashMap<u32, String>).entry(ID).or_insert($n.into()) == $n, "Collision at {}", $n);
 		ID
 	}};
 }
-
-pub fn collision_map() -> &'static mut HashMap<u32, String> {
-	LazyStatic!(HashMap<u32, String>)
-}
-use std::collections::HashMap;

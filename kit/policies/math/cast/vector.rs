@@ -1,6 +1,22 @@
 #![allow(unused_imports)]
 use super::{super::super::index::*, super::*, logging};
 
+impl<T: Copy> Cast<vec4<T>> for vec3<T> {
+	fn to((v1, v2, v3, _): vec4<T>) -> Self {
+		(v1, v2, v3)
+	}
+}
+impl<T: Copy> Cast<vec4<T>> for vec2<T> {
+	fn to((v1, v2, _, _): vec4<T>) -> Self {
+		(v1, v2)
+	}
+}
+impl<T: Copy> Cast<vec3<T>> for vec2<T> {
+	fn to((v1, v2, _): vec3<T>) -> Self {
+		(v1, v2)
+	}
+}
+
 impl<T: Copy> Cast<&[T]> for vec2<T> {
 	fn to(v: &[T]) -> Self {
 		ASSERT!(v.len() > 1, "Slice is too short for Vec2");

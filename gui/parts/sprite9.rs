@@ -39,10 +39,10 @@ impl<S: TexSize> Object for Sprite9Impl<S> {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, aspect: Vec2, range: BatchedObj) {
+	fn write_mesh(&self, to_clip: Vec2, range: BatchedObj) {
 		let (crop, &Base { pos, size, color, .. }, (u1, v1, u2, v2)) = (self.base.bound_box(), self.base(), unsafe { &*self.tex }.region);
 		let c = size.x().min(size.y()) * self.corner.min(0.5).max(0.);
-		write_sprite9((aspect, pos, size, (c, c), crop, (u1, v2, u2, v1), color), range);
+		write_sprite9((to_clip, pos, size, (c, c), crop, (u1, v2, u2, v1), color), range);
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
 		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__col_tex]) });
@@ -64,7 +64,7 @@ impl<S: TexSize> Object for Sprite9Impl<S> {
 }
 
 type Sprite9Desc = (Vec2, Vec2, Vec2, Vec2, Crop, TexCoord, Color);
-pub fn write_sprite9((aspect, pos, size, corner, (crop1, crop2), (u1, v1, u2, v2), color): Sprite9Desc, BatchedObj { z, state, xyzw, rgba, uv }: BatchedObj) {
+pub fn write_sprite9((to_clip, pos, size, corner, (crop1, crop2), (u1, v1, u2, v2), color): Sprite9Desc, BatchedObj { z, state, xyzw, rgba, uv }: BatchedObj) {
 	if state.contains(State::XYZW) {
 		let (((x1, y1), (x2, y2), (m1x, m1y), (m2x, m2y)), (u1, v1, u2, v2), (m1u, m1v, m2u, m2v)) = <_>::to({
 			let (xy1, xy2) = (pos, pos.sum(size));
@@ -78,7 +78,12 @@ pub fn write_sprite9((aspect, pos, size, corner, (crop1, crop2), (u1, v1, u2, v2
 				((u1, v2, u2, v1), (u1m, v2m, u2m, v1m))
 			};
 			(
-				(crop1.mul(aspect), crop2.mul(aspect), m1.clmp(crop1, crop2).mul(aspect), m2.clmp(crop1, crop2).mul(aspect)),
+				(
+					crop1.mul(to_clip),
+					crop2.mul(to_clip),
+					m1.clmp(crop1, crop2).mul(to_clip),
+					m2.clmp(crop1, crop2).mul(to_clip),
+				),
 				uv,
 				muv,
 			)

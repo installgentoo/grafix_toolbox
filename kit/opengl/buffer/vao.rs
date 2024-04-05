@@ -1,6 +1,6 @@
 use super::{format::*, vao_args::*, *};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Vao<I> {
 	o: Object<VertArrObj>,
 	d: Dummy<I>,

@@ -1,13 +1,17 @@
-pub use nalgebra as na; //TODO generalize and unify
+pub use nalgebra as na; // TODO generalize and unify
 
 pub type Vec2 = na::SVector<f32, 2>;
 pub type Vec3 = na::SVector<f32, 3>;
 pub type Vec4 = na::SVector<f32, 4>;
+pub type Mat2 = na::Matrix2<f32>;
 pub type Mat3 = na::Matrix3<f32>;
 pub type Mat4 = na::Matrix4<f32>;
 
 pub fn identity() -> Mat4 {
 	Mat4::identity()
+}
+pub fn rot3(axis: Vec3, angle_rad: f32) -> Mat3 {
+	na::Rotation3::from_axis_angle(&na::Unit::new_normalize(axis), angle_rad).into()
 }
 pub fn inverse3(m: Mat3) -> Mat3 {
 	m.try_inverse().unwrap_or_else(Mat3::identity)

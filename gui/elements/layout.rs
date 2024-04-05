@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Layout {
 	click: Vec2,
 	pub pos: Vec2,
@@ -14,8 +14,8 @@ impl Layout {
 		let id = LUID(self);
 		let Self { click, pos, size } = self;
 		{
-			let a = r.aspect();
-			let (lb, ru) = ((-1., -1.).div(a), (1., 1.).div(a));
+			let c = r.to_clip();
+			let (lb, ru) = ((-1., -1.).div(c), (1., 1.).div(c));
 			*size = size.clmp((0., 0.), ru.mul(2).sub(CRN_PAD));
 			*pos = pos.clmp(lb.sum((0, CRN_PAD)), ru.sub(*size).sub((CRN_PAD, 0)));
 		}

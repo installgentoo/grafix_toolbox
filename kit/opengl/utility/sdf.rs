@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use crate::GL::{gl, mesh::Screen, *};
-use crate::{glsl::*, lib::*};
+use crate::{glsl::*, lib::*, math::*};
 
 pub struct SdfGenerator {
 	dst_t: Shader,
@@ -27,7 +27,7 @@ impl SdfGenerator {
 		let mut surf_in = Fbo::<RED, f16>::new((w, h));
 		{
 			let t = tex.Bind(sampl);
-			let s = Uniforms!(dst_t, ("tex", t), ("iChannel", FROM::SIZE), ("iThickness", thickness));
+			let s = Uniforms!(dst_t, ("tex", t), ("iChannel", FROM::SIZE), ("iThickness", thickness), ("iStep", Vec2((0, 1)).div((w, h))));
 
 			let s = Uniform!(s, ("iSide", 1.));
 			surf_out.bind();
@@ -41,7 +41,7 @@ impl SdfGenerator {
 		{
 			let to = surf_out.tex.Bind(sampl);
 			let ti = surf_in.tex.Bind(sampl);
-			let _ = Uniforms!(dt_h, ("tex_o", to), ("tex_i", ti), ("iThickness", thickness));
+			let _ = Uniforms!(dt_h, ("tex_o", to), ("tex_i", ti), ("iThickness", thickness), ("iStep", Vec2((1, 0)).div((w, h))));
 			out.bind();
 			Screen::Draw();
 		}
@@ -63,9 +63,8 @@ SHADER!(
 	uniform sampler2D tex;
 	uniform int iChannel;
 	uniform int iThickness;
+	uniform vec2 iStep;
 	uniform float iSide;
-
-	vec2 iStep = vec2(0, 1) / textureSize(tex, 0);
 
 	float get_tex(in vec2 p) {
 		if (1 == iChannel) return texture(tex, glTexUV + p).r;
@@ -95,8 +94,7 @@ SHADER!(
 	layout(location = 0) out float glFragColor;
 	uniform sampler2D tex_i, tex_o;
 	uniform int iThickness;
-
-	vec2 iStep = vec2(1, 0) / textureSize(tex_i, 0);
+	uniform vec2 iStep;
 
 	void main() {
 		float d_i = texture(tex_i, glTexUV).r;

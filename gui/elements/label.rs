@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Label {
 	offset: Vec2,
 	size: Vec2,

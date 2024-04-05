@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Debug)]
 pub struct Slider {
 	pub pip_pos: f32,
 }

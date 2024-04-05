@@ -9,7 +9,7 @@ pub struct Glyph {
 }}
 
 #[cfg_attr(feature = "adv_fs", derive(ser::Serialize, ser::Deserialize))]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Font {
 	pub glyphs: HashMap<char, Glyph>,
 	pub kerning: HashMap<char, HashMap<char, f32>>,

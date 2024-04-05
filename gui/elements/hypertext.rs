@@ -12,7 +12,7 @@ struct HyperKey {
 	val: Option<Popup>,
 	trie: HashMap<Str, Self>,
 }
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct HyperDB {
 	keys: HyperKey,
 	max_breaks: usize,
@@ -60,7 +60,7 @@ impl HyperDB {
 	}
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct HyperText {
 	size: Vec2,
 	scale: f32,

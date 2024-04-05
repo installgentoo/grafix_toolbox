@@ -7,8 +7,16 @@ pub trait Frame {
 		let (w, h, min) = Vec3((w, h, w.min(h)));
 		(min, min).div((w, h))
 	}
-	fn pixel(&self) -> Vec2 {
-		(1., 1.).div(self.size())
+	fn to_clip(&self) -> Vec2 {
+		(1., 1.).div(self.aspect())
+	}
+	fn pixel(&self) -> f32 {
+		let (w, h) = self.size();
+		2. / f32(w.min(h))
+	}
+	fn pixel_vec2(&self) -> Vec2 {
+		let p = self.pixel();
+		(p, p)
 	}
 	fn clear(&self, args: impl ColorDepthArg) {
 		let (rgba, d) = args.getc();

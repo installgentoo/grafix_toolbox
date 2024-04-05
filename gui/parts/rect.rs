@@ -33,11 +33,11 @@ impl Object for RectImpl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, aspect: Vec2, BatchedObj { z, state, xyzw, rgba, .. }: BatchedObj) {
+	fn write_mesh(&self, to_clip: Vec2, BatchedObj { z, state, xyzw, rgba, .. }: BatchedObj) {
 		if state.contains(State::XYZW) {
 			let ((x1, y1), (x2, y2)) = <_>::to({
-				let (aspect, (crop1, crop2)) = (aspect, self.base.bound_box());
-				(crop1.mul(aspect), crop2.mul(aspect))
+				let (to_clip, (crop1, crop2)) = (to_clip, self.base.bound_box());
+				(crop1.mul(to_clip), crop2.mul(to_clip))
 			});
 			const O: f16 = f16::ZERO;
 

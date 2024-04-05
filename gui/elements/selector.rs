@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Selector {
 	button: Button,
 	line_edit: LineEdit,

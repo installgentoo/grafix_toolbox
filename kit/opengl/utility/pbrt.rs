@@ -76,7 +76,7 @@ impl Environment {
 				s(vec3(0., 0., 1.), vec3(0., -1., 0.)),
 				s(vec3(0., 0., -1.), vec3(0., -1., 0.)),
 			]
-			.map(|side| Camera::new(proj, side).VP())
+			.map(|side| *Camera::new(proj, side).VP())
 		};
 
 		let sampl = &Sampler::linear();

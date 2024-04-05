@@ -1,7 +1,11 @@
 use super::{parts::*, *};
 use crate::{lib::*, math::*, GL::font::Font, GL::window::*};
 
-#[derive(Default)]
+pub fn gui() -> &'static mut GUI {
+	LazyStatic!(GUI)
+}
+
+#[derive(Default, Debug)]
 pub struct Theme {
 	pub easing: f32,
 	pub bg: Color,
@@ -27,68 +31,37 @@ impl Renderer {
 		s
 	}
 	pub fn set_theme(&self, t: Theme) {
-		ASSERT!(borrow_map().is_empty(), "Cannot change theme mid-draw");
-		*theme() = t;
+		gui().theme = t;
 	}
 }
-
-pub trait GuiStorage {
-	fn storage(id: u32) -> &'static mut Self;
-}
-macro_rules! storage {
-	($t: ty) => {
-		impl GuiStorage for $t {
-			fn storage(id: u32) -> &'static mut Self {
-				LazyStatic!(HashMap<u32, $t>).entry(id).or_default()
-			}
-		}
-	};
-}
-storage!(Button);
-storage!(HyperText);
-storage!(Label);
-storage!(Layout);
-storage!(LineEdit);
-storage!(Selector);
-storage!(Slider);
-storage!(TextEdit);
 
 impl<'l> RenderLock<'l> {
 	pub fn Button(&mut self, id: u32, pos: Vec2, size: Vec2, text: &str) -> bool {
-		check_borrow(id);
-		Button::storage(id).draw(self, t(), pos, size, text) // TODO store in the renderlock
+		gui().Button(id).draw(self, t(), pos, size, text)
 	}
 	pub fn Label(&mut self, id: u32, pos: Vec2, size: Vec2, text: &str) {
-		check_borrow(id);
-		Label::storage(id).draw(self, t(), pos, size, text)
+		gui().Label(id).draw(self, t(), pos, size, text)
 	}
 	pub fn HyperText(&mut self, id: u32, pos: Vec2, size: Vec2, scale: f32, db: &HyperDB) {
-		check_borrow(id);
-		HyperText::storage(id).draw(self, t(), pos, size, scale, db)
+		gui().HyperText(id).draw(self, t(), pos, size, scale, db)
 	}
 	pub fn Layout(&mut self, id: u32, content: impl FnOnce(&mut RenderLock<'l>, Crop)) {
-		check_borrow(id);
-		Layout::storage(id).draw(self, t(), content)
+		gui().Layout(id).draw(self, t(), content)
 	}
 	pub fn LineEdit(&mut self, id: u32, pos: Vec2, size: Vec2) {
-		check_borrow(id);
-		LineEdit::storage(id).draw(self, t(), pos, size)
+		gui().LineEdit(id).draw(self, t(), pos, size)
 	}
 	pub fn Selector(&mut self, id: u32, pos: Vec2, size: Vec2, options: &'l mut [String]) -> usize {
-		check_borrow(id);
-		Selector::storage(id).draw(self, t(), pos, size, options)
+		gui().Selector(id).draw(self, t(), pos, size, options)
 	}
 	pub fn Slider(&mut self, id: u32, pos: Vec2, size: Vec2, pip_size: f32) -> f32 {
-		check_borrow(id);
-		Slider::storage(id).draw(self, t(), pos, size, pip_size)
+		gui().Slider(id).draw(self, t(), pos, size, pip_size)
 	}
 	pub fn TextEdit(&mut self, id: u32, pos: Vec2, size: Vec2, scale: f32) {
-		check_borrow(id);
-		TextEdit::storage(id).draw(self, t(), pos, size, scale, false)
+		gui().TextEdit(id).draw(self, t(), pos, size, scale, false)
 	}
 	pub fn TextList(&mut self, id: u32, pos: Vec2, size: Vec2, scale: f32) {
-		check_borrow(id);
-		TextEdit::storage(id).draw(self, t(), pos, size, scale, true)
+		gui().TextEdit(id).draw(self, t(), pos, size, scale, true)
 	}
 	pub fn clipboard() -> &'l str {
 		let (str, _) = clip_store();
@@ -105,28 +78,28 @@ impl<'l> RenderLock<'l> {
 		}
 	}
 }
-
-pub fn borrow_map() -> &'static mut HashSet<u32> {
-	LazyStatic!(HashSet<u32>)
-}
-fn check_borrow(id: u32) {
-	ASSERT!(
-		borrow_map().get(&id).is_none(),
-		"An element {:?} cannot be drawn more than once per frame",
-		chksum::collision_map().get(&id).valid()
-	);
-	borrow_map().insert(id);
+fn t() -> &'static Theme {
+	let t = &gui().theme;
+	ASSERT!(!t.font.glyphs.is_empty(), "No theme set for gui");
+	t
 }
 
 fn clip_store() -> &'static mut (String, bool) {
 	LazyStatic!((String, bool))
 }
 
-fn theme() -> &'static mut Theme {
-	LazyStatic!(Theme)
+macro_rules! storage {
+	($($t: ident),+) => {
+		#[derive(Default, Debug)]
+		pub struct GUI {
+			theme: Theme,
+			$($t: HashMap<u32, $t>,)+
+		}
+		impl GUI {
+			$(pub fn $t(&mut self, id: u32) -> &mut $t {
+				self.$t.entry(id).or_insert_with(|| Def())
+			})+
+		}
+	}
 }
-fn t() -> &'static Theme {
-	let t = theme();
-	ASSERT!(!t.font.glyphs.is_empty(), "No theme set for gui");
-	t
-}
+storage!(Button, HyperText, Label, Layout, LineEdit, Selector, Slider, TextEdit);

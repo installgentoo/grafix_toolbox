@@ -18,7 +18,7 @@ impl Frame for Window {
 	fn aspect(&self) -> Vec2 {
 		self.info().aspect
 	}
-	fn pixel(&self) -> Vec2 {
+	fn pixel(&self) -> f32 {
 		self.info().pixel
 	}
 	fn bind(&mut self) -> Binding<Framebuff> {
@@ -40,14 +40,14 @@ impl Window {
 pub struct FrameInfo {
 	pub size: uVec2,
 	pub aspect: Vec2,
-	pub pixel: Vec2,
+	pub pixel: f32,
 }
 impl FrameInfo {
 	pub fn new((w, h): uVec2) -> Self {
 		let size = (w, h);
 		let (w, h, min) = Vec3((w, h, w.min(h)));
-		let aspect = (min, min).div((w, h));
-		let pixel = (1., 1.).div((w, h));
+		let aspect = (w, h).div(min);
+		let pixel = 2. / min;
 		Self { size, aspect, pixel }
 	}
 }

@@ -44,6 +44,7 @@ impl<T: State> Drop for Binding<'_, T> {
 	}
 }
 
+#[derive(Debug)]
 pub struct ArrObject<T: State, D> {
 	t: Dummy<T>,
 	d: Dummy<D>,

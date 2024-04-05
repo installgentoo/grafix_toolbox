@@ -24,7 +24,7 @@ impl GlfwWindow {
 		use glfw::{WindowHint::*, *};
 
 		let init_ctx: fn() -> Res<_> = || {
-			let mut ctx = Res(glfw::init(|e, d| ERROR!("{e}: {d}"))).map_err(|e| format!("GLFW initialization failed, {e}"))?; //TODO don't fail for empty clipbox
+			let mut ctx = Res(glfw::init(|e, d| ERROR!("{e}: {d}"))).map_err(|e| format!("GLFW initialization failed, {e}"))?;
 
 			ctx.window_hint(ClientApi(ClientApiHint::OpenGl));
 			ctx.window_hint(ContextVersion(GL::unigl::GL_VERSION.0, GL::unigl::GL_VERSION.1));
