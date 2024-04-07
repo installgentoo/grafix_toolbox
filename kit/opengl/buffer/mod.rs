@@ -62,6 +62,13 @@ impl<'l> ShdArrBinding<'l, ShdStorage> {
 		}
 	}
 }
+impl<T: ShdBuffType> Clone for ShdArrBinding<'_, T> {
+	fn clone(&self) -> Self {
+		let &Self { t, l } = self;
+		UniformState::<T>::Clone(l);
+		Self { t, l }
+	}
+}
 impl<T: ShdBuffType> Drop for ShdArrBinding<'_, T> {
 	fn drop(&mut self) {
 		UniformState::<T>::Unbind(self.l);

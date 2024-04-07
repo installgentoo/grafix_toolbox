@@ -6,9 +6,7 @@ pub trait Fetcher<K, T> {
 	fn take(&self, _: K) -> T;
 }
 
-pub struct Prefetched<'a, K, T, M: Fetcher<K, T>> {
-	s: UnsafeCell<mSelf<'a, K, T, M>>,
-}
+pub struct Prefetched<'a, K, T, M: Fetcher<K, T>>(UnsafeCell<mSelf<'a, K, T, M>>);
 enum mSelf<'a, K, T, M: Fetcher<K, T>> {
 	Started(Box<Option<(K, &'a M)>>),
 	Done(&'a T),
@@ -16,10 +14,10 @@ enum mSelf<'a, K, T, M: Fetcher<K, T>> {
 
 impl<'a, K, T, M: Fetcher<K, T>> Prefetched<'a, K, T, M> {
 	pub fn new(k: K, m: &'a M) -> Self {
-		Self { s: UnsafeCell::new(Started(Box(Some((k, m))))) }
+		Self(UnsafeCell::new(Started(Box(Some((k, m))))))
 	}
 	pub fn get(&self) -> &T {
-		let s = unsafe { &mut *self.s.get() };
+		let s = unsafe { &mut *self.0.get() };
 		match s {
 			Done(v) => v,
 			Started(b) => {
@@ -31,7 +29,7 @@ impl<'a, K, T, M: Fetcher<K, T>> Prefetched<'a, K, T, M> {
 		}
 	}
 	pub fn take(self) -> T {
-		let s = self.s.into_inner();
+		let s = self.0.into_inner();
 		match s {
 			Done(_) => ERROR!("Batched value already borrowed, can't take"),
 			Started(b) => {

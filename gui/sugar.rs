@@ -92,7 +92,7 @@ macro_rules! storage {
 	($($t: ident),+) => {
 		#[derive(Default, Debug)]
 		pub struct GUI {
-			theme: Theme,
+			pub theme: Theme,
 			$($t: HashMap<u32, $t>,)+
 		}
 		impl GUI {

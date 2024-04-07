@@ -156,9 +156,7 @@ impl State for SamplObj {
 }
 
 #[derive(Debug, Default)]
-pub struct Texture<T> {
-	t: Dummy<T>,
-}
+pub struct Texture<T>(Dummy<T>);
 impl<T: TexType> State for Texture<T> {
 	m_STATE!();
 	unsafe fn gen(obj: &mut u32) {

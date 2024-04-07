@@ -23,15 +23,13 @@ impl<S, F> Clone for VTex2d<S, F> {
 
 pub type VTex2dEntry<'a, S> = Prefetched<'a, u32, VTex2d<S, u8>, TexAtlas<S>>;
 
-pub struct TexAtlas<S> {
-	t: UnsafeCell<State<S>>,
-}
+pub struct TexAtlas<S>(UnsafeCell<State<S>>);
 impl<S: TexSize> TexAtlas<S> {
 	pub fn new() -> Self {
 		Def()
 	}
 	pub fn load(&self, name: &str) -> VTex2dEntry<S> {
-		match unsafe { &mut *self.t.get() } {
+		match unsafe { &mut *self.0.get() } {
 			Baked(_) => ERROR!("Trying to load into finalized atals"),
 			Fresh(reqs) => {
 				let k = u32(reqs.len());
@@ -78,13 +76,13 @@ impl<S: TexSize> TexAtlas<S> {
 }
 impl<S: TexSize> Default for TexAtlas<S> {
 	fn default() -> Self {
-		Self { t: UnsafeCell::new(Fresh(Def())) }
+		Self(UnsafeCell::new(Fresh(Def())))
 	}
 }
 
 impl<S: TexSize> Fetcher<u32, VTex2d<S, u8>> for TexAtlas<S> {
 	fn get(&self, k: u32) -> &VTex2d<S, u8> {
-		let s = unsafe { &mut *self.t.get() };
+		let s = unsafe { &mut *self.0.get() };
 		let textures = match s {
 			Fresh(_) => Self::finalise(s),
 			Baked(t) => t,
@@ -92,7 +90,7 @@ impl<S: TexSize> Fetcher<u32, VTex2d<S, u8>> for TexAtlas<S> {
 		textures.get(&k).valid()
 	}
 	fn take(&self, k: u32) -> VTex2d<S, u8> {
-		let s = unsafe { &mut *self.t.get() };
+		let s = unsafe { &mut *self.0.get() };
 		let textures = match s {
 			Fresh(_) => Self::finalise(s),
 			Baked(t) => t,

@@ -154,6 +154,7 @@ impl_tex!(GL_TEXTURE_2D_ARRAY, NewArgs3, UpdArgs3);
 impl_tex!(GL_TEXTURE_CUBE_MAP, NewArgs2, UpdArgs3);
 impl_tex!(GL_TEXTURE_CUBE_MAP_ARRAY, NewArgs3, UpdArgs3);
 
+#[derive(Debug)]
 pub struct TextureBinding<'l, T> {
 	t: Dummy<&'l T>,
 	pub u: u32,
@@ -162,6 +163,13 @@ impl<'l, T: TexType> TextureBinding<'l, T> {
 	pub fn new(o: &'l Object<Texture<T>>, samp: &'l Sampler, hint: u32) -> (Self, u32) {
 		let u = TexState::Bind::<T>(o.obj, samp.obj, hint);
 		(Self { t: Dummy, u }, u)
+	}
+}
+impl<T: TexType> Clone for TextureBinding<'_, T> {
+	fn clone(&self) -> Self {
+		let &Self { t, u } = self;
+		TexState::Clone(u);
+		Self { t, u }
 	}
 }
 impl<T> Drop for TextureBinding<'_, T> {

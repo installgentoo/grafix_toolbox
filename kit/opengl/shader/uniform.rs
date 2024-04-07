@@ -113,6 +113,7 @@ impl<T: TexType> UniformArgs for GL::TextureBinding<'_, T> {
 
 		if let Some(CachedUni::TexUnit(unit)) = cached {
 			if **unit != u {
+				DEBUG!("GL texture {addr} was bound to unit {unit}");
 				apply();
 				**unit = u;
 			}
@@ -135,6 +136,7 @@ impl UniformArgs for GL::ShdArrBinding<'_, Uniform> {
 
 		if let Some(CachedUni::UboLoc(loc)) = cached {
 			if **loc != l {
+				DEBUG!("GL UBO {addr} was bound to location {loc}");
 				apply();
 				**loc = l;
 			}
@@ -165,6 +167,7 @@ pub mod uniforms_use {
 
 pub type UniCache<'a> = &'a mut Option<CachedUni>;
 
+#[derive(Debug)]
 pub enum CachedUni {
 	u32(Box<u32>),
 	uVec2(Box<uVec2>),

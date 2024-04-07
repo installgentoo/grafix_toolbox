@@ -65,6 +65,10 @@ impl<T: ShdBuffType> UniformState<T> {
 		let Loc { bind_count, .. } = Self::bound_locs().locs.at_mut(l);
 		*bind_count -= 1;
 	}
+	pub fn Clone(l: u32) {
+		let Loc { bind_count, .. } = Self::bound_locs().locs.at_mut(l);
+		*bind_count += 1;
+	}
 	pub fn Bind(obj: u32, hint: u32) -> u32 {
 		let Locations { used, ref len, locs } = Self::bound_locs();
 
@@ -151,6 +155,4 @@ impl<T: ShdBuffType> UniformState<T> {
 		}
 	}
 }
-pub struct UniformState<T> {
-	t: Dummy<T>,
-}
+pub struct UniformState<T>(Dummy<T>);

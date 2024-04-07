@@ -108,8 +108,8 @@ where
 	f32: Cast<A>,
 	Self: Cast<la::Vec2>,
 {
-	fn rotate(self, deg: A) -> Self {
-		let rad = std::f32::consts::FRAC_PI_2 * f32(deg);
+	fn rotate(self, rad: A) -> Self {
+		let rad = std::f32::consts::PI * 2. * f32(rad);
 		let rot = la::na::Rotation2::new(rad);
 		Self::to(rot * la::Vec2::to(self.get()))
 	}

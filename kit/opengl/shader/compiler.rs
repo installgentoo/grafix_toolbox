@@ -118,6 +118,7 @@ fn compile(sources: &mut HashMap<Str, ShdState>, files: &mut [Lazy<Vec<ShdSrc>>]
 		return Err(format!("Error linking program {:?}, {obj}\n{}", name.join(" "), print_shader_log(obj)));
 	}
 
+	DEBUG!("Compiled shader {}:{:?}", prog.obj, name.join(" "));
 	Ok(prog)
 }
 

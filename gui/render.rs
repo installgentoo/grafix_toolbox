@@ -95,6 +95,7 @@ impl<'l> RenderLock<'l> {
 		let Self { mut r, logics, n, .. } = self;
 		if n < u32(r.objs.objs.len()) {
 			r.objs.shrink(n);
+			r.flush |= State::BATCH_RESIZED;
 		}
 		r.consume_events(logics, events);
 		r.render(w);
@@ -104,6 +105,7 @@ impl<'l> RenderLock<'l> {
 		let Self { mut r, logics, n, .. } = self;
 		if n < u32(r.objs.objs.len()) {
 			r.objs.shrink(n);
+			r.flush |= State::BATCH_RESIZED;
 		}
 		r.consume_events(logics, events);
 		r

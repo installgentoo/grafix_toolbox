@@ -17,6 +17,7 @@ impl Objects {
 	pub fn shrink(&mut self, to: u32) {
 		let Self { batches, objs, .. } = self;
 		batches.retain_mut(|b| !b.shrink_and_empty(objs, to));
+
 		objs.truncate(usize(to));
 	}
 	pub fn batch(&mut self) {
@@ -74,6 +75,7 @@ impl Objects {
 			.fold(((None, None, None, None), State::empty(), 0, 0), |(mut flush, mut state, idx_start, batch_start), b| {
 				let (batch_size, s) = b.redraw(aspect, objs);
 				state |= s;
+				DEBUG!("Flushing state {state:?}");
 
 				if state.contains(State::BATCH_RESIZED) {
 					flush.0.get_or_insert(idx_start);

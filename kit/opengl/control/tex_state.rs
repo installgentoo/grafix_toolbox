@@ -51,6 +51,10 @@ pub mod TexState {
 		let Unit { bind_count, .. } = bound_units().units.at_mut(u);
 		*bind_count -= 1;
 	}
+	pub fn Clone(u: u32) {
+		let Unit { bind_count, .. } = bound_units().units.at_mut(u);
+		*bind_count += 1;
+	}
 	pub fn Bind<T: TexType>(obj: u32, s: u32, hint: u32) -> u32 {
 		let Units { used, ref len, units } = bound_units();
 
