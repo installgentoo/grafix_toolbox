@@ -2,7 +2,7 @@ pub mod opengl {
 	pub use gl;
 	pub type Query = spec::Object<spec::Query>; // TODO negative traits stabilization - remove send/sync from Query, Framebuffer and Vao //impl !Send for //impl !Sync for
 	pub use super::debug::{DebugLevel, EnableDebugContext};
-	pub use super::offhand::Fence;
+	pub use super::{offhand::Fence, utility::Camera};
 	pub use bind::*;
 	pub use buffer::*;
 	pub use fbo::*;
@@ -65,7 +65,7 @@ pub mod opengl {
 		pub use super::super::utility::{EnvTex, Environment};
 	}
 	pub mod mesh {
-		pub use super::super::utility::{AnyMesh, Camera, Mesh, Model, Screen, Skybox};
+		pub use super::super::utility::{AnyMesh, Mesh, Model, Screen, Skybox};
 	}
 	pub mod unigl {
 		pub use super::super::control::universion::*;

@@ -66,6 +66,7 @@ pub fn parse_shader_sources(filename: &str, text: &str) -> Vec<Res<(Str, CString
 				let body = slice((char::is_whitespace, body));
 				let body = slice((|c: char| c.is_ascii_alphanumeric(), body));
 				let (n, b) = split(body, char::is_control);
+				let n = n.trim_end_matches('-');
 				ShaderObj::valid(n).map_err(|e| format!("Failed to parse shader in {filename:?}:{cur_row_number}\n{e}"))?;
 				if b.is_empty() {
 					Err(format!("Failed to parse shader {n:?} in {filename:?}:{cur_row_number}"))?

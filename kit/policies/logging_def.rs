@@ -7,10 +7,6 @@ macro_rules! LOGGER {
 
 #[macro_export]
 macro_rules! EXPECT {
-	($e: expr) => {{
-		use logging::UniformUnwrap;
-		$e.uni_or_else(|_e| ERROR!("{}", _e))
-	}};
 	($e: expr, $($t: tt)+) => {{
 		use logging::UniformUnwrap;
 		$e.uni_or_else(|e| { PRINT!(e); ERROR!($($t)+) })
@@ -59,7 +55,8 @@ macro_rules! ASSERT {
 macro_rules! ASSERT_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
-		Logger::log(["A| ", &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
+		Logger::log(["\x1B[31mA| ", &format!($($t)+), &format!(" |{}:{}|{}\x1B[0m\n", file!(), line!(), std::thread::current().name().unwrap_or("???"))].concat(),);
+		std::panic::set_hook(std::boxed::Box::new(|_| {}));
 		panic!();
 	}};
 }
@@ -74,8 +71,9 @@ macro_rules! ERROR {
 macro_rules! ERROR_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
-		let bt = std::backtrace::Backtrace::force_capture();
-		Logger::log([&format!("E| BACKTRACE\n{bt}  ↑\nE| "), &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
+		let bt = process_backtrace(std::backtrace::Backtrace::force_capture());
+		Logger::log([&format!("E| {bt}\x1B[31mE| ")[..], &format!($($t)+), &format!(" |{}:{}|{}\x1B[0m\n", file!(), line!(), std::thread::current().name().unwrap_or("???"))].concat());
+		std::panic::set_hook(std::boxed::Box::new(|_| {}));
 		panic!();
 	}};
 }
@@ -140,7 +138,7 @@ macro_rules! DEBUG_IMPL {
 	($($t: tt)+) => {{
 		use logging::*;
 		if Level::DEBUG as i32 <= Logger::level() {
-			Logger::log( ["D| ", &format!($($t)+), "\n"].concat());
+			Logger::log(["D| ", &format!($($t)+), "\n"].concat());
 		}
 	}};
 }

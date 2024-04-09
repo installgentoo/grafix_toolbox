@@ -116,7 +116,7 @@ impl Objects {
 		let Self { batches, objs, first_transparent } = self;
 		batches.iter().take(*first_transparent).for_each(|b| b.typ(objs).obj().batch_draw(v, b.idx_range));
 	}
-	pub fn draw_transparent_batches(&self, v: &VaoBinding<u16>) {
+	pub fn draw_translucent_batches(&self, v: &VaoBinding<u16>) {
 		let Self { batches, objs, first_transparent } = self;
 		batches.iter().skip(*first_transparent).for_each(|b| b.typ(objs).obj().batch_draw(v, b.idx_range));
 	}

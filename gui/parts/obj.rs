@@ -28,6 +28,7 @@ pub struct BatchedObj<'a> {
 	pub uv: &'a mut [f16],
 }
 
+#[derive(Debug)]
 pub struct Base {
 	pub pos: Vec2,
 	pub size: Vec2,

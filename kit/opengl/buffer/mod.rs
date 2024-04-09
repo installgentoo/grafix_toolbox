@@ -3,9 +3,10 @@ pub use {format::*, mapping::*, vao::*};
 pub type AttrArr<D> = ArrObject<Attribute, D>;
 pub type IdxArr<D> = ArrObject<Index, D>;
 
-pub type UniformArr<D> = ShdArrObj<Uniform, D>;
-pub type ShdStorageArr<D> = ShdArrObj<ShdStorage, D>;
+pub type UniformArr = ShdArrObj<Uniform, f32>;
+pub type ShdStorageArr = ShdArrObj<ShdStorage, f32>;
 
+#[derive(Debug)]
 pub struct ShdArrObj<T: ShdBuffType, D> {
 	pub array: ArrObject<T, D>,
 	loc: Cell<u32>,
@@ -29,7 +30,7 @@ impl<T: ShdBuffType, D> From<ArrObject<T, D>> for ShdArrObj<T, D> {
 		Self { array, loc: Def() }
 	}
 }
-impl<D> UniformArr<D> {
+impl UniformArr {
 	pub fn Bind(&self) -> ShdArrBinding<Uniform> {
 		let loc = self.loc.take();
 		let (b, l) = ShdArrBinding::<Uniform>::new(self, loc);
@@ -37,7 +38,7 @@ impl<D> UniformArr<D> {
 		b
 	}
 }
-impl<D> ShdStorageArr<D> {
+impl ShdStorageArr {
 	pub fn Bind(&self, loc: u32) -> Option<ShdArrBinding<ShdStorage>> {
 		ShdArrBinding::<ShdStorage>::new(self, loc)
 	}
@@ -48,13 +49,13 @@ pub struct ShdArrBinding<'l, T: ShdBuffType> {
 	pub l: u32,
 }
 impl<'l> ShdArrBinding<'l, Uniform> {
-	pub fn new<D>(o: &'l UniformArr<D>, hint: u32) -> (Self, u32) {
+	pub fn new(o: &'l UniformArr, hint: u32) -> (Self, u32) {
 		let l = UniformState::<Uniform>::Bind(o.array.obj, hint);
 		(Self { t: Dummy, l }, l)
 	}
 }
 impl<'l> ShdArrBinding<'l, ShdStorage> {
-	pub fn new<D>(o: &'l ShdStorageArr<D>, loc: u32) -> Option<Self> {
+	pub fn new(o: &'l ShdStorageArr, loc: u32) -> Option<Self> {
 		if UniformState::<ShdStorage>::BindLocation(o.array.obj, loc) {
 			Some(Self { t: Dummy, l: loc })
 		} else {

@@ -249,7 +249,7 @@ impl Renderer {
 			objs.draw_opaque_batches(&v);
 
 			GLEnable!(BLEND);
-			objs.draw_transparent_batches(&v);
+			objs.draw_translucent_batches(&v);
 		}
 
 		GLRestore!(CULL_FACE, DEPTH_TEST, DEPTH_WRITABLE, BLEND);

@@ -62,8 +62,8 @@ pub mod Save {
 								data
 							};
 
-							let _ = file.write_all(&data).await;
-							EXPECT!(file.sync_all().await);
+							let _ = file.write_all(&data).await.map(|_| FAIL!("Couldn't write {name:?}"));
+							let _ = file.sync_all().await.map(|_| FAIL!("Couldn't sync {name:?}"));
 						} else {
 							let name: PathBuf = (*name).into();
 							FAIL!("{:?}", fmt_err(file, &name));

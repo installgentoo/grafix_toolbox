@@ -76,7 +76,7 @@ impl<S: TexSize> uImage<S> {
 			4 => Rgba8,
 			_ => unreachable!(),
 		};
-		EXPECT!(image::save_buffer(name, &self.data, self.w, self.h, t));
+		image::save_buffer(name, &self.data, self.w, self.h, t).unwrap();
 	}
 }
 

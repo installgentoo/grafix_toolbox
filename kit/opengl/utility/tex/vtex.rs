@@ -49,7 +49,7 @@ impl<S: TexSize> TexAtlas<S> {
 				let reqs = reqs
 					.iter_mut()
 					.enumerate()
-					.map(|(n, (name, r))| (u32(n), EXPECT!(uImage::<S>::load(r.get()).map_err(|e| format!("{e}, image {name:?}")))))
+					.map(|(n, (name, r))| (u32(n), uImage::<S>::load(r.get()).map_err(|e| format!("{e}, image {name:?}")).unwrap()))
 					.collect_vec();
 				let max_side = GL::MAX_TEXTURE_SIZE();
 				let (atlas, mut tail) = atlas::pack_into_atlas(reqs, max_side, max_side);
