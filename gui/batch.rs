@@ -1,5 +1,4 @@
-use super::{objects::*, parts::*};
-use crate::lib::*;
+use super::*;
 
 struct Obj {
 	idx: u32,

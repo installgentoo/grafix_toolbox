@@ -84,24 +84,24 @@ impl_uniform_type!(mat, Mat3x4, UniformMatrix3x4fv);
 impl_uniform_type!(mat, Mat4x3, UniformMatrix4x3fv);
 
 macro_rules! impl_la_adapter {
-	($t: ident) => {
-		impl UniformArgs for la::$t {
+	($t: ident, $lat: ident) => {
+		impl UniformArgs for la::$lat {
 			fn apply(&self, addr: i32, cached: UniCache) {
 				$t(*self).apply(addr, cached)
 			}
 		}
-		impl UniformArgs for &la::$t {
+		impl UniformArgs for &la::$lat {
 			fn apply(&self, addr: i32, cached: UniCache) {
 				(*self).apply(addr, cached)
 			}
 		}
 	};
 }
-impl_la_adapter!(Vec2);
-impl_la_adapter!(Vec3);
-impl_la_adapter!(Vec4);
-impl_la_adapter!(Mat3);
-impl_la_adapter!(Mat4);
+impl_la_adapter!(Vec2, V2);
+impl_la_adapter!(Vec3, V3);
+impl_la_adapter!(Vec4, V4);
+impl_la_adapter!(Mat3, M3);
+impl_la_adapter!(Mat4, M4);
 
 impl<T: TexType> UniformArgs for GL::TextureBinding<'_, T> {
 	fn apply(&self, addr: i32, cached: UniCache) {

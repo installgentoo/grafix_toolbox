@@ -47,7 +47,7 @@ macro_rules! PROFILER {
 				lock.insert(name, t.stop(name));
 			}
 			pub fn Print(name: &str) {
-				let t = EXPECT!(map().lock().valid().remove(name), "No timer {name:?}");
+				let t = map().lock().valid().remove(name).expect(&format!("No timer {name:?}"));
 				print_impl(name, t);
 			}
 			pub fn PrintAll() {

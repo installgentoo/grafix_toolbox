@@ -1,4 +1,4 @@
-use super::{ext::UnwrapValid, math::*, type_name};
+use super::{ext::UnwrapValid, logging, math::*, type_name};
 
 pub type Res<T> = Result<T, String>;
 
@@ -27,8 +27,11 @@ impl<T, E: std::fmt::Display> Cast<Result<T, E>> for Result<T, String> {
 	}
 }
 
-pub trait UniformUnwrap<T> {
+pub trait UniformUnwrap<T>: Sized {
 	fn uni_or_else(self, op: impl FnOnce(&str) -> T) -> T;
+	fn fail(self) -> T {
+		self.uni_or_else(|_e| ERROR!("{}", _e))
+	}
 }
 impl<T> UniformUnwrap<T> for Option<T> {
 	fn uni_or_else(self, op: impl FnOnce(&str) -> T) -> T {

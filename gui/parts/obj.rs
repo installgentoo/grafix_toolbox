@@ -1,5 +1,4 @@
-use crate::GL::{atlas::VTex2d, tex::*, VaoBinding};
-use crate::{lib::*, math::*};
+use super::*;
 
 pub trait Object {
 	fn base(&self) -> &Base;

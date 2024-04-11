@@ -14,27 +14,28 @@ pub struct TextEdit {
 	scrollbar: Slider,
 	pub text: CachedStr,
 }
-impl TextEdit {
-	pub fn draw<'s>(&'s mut self, r: &mut RenderLock<'s>, t: &'s Theme, pos: Vec2, size: Vec2, scale: f32, readonly: bool) {
+impl<'s: 'l, 'l> Lock::TextEdit<'s, 'l, '_> {
+	pub fn draw(self, pos: Vec2, size: Vec2, scale: f32, readonly: bool) {
 		const SCR_PAD: f32 = 0.02;
 		const CUR_PAD: f32 = 0.01;
+		let Self { s, r, t } = self;
 
 		let font = &t.font;
-		if self.text.changed() || scale != self.scale || size != self.size {
+		if s.text.changed() || scale != s.scale || size != s.size {
 			let linenum_bar_w = |l| (font.glyph('0').map(|g| g.adv).unwrap_or_default() * scale * (f32(l).max(1.).log10() + 1.)).min(size.x());
-			let offset = (linenum_bar_w(self.text.lines().count()), 0.);
-			let (lines, wraps) = util::parse_text_by(&self.text, font, scale, size.sub(offset).x() - SCR_PAD, char::is_whitespace);
-			self.select = util::move_caret(&lines, self.select, (0, 0), true);
-			self.caret = util::move_caret(&lines, self.caret, (0, 0), true);
+			let offset = (linenum_bar_w(s.text.lines().count()), 0.);
+			let (lines, wraps) = util::parse_text_by(&s.text, font, scale, size.sub(offset).x() - SCR_PAD, char::is_whitespace);
+			s.select = util::move_caret(&lines, s.select, (0, 0), true);
+			s.caret = util::move_caret(&lines, s.caret, (0, 0), true);
 
-			self.offset = offset;
-			self.size = size;
-			self.scale = scale;
-			self.lines = lines;
-			self.wraps = wraps;
+			s.offset = offset;
+			s.size = size;
+			s.scale = scale;
+			s.lines = lines;
+			s.wraps = wraps;
 		}
-		let id = LUID(self);
-		let Self {
+		let id = LUID(s);
+		let TextEdit {
 			ref offset,
 			ref lines,
 			ref wraps,
@@ -45,7 +46,7 @@ impl TextEdit {
 			scrollbar,
 			text,
 			..
-		} = self;
+		} = s;
 		*changes = None;
 
 		let whole_text_h = scale * f32(lines.len());
@@ -338,7 +339,7 @@ impl TextEdit {
 
 		if whole_text_h > size.y() {
 			let visible_h = size.y() / whole_text_h;
-			scrollbar.draw(r, t, pos.sum((size.x() - SCR_PAD, 0.)), (SCR_PAD, size.y()), visible_h);
+			scrollbar.lock(r).draw(pos.sum((size.x() - SCR_PAD, 0.)), (SCR_PAD, size.y()), visible_h);
 		}
 	}
 }

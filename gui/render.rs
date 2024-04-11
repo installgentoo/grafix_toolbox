@@ -1,6 +1,4 @@
-use super::{objects::*, parts::*};
-use crate::{event::*, lib::*, math::*, GL};
-use GL::{spec, Frame, Vao, RGB, RGBA};
+use super::*;
 
 macro_rules! DRAWABLE {
 	($t: ty, $draw_spec: ident) => {
@@ -42,13 +40,16 @@ DRAWABLE!(Frame9<'l>, Frame9);
 DRAWABLE!(Text<'l, '_>, Text);
 
 pub struct RenderLock<'l> {
-	r: Renderer,
+	pub(super) r: Renderer,
 	n: u32,
 	clip: Vec<Crop>,
 	logics: Vec<LogicStorage<'l>>,
 	l: Dummy<&'l Primitive>,
 }
 impl<'l> RenderLock<'l> {
+	pub fn theme(&self) -> &'l Theme {
+		unsafe { &*(&self.r.theme as *const _) }
+	}
 	pub fn clip(&mut self, pos: Vec2, size: Vec2) -> ClipLock<'l> {
 		let Self { clip, .. } = self;
 		let is_neg = size.ls((0, 0));
@@ -125,8 +126,13 @@ pub struct Renderer {
 	to_clip: Vec2,
 	focus: LogicId,
 	mouse_pos: Vec2,
+	pub theme: Theme,
+	pub(super) storage: ElementStorage,
 }
 impl Renderer {
+	pub fn new(theme: Theme) -> Self {
+		Self { theme, ..Def() }
+	}
 	pub fn lock<'l>(self) -> RenderLock<'l> {
 		const L: f32 = 10_000_000_000.;
 		RenderLock {
@@ -143,8 +149,6 @@ impl Renderer {
 		let logics = UnsafeCell::new(logics);
 		let logics = || unsafe { &mut *logics.get() }.iter_mut().rev();
 		events.retain(|e| {
-			use {Event::*, EventReply::*};
-
 			map_variant!(&MouseMove { at, .. } = e => *mouse_pos = at);
 			let refocus = if let MouseButton { state, .. } = e { state.contains(Mod::PRESS) } else { false };
 
@@ -297,10 +301,6 @@ enum LogicBound {
 	Crop(Crop),
 	Obj(u32),
 }
-pub fn LUID<T>(v: &T) -> usize {
-	v as *const T as usize
-}
-type LogicId = usize;
 
 fn contains((b1, b2): Crop, p: Vec2) -> bool {
 	!(p.ls(b1).any() || p.gt(b2).any())

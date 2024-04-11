@@ -3,7 +3,7 @@ use {super::math::*, bitflags::bitflags};
 #[derive(Debug, Clone)]
 pub enum Event {
 	MouseMove { at: Vec2, state: Mod },
-	MouseButton { button: Button, state: Mod },
+	MouseButton { button: Click, state: Mod },
 	Scroll { at: Vec2, state: Mod },
 	Keyboard { key: Key, state: Mod },
 	Char { ch: char },
@@ -66,7 +66,7 @@ impl Mod {
 }
 
 #[derive(Debug, Clone)]
-pub enum Button {
+pub enum Click {
 	Left,
 	Right,
 	Middle,

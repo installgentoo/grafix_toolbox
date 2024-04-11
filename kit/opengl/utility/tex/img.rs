@@ -76,7 +76,9 @@ impl<S: TexSize> uImage<S> {
 			4 => Rgba8,
 			_ => unreachable!(),
 		};
-		image::save_buffer(name, &self.data, self.w, self.h, t).unwrap();
+		if let Err(e) = image::save_buffer(name, &self.data, self.w, self.h, t) {
+			FAIL!("Couldn't save image {:?}", e);
+		}
 	}
 }
 

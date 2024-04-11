@@ -43,7 +43,7 @@ impl Model {
 						let xyz = &xyz[i..];
 						let (v1, v2, v3) = vec3::<Vec3>::to((xyz, &xyz[3..], &xyz[6..]));
 						let ndir = v1.sum(v2).sum(v3).div(3).sgn();
-						let (v1, v2, v3) = vec3::<la::Vec3>::to((v1, v2, v3));
+						let (v1, v2, v3) = vec3::<la::V3>::to((v1, v2, v3));
 						let n = <[_; 3]>::to(hVec3(Vec3(la::normal(v1, v2, v3)).mul(ndir)));
 						(0..9).for_each(|i| norm.push(n[i % 3]));
 					}
@@ -133,25 +133,13 @@ impl Mesh<u16, f32, f16, f32> {
 mod serde {
 	use super::{ser::*, *};
 	impl Serialize for Model {
-		fn serialize<SE: Serializer>(&self, serializer: SE) -> Result<SE::Ok, SE::Error> {
-			serializer.serialize_bytes(&self.to_bytes())
+		fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+			self.to_bytes().serialize(s)
 		}
 	}
 	impl<'de> Deserialize<'de> for Model {
-		fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-			struct V;
-			impl de::Visitor<'_> for V {
-				type Value = Model;
-
-				fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-					formatter.write_str("Model bytes")
-				}
-				fn visit_bytes<E: de::Error>(self, v: &[u8]) -> Result<Self::Value, E> {
-					Ok(Self::Value::from_bytes(v))
-				}
-			}
-
-			deserializer.deserialize_bytes(V)
+		fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+			Ok(Self::from_bytes(<&[u8]>::deserialize(d)?))
 		}
 	}
 }

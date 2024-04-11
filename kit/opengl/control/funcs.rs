@@ -53,7 +53,7 @@ impl $n {
 
 	pub fn Save() {
 		debug_assert!({
-			let (valid, _) = EXPECT!(states_map().get_mut(&($m::$n as *const () as usize)), "GL::{}::Set() must be called at least once", stringify!($n));
+			let (valid, _) = states_map().get_mut(&($m::$n as *const () as usize)).expect(&format!("GL::{}::Save() saving default state", stringify!($n)));
 			*valid = true;
 			true
 		});

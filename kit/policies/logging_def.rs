@@ -6,14 +6,6 @@ macro_rules! LOGGER {
 }
 
 #[macro_export]
-macro_rules! EXPECT {
-	($e: expr, $($t: tt)+) => {{
-		use logging::UniformUnwrap;
-		$e.uni_or_else(|e| { PRINT!(e); ERROR!($($t)+) })
-	}};
-}
-
-#[macro_export]
 macro_rules! OR_DEFAULT {
 	($e: expr) => { EXPECT_OR_DEF_IMPL!($e, "{}") };
 	($e: expr, $($t: tt)+) => { EXPECT_OR_DEF_IMPL!($e, $($t)+) };

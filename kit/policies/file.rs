@@ -5,14 +5,14 @@ pub mod Save {
 	use super::*;
 
 	pub fn Write(p: impl Into<Astr>, data: impl Into<Arc<[u8]>>) {
-		EXPECT!(sender().send((p.into(), MessageType::Write, data.into())), FAILED_WRITE);
+		sender().send((p.into(), MessageType::Write, data.into())).expect(FAILED_WRITE);
 	}
 	pub fn Append(p: impl Into<Astr>, data: impl Into<Arc<[u8]>>) {
-		EXPECT!(sender().send((p.into(), MessageType::Append, data.into())), FAILED_WRITE);
+		sender().send((p.into(), MessageType::Append, data.into())).expect(FAILED_WRITE);
 	}
 	pub fn Archive(args: impl CompressArgs) {
 		let (p, data, level) = args.get();
-		EXPECT!(sender().send((p, MessageType::ComprW(level), data)), FAILED_WRITE);
+		sender().send((p, MessageType::ComprW(level), data)).expect(FAILED_WRITE);
 	}
 
 	type Args = (Astr, Arc<[u8]>, i32);
@@ -62,8 +62,8 @@ pub mod Save {
 								data
 							};
 
-							let _ = file.write_all(&data).await.map(|_| FAIL!("Couldn't write {name:?}"));
-							let _ = file.sync_all().await.map(|_| FAIL!("Couldn't sync {name:?}"));
+							let _ = file.write_all(&data).await.map_err(|_| FAIL!("Couldn't write {name:?}"));
+							let _ = file.sync_all().await.map_err(|_| FAIL!("Couldn't sync {name:?}"));
 						} else {
 							let name: PathBuf = (*name).into();
 							FAIL!("{:?}", fmt_err(file, &name));

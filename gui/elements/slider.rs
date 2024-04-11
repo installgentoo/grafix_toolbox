@@ -9,14 +9,16 @@ impl Default for Slider {
 		Self { pip_pos: 1. }
 	}
 }
-impl Slider {
-	pub fn draw<'s>(&'s mut self, r: &mut RenderLock<'s>, t: &Theme, pos: Vec2, size: Vec2, pip_size: f32) -> f32 {
+impl<'s: 'l, 'l> Lock::Slider<'s, 'l, '_> {
+	pub fn draw(self, pos: Vec2, size: Vec2, pip_size: f32) -> f32 {
+		let Self { s, r, t } = self;
+
 		let vert = size.y() > size.x();
 		let o = move |v: Vec2| if vert { v.y() } else { v.x() };
 		let set_pip = move |v: f32| ((v - o(pos)) / o(size)).clamp(0., 1.);
 
-		let id = LUID(self);
-		let Self { pip_pos } = self;
+		let id = LUID(s);
+		let Slider { pip_pos } = s;
 
 		let p = *pip_pos;
 		r.draw_with_logic(

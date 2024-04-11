@@ -2,6 +2,7 @@ pub use crate::map_variant;
 pub mod cached;
 pub mod cached_str;
 pub mod lazy;
+pub mod memoized;
 pub mod n_iter;
 pub mod prefetch;
 pub use {def::*, vec::*};

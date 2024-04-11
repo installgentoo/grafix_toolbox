@@ -1,6 +1,4 @@
-use super::obj::*;
-use crate::GL::{shader::*, VaoBinding};
-use crate::{lib::*, math::*};
+use super::*;
 
 pub struct Rect {
 	pub pos: Vec2,

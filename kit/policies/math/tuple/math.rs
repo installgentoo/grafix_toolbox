@@ -106,11 +106,11 @@ pub trait Tuple2Geometry<A> {
 impl<T: Tuple2<f32>, A> Tuple2Geometry<A> for T
 where
 	f32: Cast<A>,
-	Self: Cast<la::Vec2>,
+	Self: Cast<la::V2>,
 {
 	fn rotate(self, rad: A) -> Self {
 		let rad = std::f32::consts::PI * 2. * f32(rad);
 		let rot = la::na::Rotation2::new(rad);
-		Self::to(rot * la::Vec2::to(self.get()))
+		Self::to(rot * la::V2::to(self.get()))
 	}
 }

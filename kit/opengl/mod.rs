@@ -2,7 +2,7 @@ pub mod opengl {
 	pub use gl;
 	pub type Query = spec::Object<spec::Query>; // TODO negative traits stabilization - remove send/sync from Query, Framebuffer and Vao //impl !Send for //impl !Sync for
 	pub use super::debug::{DebugLevel, EnableDebugContext};
-	pub use super::{offhand::Fence, utility::Camera};
+	pub use super::{offhand::Fence, utility::FocusCam};
 	pub use bind::*;
 	pub use buffer::*;
 	pub use fbo::*;

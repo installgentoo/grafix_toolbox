@@ -70,19 +70,20 @@ pub struct HyperText {
 	popup: Option<(usize, Vec2, Box<Self>)>,
 	pub text: CachedStr,
 }
-impl HyperText {
-	pub fn draw<'s>(&'s mut self, r: &mut RenderLock<'s>, t: &'s Theme, pos: Vec2, size: Vec2, scale: f32, db: &HyperDB) {
+impl<'s: 'l, 'l> Lock::HyperText<'s, 'l, '_> {
+	pub fn draw(self, pos: Vec2, size: Vec2, scale: f32, db: &HyperDB) {
 		const SCR_PAD: f32 = 0.01;
+		let Self { s, r, t } = self;
 
 		let font = &t.font;
-		if self.text.changed() || scale != self.scale || size != self.size {
-			let (lines, _) = util::parse_text_by(&self.text, font, scale, size.x(), SPLIT);
-			self.size = size;
-			self.scale = scale;
-			self.lines = lines;
+		if s.text.changed() || scale != s.scale || size != s.size {
+			let (lines, _) = util::parse_text_by(&s.text, font, scale, size.x(), SPLIT);
+			s.size = size;
+			s.scale = scale;
+			s.lines = lines;
 		}
-		let id = LUID(self);
-		let Self { lines, hovered, scrollbar, popup, .. } = self;
+		let id = LUID(s);
+		let HyperText { lines, hovered, scrollbar, popup, .. } = s;
 
 		let whole_text_h = scale * f32(lines.len());
 		let (p, vis_range) = {
@@ -147,7 +148,7 @@ impl HyperText {
 					let at = r.mouse_pos();
 					let (side, nat) = (at.sum(size).ls(at.sub(size).abs()), at.sub(size));
 					let at = (if side.x() { at.x() } else { nat.x() }, if side.y() { at.y() } else { nat.y() });
-					*popup = Some((id, at, Box(Self { size, text: text.into(), ..Def() })));
+					*popup = Some((id, at, Box(HyperText { size, text: text.into(), ..Def() })));
 				}
 			};
 
@@ -197,7 +198,7 @@ impl HyperText {
 				id,
 			);
 			let visible_h = size.y() / whole_text_h;
-			scrollbar.draw(r, t, pos.sum((size.x() - SCR_PAD, 0.)), (SCR_PAD, size.y()), visible_h);
+			scrollbar.lock(r).draw(pos.sum((size.x() - SCR_PAD, 0.)), (SCR_PAD, size.y()), visible_h);
 		}
 
 		if !hover && !child_hovered(popup) && timeout(true) {
@@ -206,7 +207,8 @@ impl HyperText {
 		}
 
 		if let Some((_, pos, p)) = popup {
-			p.draw(r, t, *pos, p.size, scale, db);
+			let size = p.size;
+			p.lock(r).draw(*pos, size, scale, db);
 		}
 	}
 }

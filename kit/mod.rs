@@ -1,8 +1,3 @@
-#[macro_use]
-mod policies;
-#[macro_use]
-mod opengl;
-
 pub mod sync {
 	pub use super::sync_pre::*;
 	pub use chan::{Receiver, Sender};
@@ -44,7 +39,7 @@ pub mod stdlib {
 	pub use std::{cmp::Ordering as ord, marker::PhantomData as Dummy, mem::size_of as type_size};
 }
 pub mod lib {
-	pub use super::policies::ext::{cached::*, cached_str::*, n_iter::*, *};
+	pub use super::policies::ext::{cached::*, cached_str::*, memoized::*, n_iter::*, *};
 	pub use super::policies::{chksum, derives::*, index::*, logging, math::*, pointer::*, result::*, type_name};
 	pub use super::{stdlib::*, GL::types::*};
 	pub use {bitflags::bitflags, const_format, num_cpus};
@@ -58,3 +53,8 @@ pub mod GL {
 }
 
 pub use policies::{event, ext::lazy, ext::prefetch, file as FS, logging, profiling, rand, slicing};
+
+#[macro_use]
+mod policies;
+#[macro_use]
+mod opengl;

@@ -9,15 +9,17 @@ pub struct Selector {
 	editing: bool,
 	pub choice: usize,
 }
-impl Selector {
-	pub fn draw<'s>(&'s mut self, r: &mut RenderLock<'s>, t: &'s Theme, pos: Vec2, size: Vec2, options: &'s mut [String]) -> usize {
-		let Self { button, line_edit, choices, open, editing, choice } = self;
+impl<'s: 'l, 'l> Lock::Selector<'s, 'l, '_> {
+	pub fn draw(self, pos: Vec2, size: Vec2, options: &'s mut [String]) -> usize {
+		let Self { s, r, t } = self;
+
+		let Selector { button, line_edit, choices, open, editing, choice } = s;
 		let text = options.at(*choice);
 
 		if !*open {
 			choices.clear();
 			let mut pressed = typed_ptr!(&mut button.pressed);
-			if button.draw(r, t, pos, size, text) {
+			if button.lock(r).draw(pos, size, text) {
 				*pressed.get_mut() = false;
 				*open = true;
 				line_edit.text = text.into();
@@ -25,7 +27,7 @@ impl Selector {
 		} else {
 			choices.resize_with(options.len(), Def);
 			for (n, c) in choices.iter_mut().enumerate() {
-				if c.draw(r, t, pos.sum(size.mul((0, n + 1))), size, &options[n]) {
+				if c.lock(r).draw(pos.sum(size.mul((0, n + 1))), size, &options[n]) {
 					*open = false;
 					*editing = false;
 					*choice = n;
@@ -46,7 +48,7 @@ impl Selector {
 			}
 
 			*editing |= r.focused(LUID(line_edit));
-			line_edit.draw(r, t, pos, size);
+			line_edit.lock(r).draw(pos, size);
 		}
 		*choice
 	}

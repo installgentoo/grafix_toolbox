@@ -61,3 +61,20 @@ impl<T: PartialEq> PartialEq for Cached<T> {
 		self.val == r.val
 	}
 }
+
+#[cfg(feature = "adv_fs")]
+mod serde {
+	use {super::*, crate::ser::*};
+
+	impl<T: Serialize> Serialize for Cached<T> {
+		fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+			self.val.serialize(s)
+		}
+	}
+	impl<'de, T: Deserialize<'de>> Deserialize<'de> for Cached<T> {
+		fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+			let val = T::deserialize(d)?;
+			Ok(Self { val, changed: true })
+		}
+	}
+}

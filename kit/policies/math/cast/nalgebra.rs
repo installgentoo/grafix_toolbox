@@ -17,9 +17,9 @@ macro_rules! array_recast {
 
 macro_rules! impl_vec {
 	($t: ty) => {
-		array_recast!(na::SVector<$t, 2>, vec2<$t>, 2);
-		array_recast!(na::SVector<$t, 3>, vec3<$t>, 3);
-		array_recast!(na::SVector<$t, 4>, vec4<$t>, 4);
+		array_recast!(na::Vector2<$t>, vec2<$t>, 2);
+		array_recast!(na::Vector3<$t>, vec3<$t>, 3);
+		array_recast!(na::Vector4<$t>, vec4<$t>, 4);
 
 		array_recast!(na::Point2<$t>, vec2<$t>, 2);
 		array_recast!(na::Point3<$t>, vec3<$t>, 3);

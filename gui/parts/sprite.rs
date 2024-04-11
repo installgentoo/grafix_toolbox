@@ -1,6 +1,4 @@
-use super::obj::*;
-use crate::GL::{atlas::VTex2d, shader::*, tex::*, VaoBinding};
-use crate::{lib::*, math::*};
+use super::*;
 
 pub struct Sprite<'r, S> {
 	pub pos: Vec2,

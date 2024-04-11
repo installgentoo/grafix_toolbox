@@ -6,13 +6,14 @@ pub struct Layout {
 	pub pos: Vec2,
 	pub size: Vec2,
 }
-impl Layout {
-	pub fn draw<'s>(&'s mut self, r: &mut RenderLock<'s>, t: &Theme, content: impl FnOnce(&mut RenderLock<'s>, Crop)) {
+impl<'s: 'l, 'l> Lock::Layout<'s, 'l, '_> {
+	pub fn draw(self, content: impl FnOnce(&mut RenderLock<'l>, Crop)) {
 		const TOP_PAD: f32 = 0.05;
 		const CRN_PAD: f32 = 0.04;
+		let Self { s, r, t } = self;
 
-		let id = LUID(self);
-		let Self { click, pos, size } = self;
+		let id = LUID(s);
+		let Layout { click, pos, size } = s;
 		{
 			let c = r.to_clip();
 			let (lb, ru) = ((-1., -1.).div(c), (1., 1.).div(c));

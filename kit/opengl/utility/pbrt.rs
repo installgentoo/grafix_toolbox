@@ -65,18 +65,18 @@ impl Environment {
 	}
 	pub fn new<S, F>(equirect: Tex2d<S, F>) -> Self {
 		let VP_mats = {
-			let vec3 = la::Vec3::new;
-			let s = |to, up| la::look_at(vec3(0., 0., 0.), to, up);
+			let (v3, o3) = (la::V3::new, na::Point3::new);
+			let s = |to, up| la::M4::look_at_rh(&na::OPoint::origin(), &to, &up);
 			let proj = la::perspective(1., 90_f32.to_radians(), 0.1, 10.);
 			[
-				s(vec3(1., 0., 0.), vec3(0., -1., 0.)),
-				s(vec3(-1., 0., 0.), vec3(0., -1., 0.)),
-				s(vec3(0., 1., 0.), vec3(0., 0., 1.)),
-				s(vec3(0., -1., 0.), vec3(0., 0., -1.)),
-				s(vec3(0., 0., 1.), vec3(0., -1., 0.)),
-				s(vec3(0., 0., -1.), vec3(0., -1., 0.)),
+				s(o3(1., 0., 0.), v3(0., -1., 0.)),
+				s(o3(-1., 0., 0.), v3(0., -1., 0.)),
+				s(o3(0., 1., 0.), v3(0., 0., 1.)),
+				s(o3(0., -1., 0.), v3(0., 0., -1.)),
+				s(o3(0., 0., 1.), v3(0., -1., 0.)),
+				s(o3(0., 0., -1.), v3(0., -1., 0.)),
 			]
-			.map(|side| *Camera::new(proj, side).VP())
+			.map(|side| proj * side)
 		};
 
 		let sampl = &Sampler::linear();

@@ -90,35 +90,33 @@ impl WindowSpec for GlfwWindow {
 		let ctx_lock = Arc::new(Barrier::new(2));
 		let ctx = &mut *self.window as *mut Window as usize;
 		make_context_current(None);
-		let ret = {
-			EXPECT!(
-				thread::Builder::new().name("gl_offhand".into()).spawn({
-					let l = ctx_lock.clone();
-					move || {
-						let mut ctx = {
-							let ctx = unsafe { &mut *(ctx as *mut Window) };
-							ctx.make_current();
-							ctx.glfw.window_hint(Visible(false));
-							if let Some((w, _)) = ctx.create_shared(1, 1, "offhand_dummy", WindowMode::Windowed) {
-								w
-							} else {
-								l.wait();
-								FAIL!("Failed to create offhand context.");
-								return;
-							}
-						};
+		let offhand = thread::Builder::new()
+			.name("gl_offhand".into())
+			.spawn({
+				let l = ctx_lock.clone();
+				move || {
+					let mut ctx = {
+						let ctx = unsafe { &mut *(ctx as *mut Window) };
 						ctx.make_current();
-						l.wait();
-						GL::macro_uses::gl_was_initialized(true);
-						f();
-					}
-				}),
-				"Failed to spawn offhand"
-			)
-		};
+						ctx.glfw.window_hint(Visible(false));
+						if let Some((w, _)) = ctx.create_shared(1, 1, "offhand_dummy", WindowMode::Windowed) {
+							w
+						} else {
+							l.wait();
+							FAIL!("Failed to create offhand context.");
+							return;
+						}
+					};
+					ctx.make_current();
+					l.wait();
+					GL::macro_uses::gl_was_initialized(true);
+					f();
+				}
+			})
+			.expect("Failed to spawn offhand");
 		ctx_lock.wait();
 		self.window.make_current();
-		ret
+		offhand
 	}
 	fn poll_events(&mut self) -> Vec<Event> {
 		let action = |a| match a {
@@ -157,12 +155,12 @@ impl WindowSpec for GlfwWindow {
 				}
 				glfw::WindowEvent::MouseButton(b, a, m) => {
 					let button = match b {
-						glfw::MouseButtonLeft => Button::Left,
-						glfw::MouseButtonRight => Button::Right,
-						glfw::MouseButtonMiddle => Button::Middle,
+						glfw::MouseButtonLeft => Click::Left,
+						glfw::MouseButtonRight => Click::Right,
+						glfw::MouseButtonMiddle => Click::Middle,
 						_ => {
 							INFO!("Excessive buttons on mouse");
-							Button::Middle
+							Click::Middle
 						}
 					};
 

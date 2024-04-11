@@ -10,14 +10,16 @@ pub struct Button {
 	pub pressed: bool,
 	pub hovered: bool,
 }
-impl Button {
-	pub fn draw<'s>(&'s mut self, r: &mut RenderLock<'s>, t: &'s Theme, pos: Vec2, size: Vec2, text: &str) -> bool {
-		if *self.text != *text || self.size != size {
+impl<'s: 'l, 'l> Lock::Button<'s, 'l, '_> {
+	pub fn draw(self, pos: Vec2, size: Vec2, text: &str) -> bool {
+		let Self { s, r, t } = self;
+
+		if *s.text != *text || s.size != size {
 			let (offset, scale) = util::fit_text(text, t, size);
 
-			*self = Self { offset, size, scale, text: text.into(), ..*self };
+			*s = Button { offset, size, scale, text: text.into(), ..*s };
 		}
-		let Self { easing, pressed, hovered, .. } = self;
+		let Button { easing, pressed, hovered, .. } = s;
 
 		let delta = 1. / (t.easing * (*easing - 2.).abs());
 		*easing = (*easing + if *hovered { delta } else { -delta }).clamp(0., 1.);
@@ -41,9 +43,9 @@ impl Button {
 		);
 		*hovered = r.hovered();
 		r.draw(Text {
-			pos: pos.sum(self.offset),
+			pos: pos.sum(s.offset),
 			color: t.text.mix(*hovered, t.text_focus).mix(p, t.text_highlight),
-			scale: self.scale,
+			scale: s.scale,
 			text,
 			font: &t.font,
 		});

@@ -8,22 +8,23 @@ pub struct LineEdit {
 	caret: usize,
 	pub text: CachedStr,
 }
-impl LineEdit {
-	pub fn draw<'s>(&'s mut self, r: &mut RenderLock<'s>, t: &'s Theme, pos: Vec2, size: Vec2) {
+impl<'s: 'l, 'l> Lock::LineEdit<'s, 'l, '_> {
+	pub fn draw(self, pos: Vec2, size: Vec2) {
 		const CUR_PAD: f32 = 0.01;
+		let Self { s, r, t } = self;
 
-		if self.text.changed() || self.size != size {
-			let (offset, scale) = util::fit_text(&self.text, t, size);
+		if s.text.changed() || s.size != size {
+			let (offset, scale) = util::fit_text(&s.text, t, size);
 
-			self.offset = offset;
-			self.size = size;
-			self.scale = scale;
+			s.offset = offset;
+			s.size = size;
+			s.scale = scale;
 		}
 
 		r.draw(Rect { pos, size, color: t.bg });
 
-		let id = LUID(self);
-		let &mut Self { offset, scale, ref mut caret, ref mut text, .. } = self;
+		let id = LUID(s);
+		let &mut LineEdit { offset, scale, ref mut caret, ref mut text, .. } = s;
 
 		if r.focused(id) {
 			let x = util::caret_x(text, t, scale, *caret, CUR_PAD);
