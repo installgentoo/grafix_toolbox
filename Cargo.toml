@@ -1,6 +1,6 @@
 [package]
 name = "grafix-toolbox"
-version = "0.8.20"
+version = "0.8.21"
 authors = ["Alexander Drozdoff"]
 edition = "2021"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
@@ -23,7 +23,7 @@ obj = ["tobj"]
 sdf = ["rusttype"]
 
 adv_img = ["gif", "jpg", "png", "webp", "avif"]
-avif = ["image/avif-decoder"]
+avif = ["image/avif"]
 gif = ["image/gif"]
 jpg = ["image/jpeg"]
 png = ["image/png"]
@@ -45,7 +45,7 @@ flume = "^0.11"
 gl = "^0.14"
 glfw = "^0.55"
 half = "^2"
-image = { version = "^0.24", default-features = false }
+image = { version = "^0.25", default-features = false }
 nalgebra = { version = "^0.32", features = ["std", "serde-serialize"], default-features = false }
 notify = { version = "^6", optional = true }
 num_cpus = "^1"

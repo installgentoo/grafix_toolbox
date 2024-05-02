@@ -72,8 +72,10 @@ impl_shd!(ShaderVert, VERTEX_SHADER);
 impl_shd!(ShaderPix, FRAGMENT_SHADER);
 impl_shd!(ShaderGeom, GEOMETRY_SHADER);
 impl_shd!(ShaderComp, COMPUTE_SHADER);
+impl_shd!(ShaderTCtrl, TESS_CONTROL_SHADER);
+impl_shd!(ShaderTEval, TESS_EVALUATION_SHADER);
 
-#[derive(Debug, Default)]
+#[derive(Default, Debug)]
 pub struct ShaderProg;
 impl State for ShaderProg {
 	m_STATE!();
@@ -88,7 +90,7 @@ impl State for ShaderProg {
 	}
 }
 
-#[derive(Debug, Default)]
+#[derive(Default, Debug)]
 pub struct VertArrObj;
 impl State for VertArrObj {
 	m_STATE!();
@@ -103,7 +105,7 @@ impl State for VertArrObj {
 	}
 }
 
-#[derive(Debug, Default)]
+#[derive(Default, Debug)]
 pub struct Query;
 impl State for Query {
 	m_STATE!();
@@ -115,7 +117,7 @@ impl State for Query {
 	}
 }
 
-#[derive(Debug, Default)]
+#[derive(Default, Debug)]
 pub struct Framebuff;
 impl State for Framebuff {
 	m_STATE!();
@@ -130,7 +132,7 @@ impl State for Framebuff {
 	}
 }
 
-#[derive(Debug, Default)]
+#[derive(Default, Debug)]
 pub struct Renderbuff;
 impl State for Renderbuff {
 	m_STATE!();
@@ -142,7 +144,7 @@ impl State for Renderbuff {
 	}
 }
 
-#[derive(Debug, Default)]
+#[derive(Default, Debug)]
 pub struct SamplObj;
 impl State for SamplObj {
 	m_STATE!();
@@ -155,7 +157,7 @@ impl State for SamplObj {
 	}
 }
 
-#[derive(Debug, Default)]
+#[derive(Default, Debug)]
 pub struct Texture<T>(Dummy<T>);
 impl<T: TexType> State for Texture<T> {
 	m_STATE!();

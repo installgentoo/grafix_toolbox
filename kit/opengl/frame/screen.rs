@@ -21,7 +21,7 @@ impl Frame for Window {
 	fn pixel(&self) -> f32 {
 		self.info().pixel
 	}
-	fn bind(&mut self) -> Binding<Framebuff> {
+	fn bind(&self) -> Binding<Framebuff> {
 		let (w, h) = self.size();
 		self.Viewport((0, 0, w, h));
 		self.Bind()

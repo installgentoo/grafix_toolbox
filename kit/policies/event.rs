@@ -17,7 +17,6 @@ pub enum EventReply {
 	Reject,
 	Decline,
 	DropFocus,
-	CancelFocus,
 }
 
 bitflags! {

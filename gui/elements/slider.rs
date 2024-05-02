@@ -35,7 +35,11 @@ impl<'s: 'l, 'l> Lock::Slider<'s, 'l, '_> {
 					}
 					_ => (),
 				}
-				Reject
+				if focused {
+					Accept
+				} else {
+					Reject
+				}
 			},
 			id,
 		);

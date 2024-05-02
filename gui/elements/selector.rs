@@ -11,7 +11,7 @@ pub struct Selector {
 }
 impl<'s: 'l, 'l> Lock::Selector<'s, 'l, '_> {
 	pub fn draw(self, pos: Vec2, size: Vec2, options: &'s mut [String]) -> usize {
-		let Self { s, r, t } = self;
+		let Self { s, r, .. } = self;
 
 		let Selector { button, line_edit, choices, open, editing, choice } = s;
 		let text = options.at(*choice);

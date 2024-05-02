@@ -19,6 +19,16 @@ pub fn Def<T: Default>() -> T {
 	Default::default()
 }
 
+pub trait InspectCell<T> {
+	fn inspect<R>(&self, f: impl Fn(&T) -> R) -> R;
+}
+impl<T> InspectCell<T> for std::cell::Cell<T> {
+	fn inspect<R>(&self, f: impl Fn(&T) -> R) -> R {
+		let s = unsafe { &*self.as_ptr() };
+		f(s)
+	}
+}
+
 pub trait OptionSink {
 	fn sink(self);
 }

@@ -37,7 +37,7 @@ impl TexParam {
 	}
 }
 
-#[derive(Debug, Default)]
+#[derive(Default, Debug)]
 pub struct Tex<S, F, T: TexType> {
 	pub param: TexParam,
 	tex: Object<Texture<T>>,
@@ -56,11 +56,11 @@ macro_rules! impl_tex {
 			pub fn new_empty(args: impl $arg_n) -> Self {
 				let (tex, f, s) = (Object::new(), Dummy, Dummy);
 				let fmt = normalize_internal_fmt(get_internal_fmt::<S, F>());
-				let check = |m, _l| {
+				let check = |_m, _l| {
 					ASSERT!(
-						_l > 0 && _l <= TexParam::mip_levels(m),
+						_l > 0 && _l <= TexParam::mip_levels(_m),
 						"GL Texture can only have {} levels, asked for {_l}",
-						TexParam::mip_levels(m)
+						TexParam::mip_levels(_m)
 					);
 				};
 				macro_rules! tex_new {

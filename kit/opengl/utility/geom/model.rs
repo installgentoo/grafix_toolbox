@@ -3,7 +3,7 @@ use crate::{lib::*, math::*, *};
 use std::borrow::Borrow;
 use GL::buffer::*;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Model {
 	idxs: Box<[u32]>,
 	xyz: Box<[f32]>,

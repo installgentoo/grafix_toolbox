@@ -30,7 +30,7 @@ pub trait Frame {
 	{
 	}
 	fn size(&self) -> uVec2;
-	fn bind(&mut self) -> Binding<Framebuff>;
+	fn bind(&self) -> Binding<Framebuff>;
 }
 
 pub struct RenderTgt<S, F> {
@@ -60,7 +60,7 @@ impl<S: TexSize, F: TexFmt> Frame for RenderTgt<S, F> {
 	fn size(&self) -> uVec2 {
 		self.fbo.size()
 	}
-	fn bind(&mut self) -> Binding<Framebuff> {
+	fn bind(&self) -> Binding<Framebuff> {
 		self.fbo.bind()
 	}
 }

@@ -182,7 +182,7 @@ impl<'s: 'l, 'l> Lock::TextEdit<'s, 'l, '_> {
 						return Accept;
 					}
 					Keyboard { key, state } if focused && state.pressed() => match key {
-						Key::Escape => return CancelFocus,
+						Key::Escape => return DropFocus,
 						Key::Right => {
 							*caret = setx(clampx(*caret), if state.ctrl() { 10 } else { 1 });
 							*select = select.or_val(state.shift(), *caret);

@@ -1,5 +1,5 @@
 use crate::{lib::*, *};
-use GL::{atlas::*, Tex2d, RED};
+use GL::{Tex2d, RED};
 
 derive_common_OBJ! {
 pub struct Glyph {
@@ -114,7 +114,7 @@ impl Font {
 			})
 			.collect_vec();
 
-		let (mut atlas, _rejects) = pack_into_atlas::<_, _, RED, _>(glyphs, GL::MAX_TEXTURE_SIZE(), GL::MAX_TEXTURE_SIZE());
+		let (mut atlas, _rejects) = GL::atlas::pack_into_atlas::<_, _, RED, _>(glyphs, GL::MAX_TEXTURE_SIZE(), GL::MAX_TEXTURE_SIZE());
 		ASSERT!(_rejects.is_empty(), "Couldn't fit font into system texture size");
 
 		let mut tex = None;
@@ -140,12 +140,15 @@ impl Font {
 	}
 }
 
+#[cfg(feature = "sdf")]
 struct ImgBox {
 	w: i32,
 	h: i32,
 	data: Box<[u8]>,
 }
+#[cfg(feature = "sdf")]
 impl Eq for ImgBox {}
+#[cfg(feature = "sdf")]
 impl PartialEq for ImgBox {
 	fn eq(&self, r: &Self) -> bool {
 		if self.w != r.w && self.h != r.h {
@@ -155,7 +158,8 @@ impl PartialEq for ImgBox {
 		diff < 5
 	}
 }
-impl Tile<u8> for ImgBox {
+#[cfg(feature = "sdf")]
+impl GL::atlas::Tile<u8> for ImgBox {
 	fn w(&self) -> i32 {
 		self.w
 	}

@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-//TODO replace with trait aliases
+// TODO replace with trait aliases
 macro_rules! trait_alias {
 	($t: ident, $($b: tt)+ ) => {
 		pub trait $t: $($b)+ {}
@@ -17,7 +17,7 @@ trait_alias!(TrivialBound, 'static + Debug + Default + Copy + PartialEq);
 
 macro_rules! derive_common_VAL {
 	($($t: tt)+) => {
-		#[derive(Debug, Default, Clone, Copy, PartialEq)]
+		#[derive(Default, Debug, Clone, Copy, PartialEq)]
 		#[cfg_attr(feature = "adv_fs", derive(serde::Serialize, serde::Deserialize))]
 		$($t)+
 	};
@@ -25,7 +25,7 @@ macro_rules! derive_common_VAL {
 
 macro_rules! derive_common_OBJ {
 	($($t: tt)+) => {
-		#[derive(Debug, Default, Clone)]
+		#[derive(Default, Debug, Clone)]
 		#[cfg_attr(feature = "adv_fs", derive(serde::Serialize, serde::Deserialize))]
 		$($t)+
 	};

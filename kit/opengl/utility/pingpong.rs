@@ -13,7 +13,7 @@ macro_rules! ComputeShader {
 		$fbo.clear((0, 1));
 		$fbo.bind();
 		let _ = $shd.Bind();
-		Screen::Draw();
+		$crate::GL::mesh::Screen::Draw();
 	}};
 	($shd: ident, $fbo: expr, ($n0: literal, $v0: expr)) => {{
 		$fbo.clear((0, 1));
@@ -27,7 +27,7 @@ macro_rules! ComputeShader {
 		$fbo.bind();
 		let s = $shd.Bind();
 		let b = $t0.Bind(&$s0);
-		let _ = Uniform!(s, ($n0, &b));
+		let _ = Uniform!(s, ($n0, b));
 		let _ = ComputeShader!($shd, $fbo);
 	}};
 	($shd: ident, $fbo: expr, ($n0: literal, $v0: expr), $($args: tt),+) => {{

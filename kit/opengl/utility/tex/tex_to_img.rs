@@ -11,7 +11,7 @@ impl<S, F> Tex2d<S, F> {
 
 		let TexParam { w, h, .. } = self.param;
 
-		let mut out = Fbo::<RS, RF>::new((w, h).div(minification).max((1, 1)));
+		let out = Fbo::<RS, RF>::new((w, h).div(minification).max((1, 1)));
 		let t = self.Bind(sampl);
 		let _ = Uniforms!(s, ("tex", t));
 		out.bind();

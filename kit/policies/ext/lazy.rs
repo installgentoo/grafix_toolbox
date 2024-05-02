@@ -3,32 +3,30 @@ use crate::{asyn::*, stdlib::*};
 use std::{ops, pin};
 
 #[derive(Clone)]
-pub struct RcLazy<T> {
-	s: Rc<UnsafeCell<Lazy<T>>>,
-}
+pub struct RcLazy<T>(Rc<UnsafeCell<Lazy<T>>>);
 impl<T: SendStat + Default> RcLazy<T> {
 	pub fn changed(&mut self) -> bool {
-		unsafe { &mut *self.s.get() }.changed()
+		unsafe { &mut *self.0.get() }.changed()
 	}
 	pub fn get(&mut self) -> &mut T {
-		unsafe { &mut *self.s.get() }.get()
+		unsafe { &mut *self.0.get() }.get()
 	}
 }
 impl<T> ops::Deref for RcLazy<T> {
 	type Target = Lazy<T>;
 	fn deref(&self) -> &Self::Target {
-		unsafe { &*self.s.get() }
+		unsafe { &*self.0.get() }
 	}
 }
 impl<T> ops::DerefMut for RcLazy<T> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
-		unsafe { &mut *self.s.get() }
+		unsafe { &mut *self.0.get() }
 	}
 }
 impl<T> From<Lazy<T>> for RcLazy<T> {
 	fn from(s: Lazy<T>) -> Self {
 		let s = Rc::new(UnsafeCell::new(s));
-		Self { s }
+		Self(s)
 	}
 }
 

@@ -13,13 +13,13 @@ impl<T: Buffer, D> ArrObject<T, D> {
 		let s = type_size::<D>();
 		GLCheck!(glBufferSubData(T::TYPE, self.obj, isize(offset * s), isize(size * s), ptr));
 	}
-	pub fn Map(&self) -> Mapping<T, D> {
+	pub fn Map(&mut self) -> Mapping<T, D> {
 		self.MapRange(0)
 	}
 	pub fn MapMut(&mut self) -> MappingMut<T, D> {
 		self.MapRangeMut(0)
 	}
-	pub fn MapRange(&self, args: impl MappingArgs) -> Mapping<T, D> {
+	pub fn MapRange(&mut self, args: impl MappingArgs) -> Mapping<T, D> {
 		let (offset, len, access) = get_mapping_args(self, args);
 		Mapping::new(self, offset, len, access | gl::MAP_READ_BIT)
 	}

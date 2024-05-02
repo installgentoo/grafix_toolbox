@@ -3,7 +3,7 @@ use GL::{atlas::*, tex::*};
 
 pub struct Animation<'a, S: TexSize> {
 	frames: Box<[(Vec2, VTex2dEntry<'a, S>)]>,
-	c: usize,
+	c: Cell<usize>,
 	a: Dummy<&'a u32>,
 }
 impl<'a, S: TexSize> Animation<'a, S> {
@@ -36,16 +36,17 @@ impl<'a, S: TexSize> Animation<'a, S> {
 		if frames.is_empty() {
 			Err(format!("Empty animation file {anim_desc}"))
 		} else {
-			Ok(Self { frames, c: 0, a: Dummy })
+			Ok(Self { frames, c: Cell::new(0), a: Dummy })
 		}
 	}
-	pub fn frame(&mut self, t: f32) -> &VTex2d<S, u8> {
+	pub fn frame(&self, t: f32) -> &VTex2d<S, u8> {
 		let Self { ref frames, c, .. } = self;
 		ASSERT!(t <= 1., "Animation assumes time in (0..1), given {t}");
 
-		for (n, ((b, e), guess)) in frames.iter().skip(*c).chain(frames.iter().take(*c)).enumerate() {
+		let n = c.get();
+		for (n, ((b, e), guess)) in frames.iter().skip(n).chain(frames.iter().take(n)).enumerate() {
 			if t >= *b && t <= *e {
-				*c = n;
+				c.replace(n);
 				return guess.get();
 			}
 		}

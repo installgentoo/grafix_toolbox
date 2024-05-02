@@ -23,8 +23,8 @@ impl SdfGenerator {
 		GLSave!(BLEND, DEPTH_TEST);
 		GLDisable!(BLEND, DEPTH_TEST);
 		let Self { dst_t, dt_h, ref sampl, .. } = self;
-		let mut surf_out = Fbo::<RED, f16>::new((w, h));
-		let mut surf_in = Fbo::<RED, f16>::new((w, h));
+		let surf_out = Fbo::<RED, f16>::new((w, h));
+		let surf_in = Fbo::<RED, f16>::new((w, h));
 		{
 			let t = tex.Bind(sampl);
 			let s = Uniforms!(dst_t, ("tex", t), ("iChannel", FROM::SIZE), ("iThickness", thickness), ("iStep", Vec2((0, 1)).div((w, h))));
@@ -37,7 +37,7 @@ impl SdfGenerator {
 			surf_in.bind();
 			Screen::Draw();
 		}
-		let mut out = Fbo::<RED, f16>::new((w, h));
+		let out = Fbo::<RED, f16>::new((w, h));
 		{
 			let to = surf_out.tex.Bind(sampl);
 			let ti = surf_in.tex.Bind(sampl);

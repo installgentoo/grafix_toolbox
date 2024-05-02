@@ -8,7 +8,7 @@ impl Framebuffer {
 		args.apply(self.obj);
 		self
 	}
-	pub fn Bind<S, F>(&mut self, tex: &Tex<S, F, impl TexType>) -> Binding<Framebuff> {
+	pub fn Bind<S, F>(&self, tex: &Tex<S, F, impl TexType>) -> Binding<Framebuff> {
 		let TexParam { w, h, .. } = tex.param;
 		GL::Viewport::Set((0, 0, w, h));
 		Binding::new(self)

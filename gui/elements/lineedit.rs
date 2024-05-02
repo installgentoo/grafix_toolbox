@@ -58,7 +58,7 @@ impl<'s: 'l, 'l> Lock::LineEdit<'s, 'l, '_> {
 					OfferFocus => return Accept,
 					MouseButton { state, .. } if state.pressed() => *caret = click(),
 					Keyboard { key, state } if focused && state.pressed() => match key {
-						Key::Enter | Key::Escape if focused => return CancelFocus,
+						Key::Enter | Key::Escape if focused => return DropFocus,
 						Key::Right => *caret = clamp(*caret, if state.ctrl() { 10 } else { 1 }),
 						Key::Left => *caret = clamp(*caret, -if state.ctrl() { 10 } else { 1 }),
 						Key::Delete if idx(-1) < text.len() => {

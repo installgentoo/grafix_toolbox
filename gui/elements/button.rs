@@ -32,7 +32,7 @@ impl<'s: 'l, 'l> Lock::Button<'s, 'l, '_> {
 			move |e, _, _| {
 				let mut pass = |s: Mod| *pressed = s.pressed();
 				match *e {
-					OfferFocus => return DropFocus,
+					OfferFocus => return Reject,
 					MouseButton { state, .. } => pass(state),
 					Keyboard { key, state } if key == Key::Space => pass(state),
 					_ => (),

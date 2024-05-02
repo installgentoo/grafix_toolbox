@@ -33,6 +33,9 @@ pub fn rotate(m: M4, angle: f32, axis: na::Unit<V3>) -> M4 {
 pub fn scale(m: M4, v: V3) -> M4 {
 	m.prepend_nonuniform_scaling(&v)
 }
+pub fn iL(pos: V3) -> M4 {
+	na::Translation3::new(-pos.x, -pos.y, -pos.z).to_homogeneous()
+}
 pub fn perspective(aspect: f32, fovy: f32, near: f32, far: f32) -> M4 {
 	assert!((far - near).abs() > 0.0001, "The near-plane and far-plane must not be superimposed.");
 	let mut mat = M4::zeros();

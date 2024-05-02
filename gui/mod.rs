@@ -22,7 +22,7 @@ macro_rules! storage {
 		}
 		impl<'l> RenderLock<'l> {
 			$(pub fn $t(&mut self, id: u32) -> Lock::$t<'static, 'l, '_> {
-				let s = unsafe{ &mut *(&mut self.r.storage as *mut ElementStorage) };
+				let s = unsafe { mem::transmute::<_, &'static mut ElementStorage>(&mut self.r.storage) };
 				s.$t(id).lock(self) // <- first lifetime comes from button
 			})+
 		}

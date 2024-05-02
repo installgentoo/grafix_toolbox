@@ -39,7 +39,11 @@ impl<'s: 'l, 'l> Lock::Layout<'s, 'l, '_> {
 					MouseMove { at, .. } if focused => *p = at.sub(*click),
 					_ => (),
 				}
-				Reject
+				if focused {
+					Accept
+				} else {
+					Reject
+				}
 			},
 			id,
 		);
@@ -60,7 +64,11 @@ impl<'s: 'l, 'l> Lock::Layout<'s, 'l, '_> {
 					}
 					_ => (),
 				}
-				Reject
+				if focused {
+					Accept
+				} else {
+					Reject
+				}
 			},
 			id + 1,
 		);

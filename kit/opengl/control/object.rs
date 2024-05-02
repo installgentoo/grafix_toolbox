@@ -25,7 +25,7 @@ impl<T: State> Default for Object<T> {
 
 pub struct Binding<'l, T: State>(Dummy<&'l T>);
 impl<T: State> Binding<'_, T> {
-	pub fn new(o: &mut Object<T>) -> Self {
+	pub fn new(o: &Object<T>) -> Self {
 		T::Lock(o.obj);
 		T::Bind(o.obj);
 		Self(Dummy)

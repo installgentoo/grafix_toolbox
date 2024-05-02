@@ -55,7 +55,7 @@ impl Environment {
 	}
 	pub fn lut() -> fImage<RG> {
 		let mut lut = Shader::pure([vs_mesh__2d_screen, ps_env__gen_lut]);
-		let mut surf = Fbo::<RGBA, f32>::new((512, 512));
+		let surf = Fbo::<RGBA, f32>::new((512, 512));
 		{
 			let _ = Uniforms!(lut, ("iSamples", 4096_u32));
 			surf.bind();
@@ -67,7 +67,7 @@ impl Environment {
 		let VP_mats = {
 			let (v3, o3) = (la::V3::new, na::Point3::new);
 			let s = |to, up| la::M4::look_at_rh(&na::OPoint::origin(), &to, &up);
-			let proj = la::perspective(1., 90_f32.to_radians(), 0.1, 10.);
+			let proj = la::perspective(1., 90f32.to_radians(), 0.1, 10.);
 			[
 				s(o3(1., 0., 0.), v3(0., -1., 0.)),
 				s(o3(-1., 0., 0.), v3(0., -1., 0.)),
@@ -89,7 +89,7 @@ impl Environment {
 			.map(|&cam| {
 				let e = equirect.Bind(sampl);
 				let _ = Uniforms!(equirect_shd, ("equirect_tex", e), ("MVPMat", cam));
-				let mut surf = Fbo::<RGBA, f32>::new((512, 512));
+				let surf = Fbo::<RGBA, f32>::new((512, 512));
 				surf.bind();
 				Skybox::Draw();
 				fImage::<RGB>::from(surf.tex)
@@ -102,7 +102,7 @@ impl Environment {
 			.map(|&cam| {
 				let e = cubemap.Bind(sampl);
 				let _ = Uniforms!(irradiance_shd, ("env_cubetex", e), ("MVPMat", cam), ("iDelta", 0.025));
-				let mut surf = Fbo::<RGBA, f32>::new((64, 64));
+				let surf = Fbo::<RGBA, f32>::new((64, 64));
 				surf.bind();
 				Skybox::Draw();
 				fImage::<RGB>::from(surf.tex)
@@ -122,7 +122,7 @@ impl Environment {
 							.map(|&cam| {
 								let e = cubemap.Bind(sampl);
 								let _ = Uniforms!(specular_shd, ("env_cubetex", e), ("MVPMat", cam), ("iSamples", 4096_u32), ("iRoughness", r));
-								let mut surf = Fbo::<RGBA, f32>::new(wh);
+								let surf = Fbo::<RGBA, f32>::new(wh);
 								surf.bind();
 								Skybox::Draw();
 								fImage::<RGB>::from(surf.tex)

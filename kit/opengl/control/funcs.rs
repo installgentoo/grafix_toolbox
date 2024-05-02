@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::lib::*;
 
 macro_rules! APPLICATOR {

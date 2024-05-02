@@ -55,11 +55,11 @@ pub mod Skybox {
 }
 
 pub trait AnyMesh {
-	fn Draw(&mut self);
+	fn Draw(&self);
 	fn to_trait(self) -> Box<dyn AnyMesh>;
 }
 impl<I: IdxType, C: AttrType, T: AttrType, N: AttrType> AnyMesh for Mesh<I, C, T, N> {
-	fn Draw(&mut self) {
+	fn Draw(&self) {
 		self.vao.Bind().Draw(self.draw);
 	}
 	fn to_trait(self) -> Box<dyn AnyMesh> {

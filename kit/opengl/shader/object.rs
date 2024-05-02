@@ -6,6 +6,8 @@ pub enum ShaderObj {
 	Fragment(Object<ShaderPix>),
 	Geometry(Object<ShaderGeom>),
 	Compute(Object<ShaderComp>),
+	TessCtrl(Object<ShaderTCtrl>),
+	TessEval(Object<ShaderTEval>),
 }
 impl ShaderObj {
 	pub fn new(name: &str, src: &CString) -> Res<Self> {
@@ -14,7 +16,9 @@ impl ShaderObj {
 			"ps" => Fragment(Def()),
 			"gs" => Geometry(Def()),
 			"cs" => Compute(Def()),
-			_ => Err(format!("Shader name {name:?} should start with vs|ps|gs|cs according to type"))?,
+			"tc" => TessCtrl(Def()),
+			"te" => TessEval(Def()),
+			_ => Err(format!("Shader name {name:?} should start with vs|ps|gs|cs|tc|te according to type"))?,
 		};
 
 		let o = obj.obj();
@@ -34,12 +38,14 @@ impl ShaderObj {
 			Fragment(o) => o.obj,
 			Geometry(o) => o.obj,
 			Compute(o) => o.obj,
+			TessCtrl(o) => o.obj,
+			TessEval(o) => o.obj,
 		}
 	}
 	pub fn valid(name: &str) -> Res<()> {
 		match slice((name, 2)) {
-			"vs" | "ps" | "gs" | "cs" => Ok(()),
-			_ => Err(format!("Shader name '{name}' should start with vs|ps|gs|cs according to type")),
+			"vs" | "ps" | "gs" | "cs" | "tc" | "te" => Ok(()),
+			_ => Err(format!("Shader name '{name}' should start with vs|ps|gs|cs|tc|te according to type")),
 		}
 	}
 	fn name(&self) -> &str {
@@ -48,6 +54,8 @@ impl ShaderObj {
 			Fragment(_) => "pixel",
 			Geometry(_) => "geometry",
 			Compute(_) => "compute",
+			TessCtrl(_) => "tess. control",
+			TessEval(_) => "tess. eval",
 		}
 	}
 }

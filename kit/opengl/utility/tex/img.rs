@@ -5,7 +5,7 @@ use std::{io, path::Path};
 pub type uImage<S> = Image<S, u8>;
 pub type fImage<S> = Image<S, f16>;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Image<S, F> {
 	pub w: u32,
 	pub h: u32,
@@ -87,10 +87,10 @@ impl Image<RGB, f32> {
 	pub fn load(data: impl AsRef<[u8]>) -> Res<Self> {
 		let img = io::BufReader::new(io::Cursor::new(data.as_ref()));
 		let img = image::codecs::hdr::HdrDecoder::new(img).map_err(|e| format!("Cannot decode hdr image: {e:?}"))?;
-		let m = img.metadata();
-		let (w, h) = (m.width, m.height);
-		let img = img.read_image_hdr().map_err(|e| format!("Cannot read hdr pixels: {e:?}"))?;
-		let data = img.chunks(usize(w)).rev().flat_map(|l| l.iter().flat_map(|image::Rgb(p)| p)).copied().collect();
+		let mut img = image::DynamicImage::from_decoder(img).map_err(|e| format!("Cannot decode hdr pixels: {e:?}"))?;
+		image::imageops::flip_vertical_in_place(&mut img);
+		let img = img.into_rgb32f();
+		let ((w, h), data) = (img.dimensions(), img.pixels().flat_map(|image::Rgb(p)| p).copied().collect());
 		Ok(Self { w, h, data, s: Dummy })
 	}
 }

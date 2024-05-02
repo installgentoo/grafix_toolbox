@@ -2,6 +2,10 @@ use crate::lib::*;
 use std::{borrow::Borrow, fmt, ops};
 use {Clone as C, PartialEq as P};
 
+pub trait MemoizedArgs<A> {
+	fn take(&self) -> A;
+	fn equal(&self, r: &A) -> bool;
+}
 pub struct Memoized<T, A: P + C> {
 	last_args: Cell<A>,
 	func: fn(&A) -> T,
@@ -11,22 +15,17 @@ impl<T, A: P + C + Default> Memoized<T, A> {
 	pub fn zero(func: fn(&A) -> T) -> Self {
 		Self { last_args: Cell::new(Def()), func, val: Cell::new(None) }
 	}
-	pub fn set(&mut self, v: T) {
-		let Self { last_args, val, .. } = self;
-		last_args.replace(Def());
-		val.replace(Some(v));
-	}
 }
 impl<T, A: P + C> Memoized<T, A> {
 	pub fn new(func: fn(&A) -> T, a: impl Into<A>) -> Self {
 		Self { last_args: Cell::new(a.into()), func, val: Cell::new(None) }
 	}
-	pub fn apply(&self, a: impl Borrow<A>) -> (bool, &T) {
+	pub fn apply(&self, a: impl MemoizedArgs<A>) -> (bool, &T) {
 		let Self { last_args, func, val } = self;
-		let a = a.borrow();
-		let changed = if unsafe { (*val.as_ptr()).is_none() || a != &*last_args.as_ptr() } {
-			val.set(Some(func(a)));
-			last_args.set(a.clone());
+		let changed = if unsafe { (*val.as_ptr()).is_none() || !a.equal(&*last_args.as_ptr()) } {
+			let a = a.take();
+			val.set(Some(func(&a)));
+			last_args.set(a);
 			true
 		} else {
 			false
@@ -42,6 +41,9 @@ impl<T, A: P + C> Memoized<T, A> {
 		}
 
 		unsafe { (*val.as_ptr()).as_mut().valid() }
+	}
+	pub fn get_args(&self) -> &A {
+		unsafe { &*self.last_args.as_ptr() }
 	}
 	pub fn get(&self) -> &T {
 		let Self { last_args, func, val } = self;
@@ -138,5 +140,74 @@ mod serde {
 			let last_args = Cell::new(A::deserialize(d)?);
 			Ok(Self { last_args, func, val: Def() })
 		}
+	}
+}
+
+impl<A: P + C> MemoizedArgs<A> for A {
+	fn take(&self) -> A {
+		self.clone()
+	}
+	fn equal(&self, r: &A) -> bool {
+		self.eq(r)
+	}
+}
+
+impl<A1: P + C, A2: P + C> MemoizedArgs<(A1, A2)> for &(A1, A2) {
+	fn take(&self) -> (A1, A2) {
+		let (a, b) = self;
+		(a.clone(), b.clone())
+	}
+	fn equal(&self, r: &(A1, A2)) -> bool {
+		self.eq(&r)
+	}
+}
+impl<A1: P + C, A2: P + C> MemoizedArgs<(A1, A2)> for (&A1, &A2) {
+	fn take(&self) -> (A1, A2) {
+		let (a, b) = self;
+		((*a).clone(), (*b).clone())
+	}
+	fn equal(&self, (r1, r2): &(A1, A2)) -> bool {
+		let (a, b) = self;
+		a.eq(&r1) && b.eq(&r2)
+	}
+}
+
+impl<A1: P + C, A2: P + C, A3: P + C> MemoizedArgs<(A1, A2, A3)> for &(A1, A2, A3) {
+	fn take(&self) -> (A1, A2, A3) {
+		let (a, b, c) = self;
+		(a.clone(), b.clone(), c.clone())
+	}
+	fn equal(&self, r: &(A1, A2, A3)) -> bool {
+		self.eq(&r)
+	}
+}
+impl<A1: P + C, A2: P + C, A3: P + C> MemoizedArgs<(A1, A2, A3)> for (&A1, &A2, &A3) {
+	fn take(&self) -> (A1, A2, A3) {
+		let (a, b, c) = self;
+		((*a).clone(), (*b).clone(), (*c).clone())
+	}
+	fn equal(&self, (r1, r2, r3): &(A1, A2, A3)) -> bool {
+		let (a, b, c) = self;
+		a.eq(&r1) && b.eq(&r2) && c.eq(&r3)
+	}
+}
+
+impl<A1: P + C, A2: P + C, A3: P + C, A4: P + C> MemoizedArgs<(A1, A2, A3, A4)> for &(A1, A2, A3, A4) {
+	fn take(&self) -> (A1, A2, A3, A4) {
+		let (a, b, c, d) = self;
+		(a.clone(), b.clone(), c.clone(), d.clone())
+	}
+	fn equal(&self, r: &(A1, A2, A3, A4)) -> bool {
+		self.eq(&r)
+	}
+}
+impl<A1: P + C, A2: P + C, A3: P + C, A4: P + C> MemoizedArgs<(A1, A2, A3, A4)> for (&A1, &A2, &A3, &A4) {
+	fn take(&self) -> (A1, A2, A3, A4) {
+		let (a, b, c, d) = self;
+		((*a).clone(), (*b).clone(), (*c).clone(), (*d).clone())
+	}
+	fn equal(&self, (r1, r2, r3, r4): &(A1, A2, A3, A4)) -> bool {
+		let (a, b, c, d) = self;
+		a.eq(&r1) && b.eq(&r2) && c.eq(&r3) && d.eq(&r4)
 	}
 }

@@ -20,7 +20,7 @@ impl<S: TexSize, F: TexFmt> Frame for Fbo<S, F> {
 		let TexParam { w, h, .. } = self.tex.param;
 		uVec2((w, h))
 	}
-	fn bind(&mut self) -> Binding<Framebuff> {
+	fn bind(&self) -> Binding<Framebuff> {
 		self.fb.Bind(&self.tex)
 	}
 }

@@ -12,7 +12,7 @@ impl<I: IdxType> Vao<I> {
 	pub fn obj(&self) -> u32 {
 		self.o.obj
 	}
-	pub fn Bind(&mut self) -> VaoBinding<I> {
+	pub fn Bind(&self) -> VaoBinding<I> {
 		VaoBinding::new(self)
 	}
 	pub fn BindIdxs(&mut self, o: &IdxArr<I>) {
@@ -52,8 +52,8 @@ pub struct VaoBinding<'l, I> {
 	d: Dummy<I>,
 }
 impl<I: IdxType> VaoBinding<'_, I> {
-	pub fn new(o: &mut Vao<I>) -> Self {
-		let _b = Binding::new(&mut o.o);
+	pub fn new(o: &Vao<I>) -> Self {
+		let _b = Binding::new(&o.o);
 		Self { _b, d: Dummy }
 	}
 	pub fn Draw(&self, args: impl DrawArgs) {

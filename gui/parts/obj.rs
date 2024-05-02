@@ -46,7 +46,7 @@ impl Base {
 }
 
 bitflags! {
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct State: u32 {
 	const BATCH_RESIZED = 0x2;
 	const XYZW = 0x10;

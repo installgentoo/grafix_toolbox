@@ -1,6 +1,7 @@
 macro_rules! element_lock {
 	($($t: ident),+) => {
 		pub mod Lock {
+			#![allow(dead_code)]
 			$(impl super::$t {
 				pub fn lock<'s, 'l, 'r>(&'s mut self, r: &'r mut super::RenderLock<'l>) -> $t<'s, 'l, 'r>
 				{

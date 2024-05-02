@@ -48,7 +48,7 @@ pub struct RenderLock<'l> {
 }
 impl<'l> RenderLock<'l> {
 	pub fn theme(&self) -> &'l Theme {
-		unsafe { &*(&self.r.theme as *const _) }
+		unsafe { mem::transmute(&self.r.theme) }
 	}
 	pub fn clip(&mut self, pos: Vec2, size: Vec2) -> ClipLock<'l> {
 		let Self { clip, .. } = self;
@@ -157,8 +157,7 @@ impl Renderer {
 					match (l.func)(e, true, *mouse_pos) {
 						Accept => return false,
 						Reject => return true,
-						DropFocus => *focus = 0,
-						CancelFocus => {
+						DropFocus => {
 							*focus = 0;
 							return false;
 						}
@@ -188,24 +187,16 @@ impl Renderer {
 					grabbed_focus |= focused;
 
 					if refocus && !focused {
-						match (l.func)(&OfferFocus, false, *mouse_pos) {
-							Accept => {
-								defocus(focus);
-								*focus = this_id;
-							}
-							DropFocus => {
-								defocus(focus);
-								*focus = 0;
-							}
-							_ => (),
+						if let Accept = (l.func)(&OfferFocus, false, *mouse_pos) {
+							defocus(focus);
+							*focus = this_id;
 						}
 					}
 					let focused = id_match(focus, l);
 					match (l.func)(e, focused, *mouse_pos) {
 						Accept => return false,
 						Reject => return true,
-						DropFocus => *focus = 0,
-						CancelFocus => {
+						DropFocus => {
 							*focus = 0;
 							return false;
 						}
