@@ -16,8 +16,8 @@ pub struct TextEdit {
 }
 impl<'s: 'l, 'l> Lock::TextEdit<'s, 'l, '_> {
 	pub fn draw(self, pos: Vec2, size: Vec2, scale: f32, readonly: bool) {
-		const SCR_PAD: f32 = 0.02;
-		const CUR_PAD: f32 = 0.01;
+		let SCR_PAD = 0.02;
+		let CUR_PAD = 0.01;
 		let Self { s, r, t } = self;
 
 		let font = &t.font;

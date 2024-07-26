@@ -92,12 +92,12 @@ pub mod TexState {
 		if *tex != obj {
 			*tex = obj;
 			DEBUG!("Binding GL {} {obj} to unit {u}", type_name::<Texture<T>>());
-			GLCheck!(glBindTextureUnit(T::TYPE, u, obj));
+			GL!(glBindTextureUnit(T::TYPE, u, obj));
 		}
 		if *samp != s {
 			*samp = s;
 			DEBUG!("Binding GL {} {s} to unit {u}", type_name::<SamplObj>());
-			GLCheck!(gl::BindSampler(u, s));
+			GL!(gl::BindSampler(u, s));
 		}
 		DEBUG!("GL texture units: {units:?}");
 		u
@@ -138,7 +138,7 @@ pub mod TexState {
 		*tex = obj;
 		let u = empty;
 		DEBUG!("Binding GL {} {obj} to unit {u}", type_name::<Texture<T>>());
-		GLCheck!(glBindTextureUnit(T::TYPE, u, obj));
+		GL!(glBindTextureUnit(T::TYPE, u, obj));
 		DEBUG!("GL texture units: {units:?}");
 		u
 	}

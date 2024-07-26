@@ -4,19 +4,19 @@
 layout(location = 0) in vec3 Position;
 uniform mat4 MVPMat;
 uniform mat4 ModelViewMat;
-out vec3 glTexUV;
+out vec3 glUV;
 
 void main() {
 	vec4 pos = vec4(Position, 1);
 	gl_Position = MVPMat * pos;
-	glTexUV = Position;
+	glUV = Position;
 }
 
 
 //--PIX ps_skybox
 
 
-in vec3 glTexUV;
+in vec3 glUV;
 layout(location = 0) out vec4 glFragColor;
 uniform samplerCube skybox_tex;
 uniform float iExposure;
@@ -24,7 +24,7 @@ uniform float iExposure;
 const float gamma = 2.2;
 
 void main() {
-	vec3 c = textureLod(skybox_tex, glTexUV, 0).rgb;
+	vec3 c = textureLod(skybox_tex, glUV, 0).rgb;
 	c = 1 - exp(-c * iExposure);
 	c = pow(c, vec3(1. / gamma));
 	glFragColor = vec4(c, 1);
@@ -42,7 +42,7 @@ uniform mat4 ModelViewMat;
 uniform mat3 NormalViewMat;
 uniform mat3 NormalMat;
 out vec3 glPos;
-out vec2 glTexUV;
+out vec2 glUV;
 out vec3 glNormal;
 out vec3 glNormalWorld;
 
@@ -50,7 +50,7 @@ void main() {
 	vec4 pos = vec4(Position, 1);
 	gl_Position = MVPMat * pos;
 	glPos = (ModelViewMat * pos).xyz;
-	glTexUV = TexCoord;
+	glUV = TexCoord;
 	glNormal = NormalViewMat * Normal;
 	glNormalWorld = NormalMat * Normal;
 }
@@ -60,7 +60,7 @@ void main() {
 
 
 in vec3 glPos;
-in vec2 glTexUV;
+in vec2 glUV;
 in vec3 glNormal;
 in vec3 glNormalWorld;
 layout(location = 0) out vec4 glFragColor;

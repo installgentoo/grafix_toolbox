@@ -67,7 +67,7 @@ impl Objects {
 		&mut self, aspect: Vec2, idxs: &mut Vec<u16>, xyzw: &mut Vec<f16>, rgba: &mut Vec<u8>, uv: &mut Vec<f16>,
 	) -> (Option<usize>, Option<usize>, Option<usize>, Option<usize>) {
 		let Self { batches, objs, .. } = self;
-		const MAXIDX: usize = u16::MAX as usize;
+		let MAXIDX = const { u16::MAX as usize };
 
 		batches
 			.iter_mut()

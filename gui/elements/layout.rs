@@ -8,8 +8,8 @@ pub struct Layout {
 }
 impl<'s: 'l, 'l> Lock::Layout<'s, 'l, '_> {
 	pub fn draw(self, content: impl FnOnce(&mut RenderLock<'l>, Crop)) {
-		const TOP_PAD: f32 = 0.05;
-		const CRN_PAD: f32 = 0.04;
+		let TOP_PAD = 0.05;
+		let CRN_PAD = 0.04;
 		let Self { s, r, t } = self;
 
 		let id = LUID(s);

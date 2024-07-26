@@ -5,7 +5,7 @@ pub trait Tuple2<R> {
 }
 impl<R, A, B> Tuple2<R> for (A, B)
 where
-	(R, R): Cast<(A, B)>,
+	(R, R): Cast<Self>,
 {
 	fn get(self) -> (R, R) {
 		<_>::to(self)
@@ -25,7 +25,7 @@ pub trait Tuple3<R> {
 }
 impl<R, A, B, C> Tuple3<R> for (A, B, C)
 where
-	(R, R, R): Cast<(A, B, C)>,
+	(R, R, R): Cast<Self>,
 {
 	fn get(self) -> (R, R, R) {
 		<_>::to(self)
@@ -45,7 +45,7 @@ pub trait Tuple4<R> {
 }
 impl<R, A, B, C, D> Tuple4<R> for (A, B, C, D)
 where
-	(R, R, R, R): Cast<(A, B, C, D)>,
+	(R, R, R, R): Cast<Self>,
 {
 	fn get(self) -> (R, R, R, R) {
 		<_>::to(self)
@@ -65,7 +65,7 @@ pub trait TupleA<R, const N: usize> {
 }
 impl<R, T, const N: usize> TupleA<R, N> for [T; N]
 where
-	[R; N]: Cast<[T; N]>,
+	[R; N]: Cast<Self>,
 {
 	fn get(self) -> [R; N] {
 		<_>::to(self)

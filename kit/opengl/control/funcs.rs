@@ -10,7 +10,7 @@ macro_rules! APPLICATOR {
 		impl<$($t: GLPrimitive),+> $n<$($t),+> for ($($t),+) {
 			fn apply(&self, func: unsafe fn($($t),+)) {
 				let ($($t),+) = self;
-				GLCheck!(func($(*$t),+));
+				GL!(func($(*$t),+));
 			}
 		}
 	};
@@ -54,7 +54,7 @@ impl $n {
 
 	pub fn Save() {
 		debug_assert!({
-			let (valid, _) = states_map().get_mut(&($m::$n as *const () as usize)).expect(&format!("GL::{}::Save() saving default state", stringify!($n)));
+			let (valid, _) = states_map().get_mut(&($m::$n as *const () as usize)).expect(&format!("GL::{}::Save() with default state, nothing to save", stringify!($n)));
 			*valid = true;
 			true
 		});
@@ -86,10 +86,10 @@ impl $n {
 
 pub trait State {
 	fn gl_enable(t: GLenum) {
-		GLCheck!(gl::Enable(t))
+		GL!(gl::Enable(t))
 	}
 	fn gl_disable(t: GLenum) {
-		GLCheck!(gl::Disable(t))
+		GL!(gl::Disable(t))
 	}
 }
 
@@ -109,10 +109,10 @@ macro_rules! SWITCH {
 	($n: ident, $e: expr, $d: expr, $i: literal) => {
 		impl State for $n {
 			fn gl_enable(_: GLenum) {
-				GLCheck!($e)
+				GL!($e)
 			}
 			fn gl_disable(_: GLenum) {
-				GLCheck!($d)
+				GL!($d)
 			}
 		}
 		SWITCH_IMPL!($n, $i);

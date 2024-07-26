@@ -22,12 +22,12 @@ impl ShaderObj {
 		};
 
 		let o = obj.obj();
-		GLCheck!(gl::ShaderSource(o, 1, &src.as_ptr(), ptr::null()));
-		GLCheck!(gl::CompileShader(o));
+		GL!(gl::ShaderSource(o, 1, &src.as_ptr(), ptr::null()));
+		GL!(gl::CompileShader(o));
 		let mut status: i32 = 0;
-		GLCheck!(gl::GetShaderiv(o, gl::COMPILE_STATUS, &mut status));
+		GL!(gl::GetShaderiv(o, gl::COMPILE_STATUS, &mut status));
 		if GLbool::to(status) != gl::TRUE {
-			Err(format!("Error compiling {} shader {name:?}\n{}", obj.name(), parsing::print_shader_log(o)))?
+			Err(format!("Error compiling {} shader {name:?}\n\n{}", obj.name(), parsing::print_shader_log(o)))?
 		}
 
 		Ok(obj)

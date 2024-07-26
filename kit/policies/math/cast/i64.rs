@@ -72,13 +72,13 @@ impl Cast<f16> for i64 {
 }
 impl Cast<f32> for i64 {
 	fn to(v: f32) -> Self {
-		ASSERT!(v.trunc() >= i64::min_value() as f32 && v.trunc() <= i64::max_value() as f32, "Error casting {v} to i64");
+		ASSERT!(v.trunc() >= i64::MIN as f32 && v.trunc() <= i64::MAX as f32, "Error casting {v} to i64");
 		unsafe { v.to_int_unchecked() }
 	}
 }
 impl Cast<f64> for i64 {
 	fn to(v: f64) -> Self {
-		ASSERT!(v.trunc() >= i64::min_value() as f64 && v.trunc() <= i64::max_value() as f64, "Error casting {v} to i64");
+		ASSERT!(v.trunc() >= i64::MIN as f64 && v.trunc() <= i64::MAX as f64, "Error casting {v} to i64");
 		unsafe { v.to_int_unchecked() }
 	}
 }

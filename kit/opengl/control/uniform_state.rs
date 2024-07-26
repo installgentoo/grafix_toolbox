@@ -105,7 +105,7 @@ impl<T: ShdBuffType> UniformState<T> {
 		*buf = obj;
 		let l = empty;
 		DEBUG!("Binding GL {} buffer {obj} to binding location {l}", type_name::<T>());
-		GLCheck!(gl::BindBufferBase(T::TYPE, l, obj));
+		GL!(gl::BindBufferBase(T::TYPE, l, obj));
 		DEBUG!("GL buffer binding locations: {locs:?}");
 		l
 	}
@@ -115,14 +115,14 @@ impl<T: ShdBuffType> UniformState<T> {
 		let Loc { buf, bind_count } = locs.at_mut(l);
 		if l >= *len {
 			FAIL!(
-				"Failed to bind GL {} buffer {obj} to binding location {l}, not enough locations({len} available)",
+				"Cannot bind GL {} buffer {obj} to binding location {l}, not enough locations({len} available)",
 				type_name::<T>()
 			);
 			return false;
 		}
 
 		if *buf != 0 && *buf != obj {
-			DEBUG!("Failed to bind GL {} buffer {obj} to binding location {l}, already occupied by {buf}", type_name::<T>());
+			DEBUG!("Cannot bind GL {} buffer {obj} to binding location {l}, already occupied by {buf}", type_name::<T>());
 			return false;
 		}
 
@@ -134,7 +134,7 @@ impl<T: ShdBuffType> UniformState<T> {
 
 		*buf = obj;
 		DEBUG!("Binding GL {} buffer {obj} to binding location {l}", type_name::<T>());
-		GLCheck!(gl::BindBufferBase(T::TYPE, l, obj));
+		GL!(gl::BindBufferBase(T::TYPE, l, obj));
 		DEBUG!("GL buffer binding locations: {locs:?}");
 		true
 	}

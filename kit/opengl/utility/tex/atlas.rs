@@ -7,7 +7,7 @@ where
 	K: fmt::Debug + Clone + Eq + hash::Hash,
 {
 	if tiles.is_empty() {
-		FAIL!("Vector supplied to atlas is empty");
+		FAIL!("Empty vector supplied to atlas");
 		return Def();
 	}
 

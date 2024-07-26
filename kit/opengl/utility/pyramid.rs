@@ -60,17 +60,17 @@ pub fn collapse(mut pyramid: Vec<Tex2d<RGBA, f32>>) -> Tex2d<RGBA, f32> {
 
 SHADER!(
 	ps_pyramid___sub,
-	r"in vec2 glTexUV;
+	r"in vec2 glUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D tex1, tex2;
 
-	void main() { glFragColor = texture(tex1, glTexUV) - texture(tex2, glTexUV); }"
+	void main() { glFragColor = texture(tex1, glUV) - texture(tex2, glUV); }"
 );
 SHADER!(
 	ps_pyramid___add,
-	r"in vec2 glTexUV;
+	r"in vec2 glUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D tex1, tex2;
 
-	void main() { glFragColor = texture(tex1, glTexUV) + texture(tex2, glTexUV); }"
+	void main() { glFragColor = texture(tex1, glUV) + texture(tex2, glUV); }"
 );

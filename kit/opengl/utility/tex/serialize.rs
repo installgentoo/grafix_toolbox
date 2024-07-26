@@ -30,7 +30,7 @@ impl<S: TexSize, F: TexFmt> Image<S, F> {
 		let w: [_; 4] = w.to_le_bytes();
 		let h: [_; 4] = h.to_le_bytes();
 		let (_, d, _) = unsafe { data.align_to() };
-		[&w, &h, d].concat().into_boxed_slice()
+		[&w, &h, d].concat().into()
 	}
 	pub fn from_bytes(v: &[u8]) -> Self {
 		let w = u32::from_le_bytes(v[0..4].try_into().valid());

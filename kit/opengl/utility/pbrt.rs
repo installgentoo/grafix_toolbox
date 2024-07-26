@@ -142,23 +142,23 @@ SHADER!(
 	vs_env__gen,
 	r"layout(location = 0) in vec3 Position;
 	uniform mat4 MVPMat;
-	out vec3 glTexUV;
+	out vec3 glUV;
 
 	void main() {
 		vec4 pos = vec4(Position, 1);
 		gl_Position = MVPMat * pos;
-		glTexUV = Position;
+		glUV = Position;
 	}"
 );
 
 SHADER!(
 	ps_env__unwrap_equirect,
-	r"in vec3 glTexUV;
+	r"in vec3 glUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D equirect_tex;
 
 	void main() {
-		vec3 v = normalize(glTexUV);
+		vec3 v = normalize(glUV);
 		vec2 uv = vec2(atan(v.z, v.x), asin(v.y)) * vec2(.1591, .3183) + .5;
 		vec3 c = texture(equirect_tex, uv).rgb;
 		glFragColor = vec4(c, 1);
@@ -167,7 +167,7 @@ SHADER!(
 
 SHADER!(
 	ps_env__gen_irradiance,
-	r"in vec3 glTexUV;
+	r"in vec3 glUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform samplerCube env_cubetex;
 	uniform float iDelta;
@@ -175,7 +175,7 @@ SHADER!(
 	const float PI = 3.1415927;
 
 	void main() {
-		vec3 normal = normalize(glTexUV);
+		vec3 normal = normalize(glUV);
 		vec3 right = cross(vec3(0, 1, 0), normal);
 		vec3 up = cross(normal, right);
 
@@ -196,6 +196,7 @@ SHADER!(
 );
 
 const TRANSFORM: STR = r"
+	uniform uint iSamples;
 	const float PI_2 = 3.1415927 * 2;
 
 	float RadicalInverse_VdC(uint bits) {
@@ -228,17 +229,16 @@ const TRANSFORM: STR = r"
 
 SHADER!(
 	ps_env__gen_spec,
-	r"in vec3 glTexUV;
+	r"in vec3 glUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform samplerCube env_cubetex;
 	uniform float iRoughness;
-	uniform uint iSamples;
 	",
 	TRANSFORM,
 	r"
 	void main()
 		{
-		vec3 N = normalize(glTexUV);
+		vec3 N = normalize(glUV);
 
 		float totalWeight = 0;
 		vec3 prefilteredColor = vec3(0);
@@ -261,9 +261,8 @@ SHADER!(
 
 SHADER!(
 	ps_env__gen_lut,
-	r"in vec2 glTexUV;
+	r"in vec2 glUV;
 	layout(location = 0) out vec4 glFragColor;
-	uniform uint iSamples;
 	",
 	TRANSFORM,
 	r"
@@ -312,5 +311,5 @@ SHADER!(
 		return vec2(A, B);
 	}
 
-	void main() { glFragColor = vec4(IntegrateBRDF(glTexUV.x, glTexUV.y), 0, 1); }"
+	void main() { glFragColor = vec4(IntegrateBRDF(glUV.x, glUV.y), 0, 1); }"
 );

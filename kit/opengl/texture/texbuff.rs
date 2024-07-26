@@ -17,7 +17,7 @@ impl<S: TexSize, F: TexFmt, B: Buffer> TexBuffer<'_, S, F, B> {
 			buf.obj,
 			tex.obj
 		);
-		GLCheck!(glTextureBuffer(GL_TEXTURE_BUFFER::TYPE, tex.obj, fmt, buf.obj));
+		GL!(glTextureBuffer(GL_TEXTURE_BUFFER::TYPE, tex.obj, fmt, buf.obj));
 		let (b, f, s) = (Dummy, Dummy, Dummy);
 		let unit = Cell::new(0);
 		Self { tex, unit, b, f, s }

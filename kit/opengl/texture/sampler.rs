@@ -4,8 +4,8 @@ use super::*;
 macro_rules! Sampler {
 ($(($n: expr, $v: expr)),+) => {{
 	use $crate::GL::{macro_uses::sampler_use::id, gl::*};
-	const _ID: u32 = id(&[$($n, $v),+]);
-	Sampler::pooled(_ID, &[$(($n, $v)),+])
+	let id = const { id(&[$($n, $v),+]) };
+	Sampler::pooled(id, &[$(($n, $v)),+])
 }};
 }
 
@@ -56,18 +56,18 @@ trait SamplerArg {
 }
 impl SamplerArg for GLenum {
 	fn apply(&self, obj: u32, name: GLenum) {
-		GLCheck!(gl::SamplerParameteri(obj, name, i32(*self)));
+		GL!(gl::SamplerParameteri(obj, name, i32(*self)));
 	}
 }
 impl SamplerArg for f32 {
 	fn apply(&self, obj: u32, name: GLenum) {
-		GLCheck!(gl::SamplerParameterf(obj, name, *self));
+		GL!(gl::SamplerParameterf(obj, name, *self));
 	}
 }
 impl SamplerArg for Vec4 {
 	fn apply(&self, obj: u32, name: GLenum) {
 		let s = [*self];
-		GLCheck!(gl::SamplerParameterfv(obj, name, s.as_ptr() as *const f32));
+		GL!(gl::SamplerParameterfv(obj, name, s.as_ptr() as *const f32));
 	}
 }
 

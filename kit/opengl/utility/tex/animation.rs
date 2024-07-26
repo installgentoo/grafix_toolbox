@@ -16,7 +16,7 @@ impl<'a, S: TexSize> Animation<'a, S> {
 			.lines()
 			.filter_map(|l| {
 				if "d " == slice((l, 2)) {
-					time += OR_DEFAULT!(slice((2, l)).parse::<f32>(), "Animation {anim_desc} has invalid format, {}");
+					time += slice((2, l)).parse::<f32>().explain_err(|| format!("Malformed animation file {anim_desc:?}")).warn();
 					None
 				} else {
 					let t = atlas.load(&format!("{name}/{l}"));

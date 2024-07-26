@@ -92,7 +92,7 @@ impl Batch {
 					}
 
 					if new_size > *size {
-						const O: f16 = f16::ZERO;
+						let O = f16::ZERO;
 						let (at, s) = ulVec2((start, new_size - *size));
 						xyzw.splice(at * 4..at * 4, vec![O; s * 4]);
 						rgba.splice(at * 4..at * 4, vec![0; s * 4]);

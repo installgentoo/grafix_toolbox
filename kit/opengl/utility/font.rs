@@ -46,7 +46,7 @@ impl Font {
 			let _ = ser::SERDE::ToVec(&font).map(|v| FS::Save::Archive((cache, v)));
 			Ok(font)
 		})();
-		OR_DEFAULT!(font, "Could not load font {name}: {}")
+		font.explain_err(|| format!("Cannot load font {name:?}")).warn()
 	}
 	#[cfg(feature = "sdf")]
 	pub fn new(font_data: &[u8], alphabet: &str) -> Res<Self> {
@@ -115,7 +115,7 @@ impl Font {
 			.collect_vec();
 
 		let (mut atlas, _rejects) = GL::atlas::pack_into_atlas::<_, _, RED, _>(glyphs, GL::MAX_TEXTURE_SIZE(), GL::MAX_TEXTURE_SIZE());
-		ASSERT!(_rejects.is_empty(), "Couldn't fit font into system texture size");
+		ASSERT!(_rejects.is_empty(), "Cannot fit font into biggest gpu texture");
 
 		let mut tex = None;
 		let h = topline - bottomline;

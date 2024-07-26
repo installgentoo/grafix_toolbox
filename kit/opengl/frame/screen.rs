@@ -4,13 +4,13 @@ use crate::math::*;
 impl Frame for Window {
 	fn ClearColor(&self, args: impl ClearArgs) {
 		let (attach, c) = args.get();
-		GLCheck!(glClearFramebuff(0, gl::COLOR, attach, c.as_ptr()));
+		GL!(glClearFramebuff(0, gl::COLOR, attach, c.as_ptr()));
 	}
 	fn ClearDepth<T>(&self, d: T)
 	where
 		f32: Cast<T>,
 	{
-		GLCheck!(glClearFramebuff(0, gl::DEPTH, 0, &f32(d) as *const f32));
+		GL!(glClearFramebuff(0, gl::DEPTH, 0, &f32(d) as *const f32));
 	}
 	fn size(&self) -> uVec2 {
 		self.info().size

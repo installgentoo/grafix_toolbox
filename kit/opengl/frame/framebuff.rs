@@ -15,7 +15,7 @@ impl Framebuffer {
 	}
 	pub fn Clear(&self, typ: GLenum, args: impl ClearArgs) {
 		let (attach, c) = args.get();
-		GLCheck!(glClearFramebuff(self.obj, typ, attach, c.as_ptr()));
+		GL!(glClearFramebuff(self.obj, typ, attach, c.as_ptr()));
 	}
 }
 
@@ -24,11 +24,11 @@ pub trait FramebuffArg {
 }
 impl<S, F, T: TexType> FramebuffArg for (&Tex<S, F, T>, GLenum) {
 	fn apply(self, obj: u32) {
-		GLCheck!(glFramebuffTex(obj, self.0.obj(), self.1));
+		GL!(glFramebuffTex(obj, self.0.obj(), self.1));
 	}
 }
 impl FramebuffArg for (&Renderbuffer, GLenum) {
 	fn apply(self, obj: u32) {
-		GLCheck!(glFramebuffRenderbuff(obj, self.0.obj, self.1));
+		GL!(glFramebuffRenderbuff(obj, self.0.obj, self.1));
 	}
 }

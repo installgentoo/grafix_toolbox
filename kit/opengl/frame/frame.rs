@@ -42,7 +42,7 @@ impl<S: TexSize, F: TexFmt> RenderTgt<S, F> {
 		let mut fbo = Fbo::new(args);
 		let TexParam { w, h, .. } = fbo.tex.param;
 		let depth = Renderbuffer::new();
-		GLCheck!(glRenderbuffStorage(depth.obj, 1, gl::DEPTH_COMPONENT, w, h));
+		GL!(glRenderbuffStorage(depth.obj, 1, gl::DEPTH_COMPONENT, w, h));
 		fbo.fb = fbo.fb.attach((&depth, gl::DEPTH_ATTACHMENT));
 		Self { fbo, depth }
 	}
@@ -55,7 +55,7 @@ impl<S: TexSize, F: TexFmt> Frame for RenderTgt<S, F> {
 	where
 		f32: Cast<T>,
 	{
-		GLCheck!(glClearFramebuff(self.fbo.fb.obj, gl::DEPTH, 0, &f32(d) as *const f32));
+		GL!(glClearFramebuff(self.fbo.fb.obj, gl::DEPTH, 0, &f32(d) as *const f32));
 	}
 	fn size(&self) -> uVec2 {
 		self.fbo.size()

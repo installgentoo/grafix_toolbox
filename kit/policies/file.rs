@@ -57,13 +57,16 @@ pub mod Save {
 
 						if let Ok(mut file) = file {
 							let data = if let ComprW(l) = operation {
-								OR_DEFAULT!(zstd::stream::encode_all(&data[..], l)).into()
+								zstd::stream::encode_all(&data[..], l)
+									.explain_err(|| format!("Cannot encode data for file {name:?}"))
+									.warn()
+									.into()
 							} else {
 								data
 							};
 
-							let _ = file.write_all(&data).await.map_err(|_| FAIL!("Couldn't write {name:?}"));
-							let _ = file.sync_all().await.map_err(|_| FAIL!("Couldn't sync {name:?}"));
+							file.write_all(&data).await.explain_err(|| format!("Cannot write {name:?}")).warn();
+							file.sync_all().await.explain_err(|| format!("Cannot sync {name:?}")).warn();
 						} else {
 							let name: PathBuf = (*name).into();
 							FAIL!("{:?}", fmt_err(file, &name));
@@ -77,9 +80,7 @@ pub mod Save {
 			});
 
 			logging::Logger::shutdown_hook(move || {
-				sender()
-					.send(("".into(), MessageType::Close, vec![].into()))
-					.expect("E| Failed to close async write system");
+				sender().send(("".into(), MessageType::Close, vec![].into())).expect("E| Cannot close async write system");
 				task::block_on(handle);
 			});
 
@@ -119,7 +120,7 @@ pub mod Lazy {
 	}
 	pub fn Archive(p: impl Into<Astr>) -> impl Stream<Item = Vec<u8>> {
 		let p = p.into();
-		lazy_read(p.clone(), read_file).map(move |data| OR_DEFAULT!(zstd::stream::decode_all(&data[..]), "Failed to decode archive {p:?}: {}"))
+		lazy_read(p.clone(), read_file).map(move |data| zstd::stream::decode_all(&data[..]).explain_err(|| format!("Cannot decode archive {p:?}")).warn())
 	}
 }
 
@@ -133,7 +134,7 @@ pub mod Watch {
 	}
 	pub fn Archive(p: impl Into<Astr>) -> impl Stream<Item = Vec<u8>> {
 		let p = p.into();
-		watch_file(p.clone(), read_file).map(move |data| OR_DEFAULT!(zstd::stream::decode_all(&data[..]), "Failed to decode archive {p:?}: {}"))
+		watch_file(p.clone(), read_file).map(move |data| zstd::stream::decode_all(&data[..]).explain_err(|| format!("Cannot decode archive {p:?}")).warn())
 	}
 }
 
@@ -142,7 +143,7 @@ fn lazy_read<T: Default, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader:
 		let p = PathBuf::from(&*p.into()).into();
 		match loader(p).await {
 			Ok(file) => file,
-			e @ Err(_) => OR_DEFAULT!(e),
+			e @ Err(_) => e.warn(),
 		}
 	})
 }
@@ -214,10 +215,10 @@ async fn read_text(p: Arc<Path>) -> Res<String> {
 }
 
 fn fmt_err<T>(r: Result<T, impl std::fmt::Display>, p: &Path) -> Res<T> {
-	r.map_err(|e| format!("Could not open file {p:?} - {e}"))
+	r.explain_err(|| format!("Cannot open file {p:?}"))
 }
 
-const FAILED_WRITE: STR = "E| Failed to send write";
+const FAILED_WRITE: STR = "E| Cannot send write";
 
 #[cfg(not(feature = "zstd"))]
 mod zstd {

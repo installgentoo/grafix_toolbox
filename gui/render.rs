@@ -1,5 +1,31 @@
 use super::*;
 
+macro_rules! storage {
+	($($t: ident),+) => {
+		#[derive(Default, Debug)]
+		pub struct ElementStorage {
+			$($t: HashMap<u32, $t>,)+
+		}
+		impl ElementStorage {
+			$(pub fn $t(&mut self, id: u32) -> &mut $t {
+				self.$t.entry(id).or_insert_with(|| Def())
+			})+
+		}
+		impl Renderer {
+			$(pub fn $t(&mut self, id: u32) -> &mut $t {
+				self.storage.$t(id)
+			})+
+		}
+		impl<'l> RenderLock<'l> {
+			$(pub fn $t(&mut self, id: u32) -> Lock::$t<'static, 'l, '_> {
+				let s = unsafe { mem::transmute::<_, &mut ElementStorage>(&mut self.r.storage) };
+				s.$t(id).lock(self)
+			})+
+		}
+	}
+}
+storage!(Button, HyperText, Label, Layout, LineEdit, Selector, Slider, TextEdit);
+
 macro_rules! DRAWABLE {
 	($t: ty, $draw_spec: ident) => {
 		impl<'l> DrawablePrimitive<'l> for $t {
@@ -126,15 +152,15 @@ pub struct Renderer {
 	to_clip: Vec2,
 	focus: LogicId,
 	mouse_pos: Vec2,
-	pub theme: Theme,
-	pub(super) storage: ElementStorage,
+	theme: Theme,
+	storage: ElementStorage,
 }
 impl Renderer {
 	pub fn new(theme: Theme) -> Self {
 		Self { theme, ..Def() }
 	}
 	pub fn lock<'l>(self) -> RenderLock<'l> {
-		const L: f32 = 10_000_000_000.;
+		let L = 10_000_000_000.;
 		RenderLock {
 			r: self,
 			clip: vec![((-L, -L), (L, L))],
@@ -269,7 +295,7 @@ impl<T: spec::Buffer, D: Copy> Storage<T, D> {
 			let Self { obj, ref buff, size } = self;
 			let new_size = buff.len();
 			if new_size <= *size && new_size * 2 > *size {
-				obj.MapRangeMut((from, new_size - from, gl::MAP_INVALIDATE_RANGE_BIT)).mem().copy_from_slice(&buff[from..]);
+				obj.MapMut((from..new_size, gl::MAP_INVALIDATE_RANGE_BIT)).mem().copy_from_slice(&buff[from..]);
 				return;
 			}
 

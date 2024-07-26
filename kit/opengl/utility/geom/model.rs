@@ -23,7 +23,7 @@ impl Model {
 				ignore_lines: true,
 			},
 		)
-		.map_err(|e| format!("Can't load models in {file}, {e}"))?;
+		.explain_err(|| format!("Cannot load models from {file:?}"))?;
 		let models = models
 			.into_iter()
 			.map(|m| {

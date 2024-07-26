@@ -1,28 +1,8 @@
 #[macro_export]
 macro_rules! LOGGER {
 	($f: path, $l: ident) => {
-		let ___errors_logging_main_logger_sink = logging::Logger::new($f, logging::Level::$l);
+		let ___errors_logging_main_logger_sink = logging::Logger::initialize($f, logging::Level::$l);
 	};
-}
-
-#[macro_export]
-macro_rules! OR_DEFAULT {
-	($e: expr) => { EXPECT_OR_DEF_IMPL!($e, "{}") };
-	($e: expr, $($t: tt)+) => { EXPECT_OR_DEF_IMPL!($e, $($t)+) };
-}
-#[macro_export]
-macro_rules! EXPECT_OR_DEF_IMPL {
-	($e: expr, $($t: tt)+) => {{
-		let e = $e;
-		use logging::UniformUnwrapOrDefault;
-		if e.uni_is_err() {
-			let (v, e) = e.uni_err();
-			FAIL!($($t)+, e);
-			v
-		} else {
-			unsafe{ e.unwrap_unchecked() }
-		}
-	}};
 }
 
 #[cfg(not(debug_assertions))]

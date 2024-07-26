@@ -67,19 +67,19 @@ macro_rules! impl_tex {
 					(NewArgs1) => {{
 						let (levels, w) = args.get1();
 						check(w, levels);
-						GLCheck!(glTextureStorage1D(<$t>::TYPE, tex.obj, levels, fmt, w));
+						GL!(glTextureStorage1D(<$t>::TYPE, tex.obj, levels, fmt, w));
 						TexParam { w, h: 1, d: 1, l: levels }
 					}};
 					(NewArgs2) => {{
 						let (levels, w, h) = args.get2();
 						check((w, h), levels);
-						GLCheck!(glTextureStorage2D(<$t>::TYPE, tex.obj, levels, fmt, w, h));
+						GL!(glTextureStorage2D(<$t>::TYPE, tex.obj, levels, fmt, w, h));
 						TexParam { w, h, d: 1, l: levels }
 					}};
 					(NewArgs3) => {{
 						let (levels, w, h, d) = args.get3();
 						check((w, h, d), levels);
-						GLCheck!(glTextureStorage3D(<$t>::TYPE, tex.obj, levels, fmt, w, h, d));
+						GL!(glTextureStorage3D(<$t>::TYPE, tex.obj, levels, fmt, w, h, d));
 						TexParam { w, h, d, l: levels }
 					}};
 				}
@@ -103,17 +103,17 @@ macro_rules! impl_tex {
 					(UpdArgs1) => {{
 						let (data, lvl, x, len) = args.geta1();
 						let (w, _, _) = mip_size(lvl, len);
-						GLCheck!(glTextureSubImage1D(<$t>::TYPE, self.tex.obj, lvl, x, w, RS::TYPE, RF::TYPE, data));
+						GL!(glTextureSubImage1D(<$t>::TYPE, self.tex.obj, lvl, x, w, RS::TYPE, RF::TYPE, data));
 					}};
 					(UpdArgs2) => {{
 						let (data, lvl, x, y, len) = args.geta2();
 						let (w, h, _) = mip_size(lvl, len);
-						GLCheck!(glTextureSubImage2D(<$t>::TYPE, self.tex.obj, lvl, x, y, w, h, RS::TYPE, RF::TYPE, data));
+						GL!(glTextureSubImage2D(<$t>::TYPE, self.tex.obj, lvl, x, y, w, h, RS::TYPE, RF::TYPE, data));
 					}};
 					(UpdArgs3) => {{
 						let (data, lvl, x, y, z, len) = args.geta3();
 						let (w, h, d) = mip_size(lvl, len);
-						GLCheck!(glTextureSubImage3D(<$t>::TYPE, self.tex.obj, lvl, x, y, z, w, h, d, RS::TYPE, RF::TYPE, data));
+						GL!(glTextureSubImage3D(<$t>::TYPE, self.tex.obj, lvl, x, y, z, w, h, d, RS::TYPE, RF::TYPE, data));
 					}};
 				}
 				tex_new!($arg_u);
@@ -127,7 +127,7 @@ impl<S, F, T: TexType> Tex<S, F, T> {
 	}
 	pub fn gen_mips(self) -> Self {
 		ASSERT!(self.param.l > 1, "Texture {} was allocated with a single mip level", self.tex.obj);
-		GLCheck!(glGenMipmaps(T::TYPE, self.tex.obj));
+		GL!(glGenMipmaps(T::TYPE, self.tex.obj));
 		self
 	}
 	pub fn Save<RS: TexSize, RF: TexFmt>(&self, lvl: u32) -> Box<[RF]> {
@@ -136,7 +136,7 @@ impl<S, F, T: TexType> Tex<S, F, T> {
 		let v = vec![Def(); size].into_boxed_slice();
 		let size = i32(size * type_size::<RF>());
 		GL::PixelStorePack::Set(1);
-		GLCheck!(glGetTexture(T::TYPE, self.tex.obj, i32(lvl), RS::TYPE, RF::TYPE, size, v.as_ptr() as *mut GLvoid));
+		GL!(glGetTexture(T::TYPE, self.tex.obj, i32(lvl), RS::TYPE, RF::TYPE, size, v.as_ptr() as *mut GLvoid));
 		v
 	}
 	pub fn Bind<'l>(&'l self, samp: &'l Sampler) -> TextureBinding<T> {

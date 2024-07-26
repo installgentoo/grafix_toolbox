@@ -58,7 +58,7 @@ impl Default for SdfGenerator {
 
 SHADER!(
 	ps_sdf__distance_transform_v,
-	r"in vec2 glTexUV;
+	r"in vec2 glUV;
 	layout(location = 0) out float glFragColor;
 	uniform sampler2D tex;
 	uniform int iChannel;
@@ -67,10 +67,10 @@ SHADER!(
 	uniform float iSide;
 
 	float get_tex(in vec2 p) {
-		if (1 == iChannel) return texture(tex, glTexUV + p).r;
-		if (2 == iChannel) return texture(tex, glTexUV + p).g;
-		if (3 == iChannel) return texture(tex, glTexUV + p).b;
-		return texture(tex, glTexUV + p).a;
+		if (1 == iChannel) return texture(tex, glUV + p).r;
+		if (2 == iChannel) return texture(tex, glUV + p).g;
+		if (3 == iChannel) return texture(tex, glUV + p).b;
+		return texture(tex, glUV + p).a;
 	}
 
 	void main() {
@@ -90,21 +90,21 @@ SHADER!(
 
 SHADER!(
 	ps_sdf__distance_transform,
-	r"in vec2 glTexUV;
+	r"in vec2 glUV;
 	layout(location = 0) out float glFragColor;
 	uniform sampler2D tex_i, tex_o;
 	uniform int iThickness;
 	uniform vec2 iStep;
 
 	void main() {
-		float d_i = texture(tex_i, glTexUV).r;
-		float d_o = texture(tex_o, glTexUV).r;
+		float d_i = texture(tex_i, glUV).r;
+		float d_o = texture(tex_o, glUV).r;
 
 		for (int _i = 1; _i < iThickness; ++_i) {
 			float i = float(_i);
 			vec2 o = i * iStep;
-			vec2 o_p = glTexUV + o;
-			vec2 o_m = glTexUV - o;
+			vec2 o_p = glUV + o;
+			vec2 o_m = glUV - o;
 			i /= iThickness;
 			d_o = min(d_o, min(length(vec2(i, texture(tex_o, o_p).r)), length(vec2(i, texture(tex_o, o_m).r))));
 			d_i = min(d_i, min(length(vec2(i, texture(tex_i, o_p).r)), length(vec2(i, texture(tex_i, o_m).r))));

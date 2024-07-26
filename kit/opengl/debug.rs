@@ -13,7 +13,7 @@ pub fn EnableDebugContext(level: DebugLevel) {
 		LEVEL = level as u32;
 	}
 	GLEnable!(DEBUG_OUTPUT, DEBUG_OUTPUT_SYNCHRONOUS);
-	GLCheck!(gl::DebugMessageCallback(Some(debug_gl_printer), ptr::addr_of!(LEVEL) as *const GLvoid));
+	GL!(gl::DebugMessageCallback(Some(debug_gl_printer), ptr::addr_of!(LEVEL) as *const GLvoid));
 }
 
 extern "system" fn debug_gl_printer(src: GLenum, typ: GLenum, id: u32, lvl: GLenum, _: i32, msg: *const i8, filter: *mut GLvoid) {

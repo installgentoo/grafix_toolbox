@@ -45,9 +45,9 @@ impl<S: TexSize> uImage<S> {
 	pub fn load(data: impl AsRef<[u8]>) -> Res<Self> {
 		let mut img = {
 			let data = data.as_ref();
-			Res(image::io::Reader::new(io::Cursor::new(data)).with_guessed_format())?
+			Res(image::ImageReader::new(io::Cursor::new(data)).with_guessed_format())?
 				.decode()
-				.map_err(|e| format!("Cannot decode image: {e:?}"))?
+				.explain_err(|| "Cannot decode image")?
 		};
 		image::imageops::flip_vertical_in_place(&mut img);
 		let ((w, h), data) = match S::TYPE {
@@ -77,7 +77,7 @@ impl<S: TexSize> uImage<S> {
 			_ => unreachable!(),
 		};
 		if let Err(e) = image::save_buffer(name, &self.data, self.w, self.h, t) {
-			FAIL!("Couldn't save image {:?}", e);
+			FAIL!("Cannot save image {e:?}");
 		}
 	}
 }
@@ -86,8 +86,8 @@ impl<S: TexSize> uImage<S> {
 impl Image<RGB, f32> {
 	pub fn load(data: impl AsRef<[u8]>) -> Res<Self> {
 		let img = io::BufReader::new(io::Cursor::new(data.as_ref()));
-		let img = image::codecs::hdr::HdrDecoder::new(img).map_err(|e| format!("Cannot decode hdr image: {e:?}"))?;
-		let mut img = image::DynamicImage::from_decoder(img).map_err(|e| format!("Cannot decode hdr pixels: {e:?}"))?;
+		let img = image::codecs::hdr::HdrDecoder::new(img).explain_err(|| format!("Cannot decode hdr image"))?;
+		let mut img = image::DynamicImage::from_decoder(img).explain_err(|| format!("Cannot decode hdr pixels"))?;
 		image::imageops::flip_vertical_in_place(&mut img);
 		let img = img.into_rgb32f();
 		let ((w, h), data) = (img.dimensions(), img.pixels().flat_map(|image::Rgb(p)| p).copied().collect());

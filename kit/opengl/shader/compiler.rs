@@ -2,8 +2,9 @@ use super::{object::*, parsing::*, *};
 use GL::Fence;
 
 pub fn compiler(data_rx: Receiver<ShaderTask>, res_sn: Sender<(ShdResult, Fence)>) {
-	let mut sources: HashMap<Str, ShdState> = Def();
+	let mut includes: String = Def();
 	let mut files: Vec<Lazy<Vec<ShdSrc>>> = Def();
+	let mut sources: HashMap<Str, ShdState> = Def();
 	let mut watched: HashMap<Str, Vec<ShdName>> = Def();
 
 	while let Ok(msg) = data_rx.recv() {
@@ -11,11 +12,12 @@ pub fn compiler(data_rx: Receiver<ShaderTask>, res_sn: Sender<(ShdResult, Fence)
 			f
 		}
 		let send = coerce(|name: ShdName, s, f: &mut [_]| {
-			let prog = compile(s, f, &name);
-			let _ = res_sn.send((ShdResult { name, prog }, Fence::new())).map_err(|e| ERROR!(e));
+			let prog = compile(&includes, s, f, &name).map_err(|e| adjust_log(e, -i32(includes.lines().count())));
+			res_sn.send((ShdResult { name, prog }, Fence::new())).fail();
 		});
 
 		match msg {
+			Includes(i) => includes = parse_includes(i).warn(),
 			Watch(name) => name.iter().for_each(|n| watched.entry(n.clone()).or_default().push(name.clone())),
 			Forget(name) => name.iter().for_each(|n| {
 				let w = watched.get_mut(n).valid();
@@ -75,14 +77,15 @@ pub fn compiler(data_rx: Receiver<ShaderTask>, res_sn: Sender<(ShdResult, Fence)
 		}
 	}
 }
-fn compile(sources: &mut HashMap<Str, ShdState>, files: &mut [Lazy<Vec<ShdSrc>>], name: &[Str]) -> Res<ShdProg> {
+fn compile(includes: &str, sources: &mut HashMap<Str, ShdState>, files: &mut [Lazy<Vec<ShdSrc>>], name: &[Str]) -> Res<ShdProg> {
 	let get_object = |name: &Str| -> Res<_> {
 		let get = |s: &mut HashMap<_, _>| {
 			if let Some(state) = s.get_mut(name) {
 				match state {
 					Compiled { obj, .. } => return Ok(obj.obj()),
 					Source { src } => {
-						let (o, new) = ShaderObj::new(name, src).map(|obj| (obj.obj(), Compiled { src: mem::take(src), obj }))?;
+						let c_src = CString::new([includes, src].concat()).explain_err(|| format!("Malformed string in shader {name:?}")).fail();
+						let (o, new) = ShaderObj::new(name, &c_src).map(|obj| (obj.obj(), Compiled { src: mem::take(src), obj }))?;
 						*state = new;
 						return Ok(o);
 					}
@@ -108,11 +111,11 @@ fn compile(sources: &mut HashMap<Str, ShdState>, files: &mut [Lazy<Vec<ShdSrc>>]
 	let prog = Object::new();
 	let obj = prog.obj;
 
-	objects.iter().for_each(|&o| GLCheck!(gl::AttachShader(obj, o)));
-	GLCheck!(gl::LinkProgram(obj));
+	objects.iter().for_each(|&o| GL!(gl::AttachShader(obj, o)));
+	GL!(gl::LinkProgram(obj));
 	let mut status: i32 = 0;
-	GLCheck!(gl::GetProgramiv(obj, gl::LINK_STATUS, &mut status));
-	objects.iter().for_each(|&o| GLCheck!(gl::DetachShader(obj, o)));
+	GL!(gl::GetProgramiv(obj, gl::LINK_STATUS, &mut status));
+	objects.iter().for_each(|&o| GL!(gl::DetachShader(obj, o)));
 
 	if GLbool::to(status) == gl::FALSE {
 		return Err(format!("Error linking program {:?}, {obj}\n{}", name.join(" "), print_shader_log(obj)));
@@ -130,18 +133,19 @@ pub struct ShdResult {
 	pub prog: Res<ShdProg>,
 }
 pub enum ShaderTask {
+	Includes(Vec<Astr>),
 	Watch(ShdName),
 	Forget(ShdName),
-	Create(ShdName),
-	Inline((Str, CString)),
 	Rebuild,
+	Inline((Str, String)),
+	Create(ShdName),
 	Load(Lazy<Vec<ShdSrc>>),
 	Clean,
 }
 pub use ShaderTask::*;
 
 pub enum ShdState {
-	Source { src: CString },
-	Compiled { src: CString, obj: ShaderObj },
+	Source { src: String },
+	Compiled { src: String, obj: ShaderObj },
 }
 pub use ShdState::*;

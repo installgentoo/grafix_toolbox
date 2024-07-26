@@ -1,6 +1,7 @@
 #[cfg(not(debug_assertions))]
 #[macro_export]
-macro_rules! GLCheck {
+#[allow(clippy::macro_metavars_in_unsafe)]
+macro_rules! GL {
 	($fun: expr) => {{
 		unsafe { $fun }
 	}};
@@ -8,7 +9,7 @@ macro_rules! GLCheck {
 
 #[cfg(debug_assertions)]
 #[macro_export]
-macro_rules! GLCheck {
+macro_rules! GL {
 	($fun: expr) => {{
 		ASSERT!($crate::GL::macro_uses::gl_was_initialized(false), "Opengl wasn't initialized on this thread");
 
@@ -26,6 +27,7 @@ macro_rules! GLCheck {
 			}
 		}
 
+		#[allow(clippy::macro_metavars_in_unsafe)]
 		let (val, err) = unsafe { ($fun, gl::GetError()) };
 		if err != gl::NO_ERROR {
 			FAIL!("OpenGL error {} in {}", code_to_error(err), stringify!($fun));

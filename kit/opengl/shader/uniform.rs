@@ -3,9 +3,9 @@ use super::{GL, *};
 #[macro_export]
 macro_rules! Uniform {
 	($bind: ident, ($n: expr, $v: expr)) => {{
-		const _ID: (u32, &str) = $crate::GL::macro_uses::uniforms_use::id($n);
+		let id = const { $crate::GL::macro_uses::uniforms_use::id($n) };
 		let mut b = $bind;
-		b.Uniform(_ID, $v);
+		b.Uniform(id, $v);
 		b
 	}};
 }
@@ -56,10 +56,10 @@ macro_rules! impl_uniform_type {
 	};
 }
 fn val<T, S>(f: unsafe fn(i32, i32, *const T), name: i32, slice: &[S]) {
-	GLCheck!(f(name, i32(slice.len()), slice.as_ptr() as *const T));
+	GL!(f(name, i32(slice.len()), slice.as_ptr() as *const T));
 }
 fn mat<S>(f: unsafe fn(i32, i32, GLbool, *const f32), name: i32, slice: &[S]) {
-	GLCheck!(f(name, i32(slice.len()), gl::FALSE, slice.as_ptr() as *const f32)); // coulmn-major
+	GL!(f(name, i32(slice.len()), gl::FALSE, slice.as_ptr() as *const f32)); // coulmn-major
 }
 impl_uniform_type!(val, u32, Uniform1uiv);
 impl_uniform_type!(val, uVec2, Uniform2uiv);
@@ -108,7 +108,7 @@ impl<T: TexType> UniformArgs for GL::TextureBinding<'_, T> {
 		let u = i32(self.u);
 		let apply = || {
 			DEBUG!("Binding GL texture {addr} to unit {u} in shader {}", ShaderProg::bound_obj());
-			GLCheck!(gl::Uniform1i(addr, u));
+			GL!(gl::Uniform1i(addr, u));
 		};
 
 		if let Some(CachedUni::TexUnit(unit)) = cached {
@@ -131,7 +131,7 @@ impl UniformArgs for GL::ShdArrBinding<'_, Uniform> {
 			let prog = *ShaderProg::bound_obj();
 			let addr = -2 - addr;
 			DEBUG!("Binding GL UBO {addr} to location {l} in shader {prog}");
-			GLCheck!(gl::UniformBlockBinding(prog, u32(addr), u32(l)));
+			GL!(gl::UniformBlockBinding(prog, u32(addr), u32(l)));
 		};
 
 		if let Some(CachedUni::UboLoc(loc)) = cached {

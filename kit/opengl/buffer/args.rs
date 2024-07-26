@@ -1,4 +1,5 @@
 use super::*;
+use std::ops::{RangeFrom, RangeFull, RangeTo};
 
 type Args = (*const GLvoid, usize, GLenum);
 pub trait AllocArgs<T> {
@@ -45,36 +46,74 @@ impl<T> UpdateArgs<T> for &[T] {
 	}
 }
 
-type RArgs = (isize, isize, GLenum);
+type RArgs = (usize, usize, GLenum);
 pub trait MappingArgs {
 	fn get(self) -> RArgs;
 }
-impl<O, L> MappingArgs for (O, L, GLenum)
+impl<I> MappingArgs for (Range<I>, GLenum)
 where
-	isize: Cast<O> + Cast<L>,
+	usize: Cast<I>,
 {
 	fn get(self) -> RArgs {
-		(isize(self.0), isize(self.1), self.2)
+		(usize(self.0.start), usize(self.0.end), self.1)
 	}
 }
-impl<O, L> MappingArgs for (O, L)
+impl<I> MappingArgs for (RangeTo<I>, GLenum)
 where
-	isize: Cast<O> + Cast<L>,
+	usize: Cast<I>,
 {
 	fn get(self) -> RArgs {
-		(self.0, self.1, 0).get()
+		(0..usize(self.0.end), self.1).get()
 	}
 }
-impl MappingArgs for GLenum {
+impl<I> MappingArgs for (RangeFrom<I>, GLenum)
+where
+	usize: Cast<I>,
+{
 	fn get(self) -> RArgs {
-		(0, 0, self).get()
+		(usize(self.0.start)..0, self.1).get()
+	}
+}
+impl MappingArgs for (RangeFull, GLenum) {
+	fn get(self) -> RArgs {
+		(0..0, self.1).get()
+	}
+}
+impl<I> MappingArgs for Range<I>
+where
+	usize: Cast<I>,
+{
+	fn get(self) -> RArgs {
+		(self, 0).get()
+	}
+}
+impl<I> MappingArgs for RangeTo<I>
+where
+	usize: Cast<I>,
+{
+	fn get(self) -> RArgs {
+		(self, 0).get()
+	}
+}
+impl<I> MappingArgs for RangeFrom<I>
+where
+	usize: Cast<I>,
+{
+	fn get(self) -> RArgs {
+		(self, 0).get()
+	}
+}
+impl MappingArgs for RangeFull {
+	fn get(self) -> RArgs {
+		(self, 0).get()
 	}
 }
 
 pub fn get_mapping_args<T: State, D>(o: &ArrObject<T, D>, args: impl MappingArgs) -> (isize, usize, GLenum) {
-	let (offset, len, access) = args.get();
-	let len = len.or_val(len >= 1, isize(o.len) - offset);
-	ASSERT!(isize(o.len) >= offset + len && len > 0, "Buffer {}({}) mapped out of bounds", o.obj, type_name::<T>());
-	let tsize = isize(type_size::<D>());
-	(offset * tsize, usize(len * tsize), access)
+	let (start, end, access) = args.get();
+	let end = end.or_val(end != 0, o.len);
+	ASSERT!(start < end, "Buffer {}({}) access with malformed range", o.obj, type_name::<T>());
+	ASSERT!(end <= o.len, "Buffer {}({}) mapped out of bounds", o.obj, type_name::<T>());
+	let tsize = type_size::<D>();
+	(isize(start * tsize), (end - start) * tsize, access)
 }

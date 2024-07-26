@@ -24,7 +24,7 @@ impl GlfwWindow {
 		use glfw::{WindowHint::*, *};
 
 		let init_ctx: fn() -> Res<_> = || {
-			let mut ctx = Res(glfw::init(|e, d| ERROR!("{e}: {d}"))).map_err(|e| format!("GLFW initialization failed, {e}"))?;
+			let mut ctx = Res(glfw::init(|e, d| ERROR!("{e}: {d}"))).explain_err(|| "GLFW initialization failed")?;
 
 			ctx.window_hint(ClientApi(ClientApiHint::OpenGl));
 			ctx.window_hint(ContextVersion(GL::unigl::GL_VERSION.0, GL::unigl::GL_VERSION.1));
@@ -38,7 +38,7 @@ impl GlfwWindow {
 		};
 
 		let (x, y, w, h) = args.get();
-		let (mut window, events) = Res(init_ctx()?.create_window(w, h, title, WindowMode::Windowed)).map_err(|_| "Failed to create GLFW window.")?;
+		let (mut window, events) = Res(init_ctx()?.create_window(w, h, title, WindowMode::Windowed)).explain_err(|| "Cannot create GLFW window")?;
 
 		window.set_pos(x, y);
 		window.make_current();
@@ -58,7 +58,7 @@ impl GlfwWindow {
 		if GL::unigl::IS_DEBUG {
 			GL::EnableDebugContext(GL::DebugLevel::All);
 		}
-		crate::GLCheck!(gl::Disable(gl::DITHER));
+		crate::GL!(gl::Disable(gl::DITHER));
 
 		let info = FrameInfo::new((w, h));
 		Ok(Self { window, events, resized_hint: true, info })
@@ -103,7 +103,7 @@ impl WindowSpec for GlfwWindow {
 							w
 						} else {
 							l.wait();
-							FAIL!("Failed to create offhand context.");
+							FAIL!("Cannot create offhand context");
 							return;
 						}
 					};
@@ -113,7 +113,9 @@ impl WindowSpec for GlfwWindow {
 					f();
 				}
 			})
-			.expect("Failed to spawn offhand");
+			.explain_err(|| "Cannot spawn offhand")
+			.fail();
+
 		ctx_lock.wait();
 		self.window.make_current();
 		offhand

@@ -1,4 +1,37 @@
-use super::{object::*, *};
+use super::{object::*, GL::unigl::GLSL_VERSION, *};
+
+pub fn parse_includes(files: Vec<Astr>) -> Res<String> {
+	let includes = iter::once(Ok(GLSL_VERSION.into()))
+		.chain(
+			files
+				.into_iter()
+				.map(|name| (name.clone(), Lazy::new(FS::Lazy::Text(name))))
+				.collect_vec()
+				.into_iter()
+				.map(|(name, i)| {
+					let i = i.take();
+					Res(CString::new([GLSL_VERSION, "void main(){}\n", &i].concat()))
+						.and_then(|i| ShaderObj::new("vs_vf", &i))
+						.map_err(|e| {
+							let e = slice((|c| c == '\n', &e));
+							let e = format!("GLSL error in header {name:?}{e}");
+							adjust_log(e, -2)
+						})
+						.map(|_| i)
+				}),
+		)
+		.collect::<Result<Vec<_>, _>>()?
+		.join("\n");
+
+	Res(CString::new([&includes, "void main(){}"].concat()))
+		.and_then(|i| ShaderObj::new("vs_vf", &i))
+		.map_err(|e| {
+			let e = slice((|c| c == '\n', &e));
+			let e = format!("GLSL headers collision{e}");
+			adjust_log(e, 0)
+		})
+		.map(|_| includes)
+}
 
 pub fn load(n: Astr, s: impl Stream<Item = String> + SendStat) -> Lazy<Vec<ShdSrc>> {
 	let mut first = true;
@@ -21,8 +54,8 @@ pub fn load(n: Astr, s: impl Stream<Item = String> + SendStat) -> Lazy<Vec<ShdSr
 	}))
 }
 
-pub fn parse_shader_sources(filename: &str, text: &str) -> Vec<Res<(Str, CString)>> {
-	let mut cur_row_number = text.find("//--GLOBAL:").map(|end| text[..end].lines().count()).unwrap_or(0);
+pub fn parse_shader_sources(filename: &str, text: &str) -> Vec<Res<(Str, String)>> {
+	let mut cur_line = text.find("//--GLOBAL:").map(|end| text[..end].lines().count()).unwrap_or(0);
 	let body: Res<_> = (|| {
 		Ok(if let Some(beg) = text.find("//--GLOBAL:") {
 			let text = &text[beg + 12..];
@@ -34,7 +67,7 @@ pub fn parse_shader_sources(filename: &str, text: &str) -> Vec<Res<(Str, CString
 		})
 	})();
 
-	let (header, mut body) = match body {
+	let (globals, mut body) = match body {
 		Ok(t) => t,
 		Err(_) => {
 			return vec![Err(format!(
@@ -67,18 +100,16 @@ pub fn parse_shader_sources(filename: &str, text: &str) -> Vec<Res<(Str, CString
 				let body = slice((|c: char| c.is_ascii_alphanumeric(), body));
 				let (n, b) = split(body, char::is_control);
 				let n = n.trim_end_matches('-');
-				ShaderObj::valid(n).map_err(|e| format!("Failed to parse shader in {filename:?}:{cur_row_number}\n{e}"))?;
+				ShaderObj::valid(n).explain_err(|| format!("Cannot parse shader in {filename:?}:{cur_line}"))?;
 				if b.is_empty() {
-					Err(format!("Failed to parse shader {n:?} in {filename:?}:{cur_row_number}"))?
+					Err(format!("Cannot parse shader {n:?} in {filename:?}:{cur_line}"))?
 				};
 
-				let o = 1.or_def(cur_row_number == 0 && header.is_empty()); // skip newline to compensate for version line
-				(n.replace(char::is_whitespace, ""), slice((o, b)))
+				(n.replace(char::is_whitespace, ""), b)
 			};
-			let newlines = "\n".repeat(cur_row_number);
-			cur_row_number += body.lines().count();
-			let shader = [GL::unigl::GLSL_VERSION, header, &newlines, body].concat();
-			let shader = CString::new(shader).map_err(|e| format!("Malformed shader {name:?} in {filename:?}:{cur_row_number}'\n{e}"))?;
+			let newlines = "\n".repeat(cur_line);
+			cur_line += body.lines().count();
+			let shader = [globals, &newlines, body].concat();
 			Ok((name, shader))
 		})
 		.map(|s| s.map(|(n, b)| (n.into(), b)))
@@ -86,16 +117,16 @@ pub fn parse_shader_sources(filename: &str, text: &str) -> Vec<Res<(Str, CString
 }
 
 pub fn print_shader_log(obj: u32) -> Str {
-	let (f_shader, f_prog): (unsafe fn(_, _, _), unsafe fn(_, _, _, _)) = match GLCheck!(gl::IsShader(obj)) {
+	let (f_shader, f_prog): (unsafe fn(_, _, _), unsafe fn(_, _, _, _)) = match GL!(gl::IsShader(obj)) {
 		gl::TRUE => (gl::GetShaderiv, gl::GetShaderInfoLog),
 		_ => (gl::GetProgramiv, gl::GetProgramInfoLog),
 	};
 
 	let mut max_len: i32 = 0;
-	GLCheck!(f_shader(obj, gl::INFO_LOG_LENGTH, &mut max_len));
+	GL!(f_shader(obj, gl::INFO_LOG_LENGTH, &mut max_len));
 	let log = {
 		let mut log: Vec<u8> = vec![0; usize(max_len)];
-		GLCheck!(f_prog(obj, max_len, ptr::null_mut(), log.as_mut_ptr() as *mut i8));
+		GL!(f_prog(obj, max_len, ptr::null_mut(), log.as_mut_ptr() as *mut i8));
 		let l = log.pop();
 		if l.is_none() || l.valid() != 0 {
 			return "Error copying error log".into();
@@ -106,7 +137,23 @@ pub fn print_shader_log(obj: u32) -> Str {
 	String::from_utf8_lossy(&log).into()
 }
 
+pub fn adjust_log(log: String, offset: i32) -> String {
+	log.lines()
+		.map(|l| {
+			let (_, tail) = split(l, |c| c == ':');
+			let (num, tail) = split(tail, |c| c == '(');
+			if let Ok(num) = num.trim_matches(':').parse::<i32>() {
+				[&(num + offset).to_string(), tail].concat()
+			} else {
+				l.to_string()
+			}
+		})
+		.rev()
+		.collect_vec()
+		.join("\n")
+}
+
 pub struct ShdSrc {
 	pub name: Str,
-	pub src: CString,
+	pub src: String,
 }

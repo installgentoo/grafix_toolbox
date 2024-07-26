@@ -56,7 +56,7 @@ pub trait State {
 	}
 	fn New() -> u32 {
 		let mut obj = 0;
-		GLCheck!(Self::gen(&mut obj));
+		GL!(Self::gen(&mut obj));
 		ASSERT!(obj != 0, "GL {} not initilized", type_name::<Self>());
 		DEBUG!("Created GL {} obj {obj}", type_name::<Self>());
 		obj
@@ -66,7 +66,7 @@ pub trait State {
 		if *bound_obj != obj {
 			DEBUG!("Binding GL {} obj {obj}", type_name::<Self>());
 			*bound_obj = obj;
-			GLCheck!(Self::bind(obj));
+			GL!(Self::bind(obj));
 		}
 	}
 	fn Drop(obj: u32) {
@@ -76,6 +76,6 @@ pub trait State {
 		}
 		let mut obj = obj;
 		DEBUG!("Deleting GL {} obj {obj}", type_name::<Self>());
-		GLCheck!(Self::del(&mut obj));
+		GL!(Self::del(&mut obj));
 	}
 }

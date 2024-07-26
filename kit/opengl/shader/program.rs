@@ -1,6 +1,5 @@
-use super::{compiler::*, parsing::*, uniform::*, *};
-use crate::FS;
-use GL::{offhand::*, window::*};
+use super::{args::*, compiler::*, parsing::*, uniform::*, *};
+use GL::offhand::*;
 
 pub struct Shader {
 	name: ShdName,
@@ -12,7 +11,7 @@ impl Shader {
 	pub fn pure<const N: usize>(args: [I; N]) -> Self {
 		Self::new(args).valid()
 	}
-	pub fn new(args: impl ShaderArgs) -> Res<Self> {
+	pub fn new(args: impl CompileArgs) -> Res<Self> {
 		let ShaderManager { sn, rx, .. } = ShaderManager::get();
 		let name = args.get();
 
@@ -22,7 +21,7 @@ impl Shader {
 
 		Ok(Self { name, prog: prog?, uniforms, dynamic })
 	}
-	pub fn watch(args: impl ShaderArgs) -> Res<Self> {
+	pub fn watch(args: impl CompileArgs) -> Res<Self> {
 		let ShaderManager { sn, .. } = ShaderManager::get();
 		let mut s = Self::new(args)?;
 
@@ -83,14 +82,14 @@ impl<'l> ShaderBinding<'l> {
 		let Shader { name: shd_name, prog, uniforms, .. } = self.shd;
 		let (addr, cached) = match args.kind() {
 			ArgsKind::Uniform => get_addr(uniforms, (id, name), |n| {
-				let addr = GLCheck!(gl::GetUniformLocation(prog.obj, n.as_ptr()));
+				let addr = GL!(gl::GetUniformLocation(prog.obj, n.as_ptr()));
 				if addr == -1 {
 					INFO!("No uniform {name:?} in shader {:?}, or it was optimized out", shd_name.join(" "));
 				}
 				addr
 			}),
 			ArgsKind::UBO => get_addr(uniforms, (id, name), |n| {
-				let addr = GLCheck!(gl::GetUniformBlockIndex(prog.obj, n.as_ptr()));
+				let addr = GL!(gl::GetUniformBlockIndex(prog.obj, n.as_ptr()));
 				if addr == gl::INVALID_INDEX {
 					INFO!("No UBO {name:?} in shader {:?}, or it was optimized out", shd_name.join(" "));
 					return -1;
@@ -129,24 +128,27 @@ pub struct ShaderManager {
 	mailbox: HashMap<ShdName, Option<Res<ShdProg>>>,
 }
 impl ShaderManager {
-	pub fn Initialize(w: &mut Window) -> &mut Self {
-		Self::get_or_init(Some(w))
+	pub fn Initialize<'s>(args: impl InitArgs<'s>) {
+		let (window, i) = args.get();
+		Self::get_or_init(Some(window)).sn.send(Includes(i)).valid();
 	}
-	pub fn LoadSources(filename: impl Into<Astr>) {
-		let n = filename.into();
-		let file = load(n.clone(), FS::Lazy::Text(n));
-		ShaderManager::get().sn.send(Load(file)).valid();
+	pub fn Load(filenames: impl LoadArgs) {
+		for n in filenames.get() {
+			let file = load(n.clone(), FS::Lazy::Text(n));
+			ShaderManager::get().sn.send(Load(file)).valid();
+		}
 	}
-	pub fn WatchSources(filename: impl Into<Astr>) {
-		let n = filename.into();
-		let file = load(n.clone(), FS::Watch::Text(n));
-		ShaderManager::get().sn.send(Load(file)).valid();
+	pub fn Watch(filenames: impl LoadArgs) {
+		for n in filenames.get() {
+			let file = load(n.clone(), FS::Watch::Text(n));
+			ShaderManager::get().sn.send(Load(file)).valid();
+		}
 	}
 	pub fn CleanCache() {
 		ShaderManager::get().sn.send(Clean).valid();
 	}
 	fn inline_source(name: &str, source: &str) {
-		ShaderManager::get().sn.send(Inline((name.into(), CString::new(source).valid()))).valid();
+		ShaderManager::get().sn.send(Inline((name.into(), source.into()))).valid();
 	}
 	fn get() -> &'static mut Self {
 		Self::get_or_init(None)

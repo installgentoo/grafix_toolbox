@@ -25,7 +25,7 @@ macro_rules! impl_get {
 		impl Get for $t {
 			fn get(p: GLenum) -> Self {
 				let mut r = Def();
-				GLCheck!(gl::$f(p, &mut r));
+				GL!(gl::$f(p, &mut r));
 				r
 			}
 		}

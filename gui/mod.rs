@@ -4,32 +4,6 @@ pub use {
 	render::{RenderLock, Renderer},
 };
 
-macro_rules! storage {
-	($($t: ident),+) => {
-		#[derive(Default, Debug)]
-		pub struct ElementStorage {
-			$($t: HashMap<u32, $t>,)+
-		}
-		impl ElementStorage {
-			$(pub fn $t(&mut self, id: u32) -> &mut $t {
-				self.$t.entry(id).or_insert_with(|| Def())
-			})+
-		}
-		impl Renderer {
-			$(pub fn $t(&mut self, id: u32) -> &mut $t {
-				self.storage.$t(id)
-			})+
-		}
-		impl<'l> RenderLock<'l> {
-			$(pub fn $t(&mut self, id: u32) -> Lock::$t<'static, 'l, '_> {
-				let s = unsafe { mem::transmute::<_, &'static mut ElementStorage>(&mut self.r.storage) };
-				s.$t(id).lock(self) // <- first lifetime comes from button
-			})+
-		}
-	}
-}
-storage!(Button, HyperText, Label, Layout, LineEdit, Selector, Slider, TextEdit);
-
 impl<'l> RenderLock<'l> {
 	pub fn clipboard() -> &'l str {
 		let (str, _) = clip_store();

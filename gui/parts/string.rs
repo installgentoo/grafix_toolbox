@@ -141,7 +141,7 @@ impl Object for TextImpl {
 						let xy2 = xy2.clmp(crop1, crop2).mul(to_clip);
 						(xy1, xy2, uv)
 					});
-					const O: f16 = f16::ZERO;
+					let O = f16::ZERO;
 
 					xyzw[..16].copy_from_slice(&[x1, y1, z, O, x2, y1, z, O, x2, y2, z, O, x1, y2, z, O]);
 					xyzw = &mut xyzw[16..];
@@ -183,24 +183,24 @@ fn first_glyph<'a>(f: &'a Font, text: &str) -> Vec4 {
 SHADER!(
 	ps_gui_sdftext,
 	r"in vec4 glColor;
-	in vec2 glTexUV;
+	in vec2 glUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D tex;
 
 	void main() {
 		vec2 sz = vec2(textureSize(tex, 0));
 
-		float dx = dFdx(glTexUV.x) * sz.x;
-		float dy = dFdy(glTexUV.y) * sz.y;
+		float dx = dFdx(glUV.x) * sz.x;
+		float dy = dFdy(glUV.y) * sz.y;
 
 		float toPixels = 10. * inversesqrt(dx * dx + dy * dy);
 
-		vec2 step = vec2(dFdx(glTexUV.x) * .5, 0);
+		vec2 step = vec2(dFdx(glUV.x) * .5, 0);
 
-		float l = texture(tex, glTexUV - step).r;
-		float c = texture(tex, glTexUV).r;
-		float r = texture(tex, glTexUV + step).r;
-		float n = texture(tex, glTexUV + step * 2).r;
+		float l = texture(tex, glUV - step).r;
+		float c = texture(tex, glUV).r;
+		float r = texture(tex, glUV + step).r;
+		float n = texture(tex, glUV + step * 2).r;
 
 		vec4 p = clamp((vec4(l, c, r, n) - .5) * toPixels + 1, vec4(0), vec4(1));
 

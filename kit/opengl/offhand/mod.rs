@@ -9,7 +9,7 @@ impl<O: SendStat> Offhand<O> {
 		Self::from_fn(w, depth, move |data_rx, res_sn| {
 			while let Ok(msg) = data_rx.recv() {
 				let res = process(msg);
-				let _ = res_sn.send((res, Fence::new())).map_err(|e| FAIL!(e));
+				res_sn.send((res, Fence::new())).warn();
 			}
 		})
 	}

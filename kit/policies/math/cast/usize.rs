@@ -72,19 +72,13 @@ impl Cast<f16> for usize {
 }
 impl Cast<f32> for usize {
 	fn to(v: f32) -> Self {
-		ASSERT!(
-			v.trunc() >= usize::min_value() as f32 && v.trunc() <= usize::max_value() as f32,
-			"Error casting {v} to usize"
-		);
+		ASSERT!(v.trunc() >= usize::MIN as f32 && v.trunc() <= usize::MAX as f32, "Error casting {v} to usize");
 		unsafe { v.to_int_unchecked() }
 	}
 }
 impl Cast<f64> for usize {
 	fn to(v: f64) -> Self {
-		ASSERT!(
-			v.trunc() >= usize::min_value() as f64 && v.trunc() <= usize::max_value() as f64,
-			"Error casting {v} to usize"
-		);
+		ASSERT!(v.trunc() >= usize::MIN as f64 && v.trunc() <= usize::MAX as f64, "Error casting {v} to usize");
 		unsafe { v.to_int_unchecked() }
 	}
 }

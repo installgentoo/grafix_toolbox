@@ -1,4 +1,4 @@
-#![allow(dead_code, clippy::too_many_arguments)]
+#![allow(dead_code, clippy::too_many_arguments, clippy::not_unsafe_ptr_arg_deref)]
 use crate::lib::*;
 
 #[cfg(not(feature = "gl45"))]
@@ -16,26 +16,26 @@ pub const IS_DEBUG: bool = true;
 #[cfg(not(feature = "gl45"))]
 macro_rules! G {
 	($g33: expr, $g45: expr) => {
-		$g33
+		unsafe { $g33 }
 	};
 }
 #[cfg(feature = "gl45")]
 macro_rules! G {
 	($g33: expr, $g45: expr) => {
-		$g45
+		unsafe { $g45 }
 	};
 }
 
-pub unsafe fn glCreateBuffer(obj: &mut u32) {
+pub fn glCreateBuffer(obj: &mut u32) {
 	G!(gl::GenBuffers(1, obj), gl::CreateBuffers(1, obj));
 }
-pub unsafe fn glCreateVao(obj: &mut u32) {
+pub fn glCreateVao(obj: &mut u32) {
 	G!(gl::GenVertexArrays(1, obj), gl::CreateVertexArrays(1, obj));
 }
-pub unsafe fn glCreateTexture(_typ: GLenum, obj: &mut u32) {
+pub fn glCreateTexture(_typ: GLenum, obj: &mut u32) {
 	G!(gl::GenTextures(1, obj), gl::CreateTextures(_typ, 1, obj));
 }
-pub unsafe fn glDeleteTexture(obj: &mut u32) {
+pub fn glDeleteTexture(obj: &mut u32) {
 	G!(
 		{
 			if *obj == *bound_tex33() {
@@ -46,13 +46,13 @@ pub unsafe fn glDeleteTexture(obj: &mut u32) {
 		gl::DeleteTextures(1, obj)
 	);
 }
-pub unsafe fn glCreateFramebuff(obj: &mut u32) {
+pub fn glCreateFramebuff(obj: &mut u32) {
 	G!(gl::GenFramebuffers(1, obj), gl::CreateFramebuffers(1, obj));
 }
-pub unsafe fn glCreateRenderbuff(obj: &mut u32) {
+pub fn glCreateRenderbuff(obj: &mut u32) {
 	G!(gl::GenRenderbuffers(1, obj), gl::CreateRenderbuffers(1, obj));
 }
-pub unsafe fn glBufferStorage(_typ: GLenum, obj: u32, size: isize, data: *const GLvoid, _usage: GLenum) {
+pub fn glBufferStorage(_typ: GLenum, obj: u32, size: isize, data: *const GLvoid, _usage: GLenum) {
 	G!(
 		{
 			gl::BindBuffer(_typ, obj);
@@ -61,7 +61,7 @@ pub unsafe fn glBufferStorage(_typ: GLenum, obj: u32, size: isize, data: *const 
 		gl::NamedBufferStorage(obj, size, data, _usage)
 	);
 }
-pub unsafe fn glBufferSubData(_typ: GLenum, obj: u32, offset: isize, size: isize, data: *const GLvoid) {
+pub fn glBufferSubData(_typ: GLenum, obj: u32, offset: isize, size: isize, data: *const GLvoid) {
 	G!(
 		{
 			gl::BindBuffer(_typ, obj);
@@ -70,7 +70,7 @@ pub unsafe fn glBufferSubData(_typ: GLenum, obj: u32, offset: isize, size: isize
 		gl::NamedBufferSubData(obj, offset, size, data)
 	);
 }
-pub unsafe fn glMapBufferRange(_typ: GLenum, obj: u32, offset: isize, length: isize, access: GLbitfield) -> *mut GLvoid {
+pub fn glMapBufferRange(_typ: GLenum, obj: u32, offset: isize, length: isize, access: GLbitfield) -> *mut GLvoid {
 	G!(
 		{
 			gl::BindBuffer(_typ, obj);
@@ -79,7 +79,7 @@ pub unsafe fn glMapBufferRange(_typ: GLenum, obj: u32, offset: isize, length: is
 		gl::MapNamedBufferRange(obj, offset, length, access)
 	)
 }
-pub unsafe fn glUnmapBuffer(_typ: GLenum, obj: u32) -> GLbool {
+pub fn glUnmapBuffer(_typ: GLenum, obj: u32) -> GLbool {
 	G!(
 		{
 			gl::BindBuffer(_typ, obj);
@@ -88,7 +88,7 @@ pub unsafe fn glUnmapBuffer(_typ: GLenum, obj: u32) -> GLbool {
 		gl::UnmapNamedBuffer(obj)
 	)
 }
-pub unsafe fn glVaoElementBuffer(vao: u32, buf: u32) {
+pub fn glVaoElementBuffer(vao: u32, buf: u32) {
 	G!(
 		{
 			gl::BindVertexArray(vao);
@@ -98,7 +98,7 @@ pub unsafe fn glVaoElementBuffer(vao: u32, buf: u32) {
 		gl::VertexArrayElementBuffer(vao, buf)
 	);
 }
-pub unsafe fn glVertexAttribFormat(vao: u32, buf: u32, idx: u32, size: u32, typ: GLenum, normalized: GLbool, stride: u32, offset: u32, t_size: u32) {
+pub fn glVertexAttribFormat(vao: u32, buf: u32, idx: u32, size: u32, typ: GLenum, normalized: GLbool, stride: u32, offset: u32, t_size: u32) {
 	G!(
 		{
 			gl::BindVertexArray(vao);
@@ -115,7 +115,7 @@ pub unsafe fn glVertexAttribFormat(vao: u32, buf: u32, idx: u32, size: u32, typ:
 		}
 	);
 }
-pub unsafe fn glTextureBuffer(_typ: GLenum, tex: u32, fmt: GLenum, buf: u32) {
+pub fn glTextureBuffer(_typ: GLenum, tex: u32, fmt: GLenum, buf: u32) {
 	G!(
 		{
 			gl::BindTexture(_typ, tex);
@@ -125,7 +125,7 @@ pub unsafe fn glTextureBuffer(_typ: GLenum, tex: u32, fmt: GLenum, buf: u32) {
 		gl::TextureBuffer(tex, fmt, buf)
 	);
 }
-pub unsafe fn glTextureStorage1D(_typ: GLenum, tex: u32, levels: i32, fmt: GLenum, w: i32) {
+pub fn glTextureStorage1D(_typ: GLenum, tex: u32, levels: i32, fmt: GLenum, w: i32) {
 	G!(
 		{
 			gl::BindTexture(_typ, tex);
@@ -139,7 +139,7 @@ pub unsafe fn glTextureStorage1D(_typ: GLenum, tex: u32, levels: i32, fmt: GLenu
 		gl::TextureStorage1D(tex, levels, fmt, w)
 	);
 }
-pub unsafe fn glTextureStorage2D(_typ: GLenum, tex: u32, levels: i32, fmt: GLenum, w: i32, h: i32) {
+pub fn glTextureStorage2D(_typ: GLenum, tex: u32, levels: i32, fmt: GLenum, w: i32, h: i32) {
 	G!(
 		{
 			gl::BindTexture(_typ, tex);
@@ -161,7 +161,7 @@ pub unsafe fn glTextureStorage2D(_typ: GLenum, tex: u32, levels: i32, fmt: GLenu
 		gl::TextureStorage2D(tex, levels, fmt, w, h)
 	);
 }
-pub unsafe fn glTextureStorage3D(_typ: GLenum, tex: u32, levels: i32, fmt: GLenum, w: i32, h: i32, d: i32) {
+pub fn glTextureStorage3D(_typ: GLenum, tex: u32, levels: i32, fmt: GLenum, w: i32, h: i32, d: i32) {
 	G!(
 		{
 			gl::BindTexture(_typ, tex);
@@ -177,7 +177,7 @@ pub unsafe fn glTextureStorage3D(_typ: GLenum, tex: u32, levels: i32, fmt: GLenu
 		gl::TextureStorage3D(tex, levels, fmt, w, h, d)
 	);
 }
-pub unsafe fn glTextureSubImage1D(_typ: GLenum, tex: u32, lvl: i32, x: i32, w: i32, fmt: GLenum, t: GLenum, data: *const GLvoid) {
+pub fn glTextureSubImage1D(_typ: GLenum, tex: u32, lvl: i32, x: i32, w: i32, fmt: GLenum, t: GLenum, data: *const GLvoid) {
 	G!(
 		{
 			gl::BindTexture(_typ, tex);
@@ -187,7 +187,7 @@ pub unsafe fn glTextureSubImage1D(_typ: GLenum, tex: u32, lvl: i32, x: i32, w: i
 		gl::TextureSubImage1D(tex, lvl, x, w, fmt, t, data)
 	);
 }
-pub unsafe fn glTextureSubImage2D(_typ: GLenum, tex: u32, lvl: i32, x: i32, y: i32, w: i32, h: i32, fmt: GLenum, t: GLenum, data: *const GLvoid) {
+pub fn glTextureSubImage2D(_typ: GLenum, tex: u32, lvl: i32, x: i32, y: i32, w: i32, h: i32, fmt: GLenum, t: GLenum, data: *const GLvoid) {
 	G!(
 		{
 			gl::BindTexture(_typ, tex);
@@ -197,7 +197,7 @@ pub unsafe fn glTextureSubImage2D(_typ: GLenum, tex: u32, lvl: i32, x: i32, y: i
 		gl::TextureSubImage2D(tex, lvl, x, y, w, h, fmt, t, data)
 	);
 }
-pub unsafe fn glTextureSubImage3D(_typ: GLenum, tex: u32, lvl: i32, x: i32, y: i32, z: i32, w: i32, h: i32, d: i32, fmt: GLenum, t: GLenum, data: *const GLvoid) {
+pub fn glTextureSubImage3D(_typ: GLenum, tex: u32, lvl: i32, x: i32, y: i32, z: i32, w: i32, h: i32, d: i32, fmt: GLenum, t: GLenum, data: *const GLvoid) {
 	G!(
 		{
 			gl::BindTexture(_typ, tex);
@@ -211,7 +211,7 @@ pub unsafe fn glTextureSubImage3D(_typ: GLenum, tex: u32, lvl: i32, x: i32, y: i
 		gl::TextureSubImage3D(tex, lvl, x, y, z, w, h, d, fmt, t, data)
 	);
 }
-pub unsafe fn glBindTextureUnit(_typ: GLenum, unit: u32, tex: u32) {
+pub fn glBindTextureUnit(_typ: GLenum, unit: u32, tex: u32) {
 	G!(
 		{
 			gl::ActiveTexture(gl::TEXTURE0 + unit);
@@ -221,7 +221,7 @@ pub unsafe fn glBindTextureUnit(_typ: GLenum, unit: u32, tex: u32) {
 		gl::BindTextureUnit(unit, tex)
 	);
 }
-pub unsafe fn glGenMipmaps(_typ: GLenum, tex: u32) {
+pub fn glGenMipmaps(_typ: GLenum, tex: u32) {
 	G!(
 		{
 			gl::BindTexture(_typ, tex);
@@ -231,7 +231,7 @@ pub unsafe fn glGenMipmaps(_typ: GLenum, tex: u32) {
 		gl::GenerateTextureMipmap(tex)
 	);
 }
-pub unsafe fn glGetTexture(_typ: GLenum, tex: u32, lvl: i32, fmt: GLenum, t: GLenum, _size: i32, data: *mut GLvoid) {
+pub fn glGetTexture(_typ: GLenum, tex: u32, lvl: i32, fmt: GLenum, t: GLenum, _size: i32, data: *mut GLvoid) {
 	G!(
 		{
 			gl::BindTexture(_typ, tex);
@@ -241,7 +241,7 @@ pub unsafe fn glGetTexture(_typ: GLenum, tex: u32, lvl: i32, fmt: GLenum, t: GLe
 		gl::GetTextureImage(tex, lvl, fmt, t, _size, data)
 	);
 }
-pub unsafe fn glClearFramebuff(fb: u32, typ: GLenum, buffidx: i32, val: *const f32) {
+pub fn glClearFramebuff(fb: u32, typ: GLenum, buffidx: i32, val: *const f32) {
 	G!(
 		{
 			gl::BindFramebuffer(gl::FRAMEBUFFER, fb);
@@ -251,7 +251,7 @@ pub unsafe fn glClearFramebuff(fb: u32, typ: GLenum, buffidx: i32, val: *const f
 		gl::ClearNamedFramebufferfv(fb, typ, buffidx, val)
 	);
 }
-pub unsafe fn glFramebuffTex(fb: u32, tex: u32, attach: GLenum) {
+pub fn glFramebuffTex(fb: u32, tex: u32, attach: GLenum) {
 	G!(
 		{
 			gl::BindFramebuffer(gl::FRAMEBUFFER, fb);
@@ -261,7 +261,7 @@ pub unsafe fn glFramebuffTex(fb: u32, tex: u32, attach: GLenum) {
 		gl::NamedFramebufferTexture(fb, attach, tex, 0)
 	);
 }
-pub unsafe fn glFramebuffRenderbuff(fb: u32, rb: u32, attach: GLenum) {
+pub fn glFramebuffRenderbuff(fb: u32, rb: u32, attach: GLenum) {
 	G!(
 		{
 			gl::BindFramebuffer(gl::FRAMEBUFFER, fb);
@@ -271,7 +271,7 @@ pub unsafe fn glFramebuffRenderbuff(fb: u32, rb: u32, attach: GLenum) {
 		gl::NamedFramebufferRenderbuffer(fb, attach, gl::RENDERBUFFER, rb)
 	);
 }
-pub unsafe fn glRenderbuffStorage(fb: u32, sampl: i32, fmt: GLenum, w: i32, h: i32) {
+pub fn glRenderbuffStorage(fb: u32, sampl: i32, fmt: GLenum, w: i32, h: i32) {
 	G!(
 		{
 			gl::BindRenderbuffer(gl::RENDERBUFFER, fb);

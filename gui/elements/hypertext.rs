@@ -19,8 +19,8 @@ pub struct HyperDB {
 }
 impl HyperDB {
 	pub fn new(f: &Font, scale: f32, pairs: impl iter::IntoIterator<Item = (impl ToString, impl ToString)>) -> Self {
-		const MAX_RATIO: f32 = 10.;
-		const PADDING: f32 = 0.1;
+		let MAX_RATIO = 10.;
+		let PADDING = 0.1;
 
 		let mut max_breaks = 0;
 		let mut keys: HyperKey = Def();
@@ -72,7 +72,7 @@ pub struct HyperText {
 }
 impl<'s: 'l, 'l> Lock::HyperText<'s, 'l, '_> {
 	pub fn draw(self, pos: Vec2, size: Vec2, scale: f32, db: &HyperDB) {
-		const SCR_PAD: f32 = 0.01;
+		let SCR_PAD = 0.01;
 		let Self { s, r, t } = self;
 
 		let font = &t.font;

@@ -21,10 +21,9 @@ pub async fn Null() -> Unblock<io::Sink> {
 
 pub struct Logger;
 impl Logger {
-	pub fn new<T, F>(out: impl FnOnce() -> F + SendStat, l: Level) -> Self
+	pub fn initialize<F>(out: impl FnOnce() -> F + SendStat, l: Level) -> Self
 	where
-		T: AsyncWrite + Unpin + Send,
-		F: Future<Output = T> + Send,
+		F: Future<Output: AsyncWrite + Unpin + Send> + Send,
 	{
 		Self::init_logger(out, l);
 		Self
@@ -45,10 +44,9 @@ impl Logger {
 	pub fn set_level(l: Level) {
 		unsafe { LEVEL = l }
 	}
-	fn init_logger<T, F>(out: impl FnOnce() -> F + SendStat, l: Level)
+	fn init_logger<F>(out: impl FnOnce() -> F + SendStat, l: Level)
 	where
-		T: AsyncWrite + Unpin + Send,
-		F: Future<Output = T> + Send,
+		F: Future<Output: AsyncWrite + Unpin + Send> + Send,
 	{
 		unsafe {
 			LOGGER.get_or_init(move || {

@@ -85,7 +85,7 @@ pub fn write_sprite9((to_clip, pos, size, corner, (crop1, crop2), (u1, v1, u2, v
 				muv,
 			)
 		});
-		const O: f16 = f16::ZERO;
+		let O = f16::ZERO;
 
 		if state.contains(State::XYZW) {
 			#[rustfmt::skip]

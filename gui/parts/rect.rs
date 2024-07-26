@@ -37,7 +37,7 @@ impl Object for RectImpl {
 				let (to_clip, (crop1, crop2)) = (to_clip, self.base.bound_box());
 				(crop1.mul(to_clip), crop2.mul(to_clip))
 			});
-			const O: f16 = f16::ZERO;
+			let O = f16::ZERO;
 
 			xyzw[..16].copy_from_slice(&[x1, y1, z, O, x2, y1, z, O, x2, y2, z, O, x1, y2, z, O]);
 		}

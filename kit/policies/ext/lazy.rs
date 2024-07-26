@@ -69,6 +69,15 @@ impl<T: SendStat + Default> Lazy<T> {
 			_ => unreachable!(),
 		}
 	}
+	pub fn take(mut self) -> T {
+		self.get();
+
+		match mem::take(&mut self.state) {
+			Loading(v_last, _) => v_last,
+			Quit(v) => v,
+			_ => unreachable!(),
+		}
+	}
 }
 
 fn check_and_load<T: SendStat + Default>(blocking: bool, lazy: &mut Lazy<T>) -> bool {

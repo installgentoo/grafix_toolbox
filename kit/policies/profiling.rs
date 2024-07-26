@@ -137,7 +137,7 @@ struct GLTimer {
 }
 impl Start for GLTimer {
 	fn start(self: Box<Self>) -> Started {
-		crate::GLCheck!(gl::BeginQuery(gl::TIME_ELAPSED, self.o.obj));
+		crate::GL!(gl::BeginQuery(gl::TIME_ELAPSED, self.o.obj));
 		Box(*self)
 	}
 	fn get_res(self: Box<Self>) -> (u128, u128) {
@@ -147,9 +147,9 @@ impl Start for GLTimer {
 }
 impl Stop for GLTimer {
 	fn stop(self: Box<Self>) -> Done {
-		crate::GLCheck!(gl::EndQuery(gl::TIME_ELAPSED));
+		crate::GL!(gl::EndQuery(gl::TIME_ELAPSED));
 		let mut res = 0;
-		crate::GLCheck!(gl::GetQueryObjecti64v(self.o.obj, gl::QUERY_RESULT, &mut res));
+		crate::GL!(gl::GetQueryObjecti64v(self.o.obj, gl::QUERY_RESULT, &mut res));
 		let Self { o, total, iters } = *self;
 		Box(Self { o, total: total + res, iters: iters + 1 })
 	}

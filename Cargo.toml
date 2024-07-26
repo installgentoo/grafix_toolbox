@@ -1,6 +1,6 @@
 [package]
 name = "grafix-toolbox"
-version = "0.8.21"
+version = "0.8.22"
 authors = ["Alexander Drozdoff"]
 edition = "2021"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
@@ -43,10 +43,10 @@ crossbeam-channel = "^0.5"
 fastrand = { version = "^2", optional = true }
 flume = "^0.11"
 gl = "^0.14"
-glfw = "^0.55"
+glfw = "^0.58"
 half = "^2"
 image = { version = "^0.25", default-features = false }
-nalgebra = { version = "^0.32", features = ["std", "serde-serialize"], default-features = false }
+nalgebra = { version = "^0.33", features = ["std", "serde-serialize"], default-features = false }
 notify = { version = "^6", optional = true }
 num_cpus = "^1"
 rusttype = { version = "^0.9", optional = true }

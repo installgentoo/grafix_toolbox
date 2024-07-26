@@ -16,7 +16,7 @@ impl<I: IdxType> Vao<I> {
 		VaoBinding::new(self)
 	}
 	pub fn BindIdxs(&mut self, o: &IdxArr<I>) {
-		GLCheck!(glVaoElementBuffer(self.obj(), o.obj));
+		GL!(glVaoElementBuffer(self.obj(), o.obj));
 		debug_assert!({
 			*Index::crossbindcheck_map().entry(self.obj()).or_default() = vec![o.obj];
 			true
@@ -26,7 +26,7 @@ impl<I: IdxType> Vao<I> {
 		let (idx, size, norm, stride, offset) = args.get();
 		ASSERT!(size > 0 && size < 5, "Attribute size({size}) isn't valid");
 		let t_size = u32(type_size::<A>());
-		GLCheck!(glVertexAttribFormat(self.obj(), o.obj, idx, size, A::TYPE, to_glbool(norm), stride, offset, t_size));
+		GL!(glVertexAttribFormat(self.obj(), o.obj, idx, size, A::TYPE, to_glbool(norm), stride, offset, t_size));
 		debug_assert!({
 			let attrs = Attribute::crossbindcheck_map().entry(self.obj()).or_default();
 			if attrs.len() < usize(idx + 1) {
@@ -60,12 +60,12 @@ impl<I: IdxType> VaoBinding<'_, I> {
 		Index::checkcrossbinds(VertArrObj::bound_obj());
 		Attribute::checkcrossbinds(VertArrObj::bound_obj());
 		let (num, offset, mode) = args.get();
-		GLCheck!(gl::DrawElements(mode, num, I::TYPE, (offset * type_size::<I>()) as *const GLvoid));
+		GL!(gl::DrawElements(mode, num, I::TYPE, (offset * type_size::<I>()) as *const GLvoid));
 	}
 	pub fn DrawUnindexed(&self, args: impl DrawArgs) {
 		Attribute::checkcrossbinds(VertArrObj::bound_obj());
 		let (num, offset, mode) = args.get();
-		GLCheck!(gl::DrawArrays(mode, i32(offset), num));
+		GL!(gl::DrawArrays(mode, i32(offset), num));
 	}
 	pub fn DrawInstanced<T>(&self, n: T, args: impl DrawArgs)
 	where
@@ -75,6 +75,6 @@ impl<I: IdxType> VaoBinding<'_, I> {
 		Attribute::checkcrossbinds(VertArrObj::bound_obj());
 		let (num, offset, mode) = args.get();
 		let offset = (offset * type_size::<I>()) as *const GLvoid;
-		GLCheck!(gl::DrawElementsInstanced(mode, num, I::TYPE, offset, i32(n)));
+		GL!(gl::DrawElementsInstanced(mode, num, I::TYPE, offset, i32(n)));
 	}
 }

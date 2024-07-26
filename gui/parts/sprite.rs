@@ -43,7 +43,7 @@ impl<S: TexSize> Object for SpriteImpl<S> {
 
 				(crop1.mul(to_clip), crop2.mul(to_clip), uv)
 			});
-			const O: f16 = f16::ZERO;
+			let O = f16::ZERO;
 
 			if state.contains(State::XYZW) {
 				xyzw[..16].copy_from_slice(&[x1, y1, z, O, x2, y1, z, O, x2, y2, z, O, x1, y2, z, O]);
@@ -83,20 +83,20 @@ SHADER!(
 	layout(location = 1) in vec4 Color;
 	layout(location = 2) in vec2 TexCoord;
 	out vec4 glColor;
-	out vec2 glTexUV;
+	out vec2 glUV;
 
 	void main() {
 		gl_Position = vec4(Position.xyz, 1);
 		glColor = Color;
-		glTexUV = TexCoord;
+		glUV = TexCoord;
 	}"
 );
 SHADER!(
 	ps_gui__col_tex,
 	r"in vec4 glColor;
-	in vec2 glTexUV;
+	in vec2 glUV;
 	layout(location = 0) out vec4 glFragColor;
 	uniform sampler2D tex;
 
-	void main() { glFragColor = glColor * texture(tex, glTexUV); }"
+	void main() { glFragColor = glColor * texture(tex, glUV); }"
 );

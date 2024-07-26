@@ -10,7 +10,7 @@ pub struct LineEdit {
 }
 impl<'s: 'l, 'l> Lock::LineEdit<'s, 'l, '_> {
 	pub fn draw(self, pos: Vec2, size: Vec2) {
-		const CUR_PAD: f32 = 0.01;
+		let CUR_PAD = 0.01;
 		let Self { s, r, t } = self;
 
 		if s.text.changed() || s.size != size {
