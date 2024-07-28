@@ -1,4 +1,5 @@
-use super::{GL, *};
+use super::*;
+use crate::math::la;
 
 #[macro_export]
 macro_rules! Uniform {
@@ -19,11 +20,10 @@ macro_rules! Uniforms {
 }};
 }
 
-#[allow(clippy::upper_case_acronyms)]
 pub enum ArgsKind {
 	Uniform,
-	UBO,
-	SSBO,
+	Ubo,
+	Ssbo,
 }
 pub trait UniformArgs {
 	fn apply(&self, _: i32, _: UniCache);
@@ -146,7 +146,7 @@ impl UniformArgs for GL::ShdArrBinding<'_, Uniform> {
 		}
 	}
 	fn kind(&self) -> ArgsKind {
-		ArgsKind::UBO
+		ArgsKind::Ubo
 	}
 }
 
@@ -155,7 +155,7 @@ impl UniformArgs for GL::ShdArrBinding<'_, ShdStorage> {
 		unreachable!();
 	}
 	fn kind(&self) -> ArgsKind {
-		ArgsKind::SSBO
+		ArgsKind::Ssbo
 	}
 }
 

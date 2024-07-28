@@ -1,4 +1,4 @@
-use super::super::Cast;
+use super::super::pre::Cast;
 
 pub trait Tuple2<R> {
 	fn get(self) -> (R, R);

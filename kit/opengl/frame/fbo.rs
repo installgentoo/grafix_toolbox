@@ -1,4 +1,4 @@
-use super::{GL::tex::*, *};
+use super::*;
 
 pub struct Fbo<S, F> {
 	pub fb: Framebuffer,

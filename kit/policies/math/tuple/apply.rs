@@ -1,4 +1,4 @@
-use super::{super::super::ext::UnwrapValid, args::*};
+use super::{super::super::func::ext::UnwrapValid, args::*};
 
 pub trait TupleApply<RA, A>: Sized {
 	type R<B>;
@@ -84,7 +84,7 @@ where
 {
 	type R<B> = [B; N];
 	fn apply<B, F: Fn(A, A) -> B>(self, r: RA, op: F) -> Self::R<B> {
-		let (l, r) = (self, r.get()); //TODO zip array stabilization
+		let (l, r) = (self, r.get()); // TODO zip array stabilization
 		let Ok(b) = l.into_iter().zip(r).map(|(l, r)| op(l, r)).collect::<Vec<_>>().try_into() else {
 			unreachable!()
 		};

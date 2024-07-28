@@ -46,6 +46,7 @@ impl Sampler {
 
 pub type Sampler = Object<SamplObj>;
 impl Sampler {
+	#![allow(private_bounds)]
 	pub fn Parameter(&mut self, name: GLenum, args: impl SamplerArg) {
 		args.apply(self.obj, name);
 	}

@@ -1,5 +1,4 @@
-#![allow(dead_code)]
-use super::super::*;
+use super::super::pre::*;
 
 macro_rules! func_cast {
 	($t: ident) => {

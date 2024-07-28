@@ -1,5 +1,4 @@
-use crate::{glsl::*, lib::*, math::*, *};
-use std::borrow::Borrow;
+use crate::{lib::*, math::*, *};
 use GL::{mesh::*, *};
 
 pub struct EnvTex {
@@ -32,7 +31,7 @@ impl Environment {
 		}
 
 		let env: Res<_> = (|| {
-			let file = FS::Load::File(format!("res/{name}.hdr"))?;
+			let file = FS::Load::File(format!("res/{name}.hdr"));
 			let equirect = Tex2d::from(Image::<RGB, f32>::load(file)?);
 			let env = Self::new(equirect);
 			let _ = ser::SERDE::ToVec(&env).map(|v| FS::Save::Archive((cache, v)));

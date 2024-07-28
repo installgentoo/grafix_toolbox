@@ -1,5 +1,5 @@
 use super::{policy::*, universion::*};
-use crate::{lib::*, GL};
+use crate::lib::*;
 
 struct Units {
 	used: u32,

@@ -1,4 +1,4 @@
-use super::{ext::*, *};
+use super::{super::ext::*, super::la, *};
 
 pub trait TupleMath<RA, A: Number>: TupleApply<RA, A, R<A> = Self> {
 	fn clmp<LA>(self, l: LA, r: RA) -> Self

@@ -1,5 +1,14 @@
-use super::control::funcs::*;
+use super::control::{consts::Get, funcs::*};
 use crate::lib::*;
+
+CONST!(MAX_TEXTURE_IMAGE_UNITS, i32);
+CONST!(MAX_COMBINED_TEXTURE_IMAGE_UNITS, i32);
+CONST!(MAX_TEXTURE_BUFFER_SIZE, i32);
+CONST!(MAX_TEXTURE_SIZE, i32);
+CONST!(MAX_UNIFORM_BUFFER_BINDINGS, i32);
+CONST!(MAX_SHADER_STORAGE_BUFFER_BINDINGS, i32);
+CONST!(MAX_UNIFORM_BLOCK_SIZE, i32);
+CONST!(MAX_SHADER_STORAGE_BLOCK_SIZE, i32);
 
 FUNC!(gl, Viewport, i32, i32, i32, i32);
 FUNC!(gl, BlendFunc, GLenum, GLenum);

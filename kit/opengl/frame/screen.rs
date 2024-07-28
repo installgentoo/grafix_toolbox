@@ -1,4 +1,4 @@
-use super::{Frame, GL::window::*, *};
+use super::{GL::window::*, *};
 use crate::math::*;
 
 impl Frame for Window {

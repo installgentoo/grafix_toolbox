@@ -1,9 +1,9 @@
-#![allow(dead_code)]
 use crate::lib::*;
 
 macro_rules! APPLICATOR {
 	($n: ident, $($t: ident),+) => {
 		pub trait $n<$($t),+> {
+			#![allow(dead_code)]
 			fn apply(&self, _: unsafe fn($($t),+));
 		}
 		#[allow(unused_parens)]

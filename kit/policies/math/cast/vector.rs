@@ -1,5 +1,4 @@
-#![allow(unused_imports)]
-use super::{super::super::index::*, super::*, logging};
+use crate::lib::*;
 
 impl<T: Copy> Cast<vec4<T>> for vec3<T> {
 	fn to((v1, v2, v3, _): vec4<T>) -> Self {

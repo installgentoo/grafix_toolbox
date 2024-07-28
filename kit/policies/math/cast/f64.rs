@@ -1,4 +1,4 @@
-use super::{super::f16, Cast};
+use super::super::pre::*;
 
 impl Cast<bool> for f64 {
 	fn to(v: bool) -> Self {

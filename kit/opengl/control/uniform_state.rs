@@ -1,5 +1,5 @@
 use super::policy::*;
-use crate::{lib::*, GL};
+use crate::lib::*;
 
 struct Locations {
 	used: u32,

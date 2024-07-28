@@ -1,20 +1,17 @@
-#![allow(dead_code)]
-use crate::GL::{gl, mesh::Screen, *};
-use crate::{glsl::*, lib::*, math::*};
+use crate::GL::{gl, mesh::*, *};
+use crate::{lib::*, math::*};
 
 pub struct SdfGenerator {
 	dst_t: Shader,
 	dt_h: Shader,
-	render: Shader,
 	sampl: Sampler,
 }
 impl SdfGenerator {
 	pub fn new(sampl: &[(GLenum, GLenum)]) -> Self {
 		let dst_t = Shader::pure([vs_mesh__2d_screen, ps_sdf__distance_transform_v]);
 		let dt_h = Shader::pure([vs_mesh__2d_screen, ps_sdf__distance_transform]);
-		let render = Shader::pure([vs_mesh__2d_screen, ps_mesh__2d_screen]);
 		let sampl = sampl.iter().chain(&[(gl::TEXTURE_MIN_FILTER, gl::NEAREST)]).copied().collect_vec().into();
-		Self { dst_t, dt_h, render, sampl }
+		Self { dst_t, dt_h, sampl }
 	}
 	pub fn generate<S: TexSize, F: TexFmt, FROM: TexSize>(&mut self, tex: &Tex2d<S, F>, scale: i32, thickness: i32) -> Tex2d<RED, f16> {
 		ASSERT!(FROM::SIZE <= S::SIZE, "Wrong sdf source channel");

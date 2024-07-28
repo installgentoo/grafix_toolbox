@@ -1,6 +1,4 @@
-use super::{ext::*, logging, math::*};
-use crate::{stdlib::*, GL};
-use std::sync::{Mutex, OnceLock};
+use crate::{lib::*, sync::*};
 
 #[cfg(not(feature = "profiling"))]
 #[macro_export]

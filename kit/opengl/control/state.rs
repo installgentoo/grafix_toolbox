@@ -1,4 +1,4 @@
-use crate::{lib::*, GL};
+use crate::lib::*;
 
 pub trait State {
 	fn bound_obj() -> &'static mut u32;

@@ -15,10 +15,6 @@ pub trait Object {
 		rect_idxs((start, size))
 	}
 }
-
-pub type Crop = (Vec2, Vec2);
-pub type Color = Vec4;
-pub type TexCoord = Vec4;
 pub struct BatchedObj<'a> {
 	pub z: f16,
 	pub state: State,
@@ -26,6 +22,15 @@ pub struct BatchedObj<'a> {
 	pub rgba: &'a mut [u8],
 	pub uv: &'a mut [f16],
 }
+bitflags! {#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct State: u32 {
+	const BATCH_RESIZED = 0x2;
+	const XYZW = 0x10;
+	const RGBA = 0x20;
+	const UV = 0x40;
+	const FULL = Self::XYZW.bits() | Self::RGBA.bits() | Self::UV.bits();
+	const MISMATCH = 0x1 | Self::FULL.bits() | Self::BATCH_RESIZED.bits();
+}}
 
 #[derive(Debug)]
 pub struct Base {
@@ -43,18 +48,6 @@ impl Base {
 		let ((b1, b2), (rb1, rb2)) = (self.bound_box(), r.bound_box());
 		!(b2.x() <= rb1.x() || b1.x() >= rb2.x() || b2.y() <= rb1.y() || b1.y() >= rb2.y())
 	}
-}
-
-bitflags! {
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
-pub struct State: u32 {
-	const BATCH_RESIZED = 0x2;
-	const XYZW = 0x10;
-	const RGBA = 0x20;
-	const UV = 0x40;
-	const FULL = Self::XYZW.bits() | Self::RGBA.bits() | Self::UV.bits();
-	const MISMATCH = 0x1 | Self::FULL.bits() | Self::BATCH_RESIZED.bits();
-}
 }
 
 #[inline(always)]
