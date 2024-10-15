@@ -17,8 +17,8 @@ type LinesWraps = (Box<[STR]>, Box<[u32]>);
 pub fn parse_text(t: &str, f: &Font, s: f32, m: f32) -> LinesWraps {
 	parse_text_impl(t, f, s, m, false, |_| false)
 }
-pub fn parse_text_by(t: &str, f: &Font, s: f32, m: f32, sp: impl Fn(char) -> bool) -> LinesWraps {
-	parse_text_impl(t, f, s, m, true, sp)
+pub fn parse_text_by(t: &str, f: &Font, s: f32, m: f32, linebreak: impl Fn(char) -> bool) -> LinesWraps {
+	parse_text_impl(t, f, s, m, true, linebreak)
 }
 fn parse_text_impl(text: &str, font: &Font, scale: f32, max_w: f32, split: bool, split_by: impl Fn(char) -> bool) -> LinesWraps {
 	if text.is_empty() {

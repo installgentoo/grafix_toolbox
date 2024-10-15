@@ -12,7 +12,7 @@ pub fn compiler(data_rx: Receiver<ShaderTask>, res_sn: Sender<(ShdResult, Fence)
 			f
 		}
 		let send = coerce(|name: ShdName, s, f: &mut [_]| {
-			let prog = compile(&includes, s, f, &name).map_err(|e| adjust_log(e, -i32(includes.lines().count())));
+			let prog = compile(&includes, s, f, &name).map_err(|e| adjust_log(e, 1 - i32(includes.lines().count())));
 			res_sn.send((ShdResult { name, prog }, Fence::new())).fail();
 		});
 

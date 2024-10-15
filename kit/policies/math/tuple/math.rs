@@ -92,7 +92,7 @@ pub trait TupleComparison<B, RA, A: EpsEq>: TupleApply<RA, A, R<bool> = B> {
 		self.apply(r, |l, r| l.eps_eq(r))
 	}
 	fn trsh_eq(self, r: RA, e: A) -> B {
-		self.apply(r, |l, r| l.trsh_eq(r, &e))
+		self.apply(r, |l, r| l.trsh_eq(r, e))
 	}
 }
 impl<S: TupleApply<RA, A, R<bool> = (bool, bool)>, RA, A: EpsEq> TupleComparison<(bool, bool), RA, A> for S {}

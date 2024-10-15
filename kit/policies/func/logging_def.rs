@@ -27,7 +27,7 @@ macro_rules! ASSERT {
 macro_rules! ASSERT_IMPL {
 	($($t: tt)+) => {{
 		use $crate::logging::*;
-		Logger::log(["\x1B[31mA| ", &format!($($t)+), &format!(" |{}:{}|{}\x1B[0m\n", file!(), line!(), std::thread::current().name().unwrap_or("???"))].concat(),);
+		Logger::log(format!("A| {} |{}:{}|{}\n", format!($($t)+), file!(), line!(), std::thread::current().name().unwrap_or("???")).red().to_string());
 		std::panic::set_hook(std::boxed::Box::new(|_| {}));
 		panic!();
 	}};
@@ -43,8 +43,9 @@ macro_rules! ERROR {
 macro_rules! ERROR_IMPL {
 	($($t: tt)+) => {{
 		use $crate::logging::*;
+		let E = "E|".red().bold();
 		let bt = process_backtrace(std::backtrace::Backtrace::force_capture());
-		Logger::log([&format!("E| {bt}\x1B[31mE| ")[..], &format!($($t)+), &format!(" |{}:{}|{}\x1B[0m\n", file!(), line!(), std::thread::current().name().unwrap_or("???"))].concat());
+		Logger::log(format!("{E} {bt}{E} {} |{}:{}|{}\n", format!($($t)+).red(), file!(), line!(), std::thread::current().name().unwrap_or("???")));
 		std::panic::set_hook(std::boxed::Box::new(|_| {}));
 		panic!();
 	}};
@@ -72,7 +73,8 @@ macro_rules! WARN_IMPL {
 	($($t: tt)+) => {{
 		use $crate::logging::*;
 		if Level::WARNING as i32 <= Logger::level() {
-			Logger::log(["W| ", &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
+			let W = "W| ".red().to_string();
+			Logger::log([&W, &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
 		}
 	}};
 }

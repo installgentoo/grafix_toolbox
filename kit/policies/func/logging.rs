@@ -1,6 +1,5 @@
 pub use super::result::{UniformUnwrap, UniformUnwrapOrDefault};
-use crate::{asyn::*, lib::*, sync};
-use std::backtrace::Backtrace;
+pub use text_color::term::*;
 
 pub async fn Term() -> Unblock<sync::io::Stdout> {
 	Unblock::new(sync::io::stdout())
@@ -11,6 +10,7 @@ pub async fn TermErr() -> Unblock<sync::io::Stderr> {
 }
 
 pub async fn File() -> fs::File {
+	term_color::disable();
 	unwrap(fs::File::create("log.txt").await, "couldn't create log file")
 }
 
@@ -53,9 +53,10 @@ impl Logger {
 					let bt = process_backtrace(Backtrace::force_capture());
 					let p = i.payload();
 					let p = p.downcast_ref::<String>().cloned().or_else(|| p.downcast_ref::<&str>().map(|s| s.to_string()));
+					let P = "P|".red().bold();
 					Logger::log(format!(
-						"P| {bt}\x1B[31mP| {} |{}|{}\x1B[0m\n",
-						p.unwrap_or("???".into()),
+						"{P} {bt}{P} {} |{}|{}\n",
+						p.unwrap_or("???".into()).red(),
 						i.location().map_or("???".to_string(), |s| format!("{s}")),
 						thread::current().name().unwrap_or("???")
 					));
@@ -166,3 +167,6 @@ fn unwrap_o<T>(v: Option<T>, msg: &str) -> T {
 async fn check_order() -> Unblock<sync::io::Stdout> {
 	panic!("E| No logger! Add 'LOGGER!(logging::Term, INFO);' as first line in main()");
 }
+
+use crate::{asyn::*, lib::*, sync, text_color};
+use std::backtrace::Backtrace;

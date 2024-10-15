@@ -9,7 +9,7 @@ pub struct Shader {
 }
 impl Shader {
 	pub fn pure<const N: usize>(args: [I; N]) -> Self {
-		Self::new(args).valid()
+		Self::new(args).fail()
 	}
 	pub fn new(args: impl CompileArgs) -> Res<Self> {
 		let ShaderManager { sn, rx, .. } = ShaderManager::get();
@@ -47,7 +47,7 @@ impl Shader {
 					Ok(p) => {
 						*prog = p;
 						*uniforms = Def();
-						PRINT!("Rebuilt shader {}", name.join(" "))
+						PRINT!(format!("Rebuilt shader {}", name.join(" ")).green().bold())
 					}
 				}
 			}
@@ -147,8 +147,8 @@ impl ShaderManager {
 	pub fn CleanCache() {
 		ShaderManager::get().sn.send(Clean).valid();
 	}
-	fn inline_source(name: &str, source: &str) {
-		ShaderManager::get().sn.send(Inline((name.into(), source.into()))).valid();
+	fn inline_source(name: &str, source: &[&str]) {
+		ShaderManager::get().sn.send(Inline((name.into(), source.concat()))).valid();
 	}
 	fn get() -> &'static mut Self {
 		Self::get_or_init(None)
@@ -165,12 +165,13 @@ impl ShaderManager {
 	}
 }
 
-impl From<InlineShader> for Str {
-	fn from(v: InlineShader) -> Self {
+impl From<I> for Str {
+	fn from(v: I) -> Self {
 		let InlineShader(v, v_t) = v;
 		ShaderManager::inline_source(v, v_t);
 		v.into()
 	}
 }
 
+type I = InlineShader;
 type Uniforms = HashMap<u32, (i32, Option<CachedUni>)>;

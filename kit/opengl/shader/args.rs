@@ -59,7 +59,7 @@ impl<A1: Into<Str>, A2: Into<Str>, A3: Into<Str>, A4: Into<Str>, A5: Into<Str>> 
 		[a1.into(), a2.into(), a3.into(), a4.into(), a5.into()].into()
 	}
 }
-impl<const N: usize> CompileArgs for [I; N] {
+impl<const N: usize> CompileArgs for [InlineShader; N] {
 	fn get(self) -> Compile {
 		self.into_iter().map(|a| a.into()).collect_box()
 	}

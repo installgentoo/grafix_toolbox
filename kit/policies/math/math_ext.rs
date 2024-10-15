@@ -19,34 +19,34 @@ pub trait EpsEq: Copy + cmp::PartialOrd {
 	fn eps_eq(self, r: Self) -> bool {
 		self == r
 	}
-	fn trsh_eq(self, r: Self, _: &Self) -> bool {
+	fn trsh_eq(self, r: Self, _: Self) -> bool {
 		self == r
 	}
 }
 impl_trait_for!(EpsEq = bool, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 impl EpsEq for f16 {
 	fn eps_eq(self, r: Self) -> bool {
-		self.trsh_eq(r, &f16::EPSILON)
+		self.trsh_eq(r, f16::EPSILON)
 	}
-	fn trsh_eq(self, r: Self, e: &Self) -> bool {
+	fn trsh_eq(self, r: Self, e: Self) -> bool {
 		let (l, r) = Vec2((self, r));
-		(l - r).abs() <= f32(*e)
+		(l - r).abs() <= f32(e)
 	}
 }
 impl EpsEq for f32 {
 	fn eps_eq(self, r: Self) -> bool {
-		self.trsh_eq(r, &f32::EPSILON)
+		self.trsh_eq(r, f32::EPSILON)
 	}
-	fn trsh_eq(self, r: Self, e: &Self) -> bool {
-		(self - r).abs() <= *e
+	fn trsh_eq(self, r: Self, e: Self) -> bool {
+		(self - r).abs() <= e
 	}
 }
 impl EpsEq for f64 {
 	fn eps_eq(self, r: Self) -> bool {
-		self.trsh_eq(r, &f64::EPSILON)
+		self.trsh_eq(r, f64::EPSILON)
 	}
-	fn trsh_eq(self, r: Self, e: &Self) -> bool {
-		(self - r).abs() <= *e
+	fn trsh_eq(self, r: Self, e: Self) -> bool {
+		(self - r).abs() <= e
 	}
 }
 
@@ -185,11 +185,12 @@ where
 euc_mod!(f32);
 euc_mod!(f64);
 
-pub trait Precise {
+pub trait Precise: Default + PartialEq {
 	fn mix(self, a: f32, r: Self) -> Self;
 	fn root(self) -> Self;
-	#[allow(clippy::wrong_self_convention)]
-	fn is_zero(self) -> bool;
+	fn is_zero(&self) -> bool {
+		self == &Default::default()
+	}
 }
 macro_rules! sqrt {
 	($t: ty) => {
@@ -199,9 +200,6 @@ macro_rules! sqrt {
 			}
 			fn root(self) -> Self {
 				Self::to(f32(self).sqrt())
-			}
-			fn is_zero(self) -> bool {
-				f32(self) == 0.
 			}
 		}
 	};
@@ -227,9 +225,6 @@ impl Precise for f64 {
 	}
 	fn root(self) -> Self {
 		self.sqrt()
-	}
-	fn is_zero(self) -> bool {
-		self == 0.
 	}
 }
 

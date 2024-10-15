@@ -7,13 +7,11 @@ pub mod uniform;
 macro_rules! SHADER {
 	($n: ident, $($body: expr),+) => {
 		#[allow(non_upper_case_globals)]
-		pub const $n: $crate::GL::macro_uses::InlineShader = $crate::GL::macro_uses::InlineShader(stringify!($n), const_format::concatcp!($($body,)+));
+		pub const $n: $crate::GL::macro_uses::InlineShader = $crate::GL::macro_uses::InlineShader(stringify!($n), &[$($body,)+]);
 	};
 }
 
-pub struct InlineShader(pub STR, pub STR);
-
-type I = InlineShader;
+pub struct InlineShader(pub STR, pub &'static [STR]);
 
 mod args;
 mod compiler;

@@ -30,7 +30,6 @@ pub mod ser {
 		pub use serde_json::{from_str as FromStr, to_string as ToStr, to_vec as ToU8};
 	}
 	pub use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-	pub use std::fmt;
 }
 pub mod stdlib {
 	pub use std::cell::{Cell, RefCell, UnsafeCell};
@@ -40,13 +39,22 @@ pub mod stdlib {
 }
 pub mod lib {
 	pub use super::{policies::ext::*, policies::pre::*, stdlib::*, GL, GL::types::*};
-	pub use {bitflags::bitflags, const_format, num_cpus};
+	pub use bitflags::bitflags;
 }
 pub mod math {
 	pub use super::policies::math::{ext::*, la, la::na};
 }
 pub mod GL {
 	pub use super::opengl::{event, pre::*, window};
+}
+pub mod text_color {
+	pub mod term {
+		pub mod term_color {
+			pub use yansi::disable;
+			pub use yansi::enable;
+		}
+		pub use yansi::Paint as text_color_prelude;
+	}
 }
 
 pub use policies::ext::*;

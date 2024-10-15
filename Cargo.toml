@@ -1,6 +1,6 @@
 [package]
 name = "grafix-toolbox"
-version = "0.8.23"
+version = "0.8.24"
 authors = ["Alexander Drozdoff"]
 edition = "2021"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
@@ -38,7 +38,6 @@ path = "./crate.rs"
 [dependencies]
 bincode = { version = "^1", optional = true }
 bitflags = "^2"
-const_format = "^0.2"
 crossbeam-channel = "^0.5"
 fastrand = { version = "^2", optional = true }
 flume = "^0.11"
@@ -48,11 +47,11 @@ half = "^2"
 image = { version = "^0.25", default-features = false }
 nalgebra = { version = "^0.33", features = ["std", "serde-serialize"], default-features = false }
 notify = { version = "^6", optional = true }
-num_cpus = "^1"
 rusttype = { version = "^0.9", optional = true }
 serde = { version = "^1", features = ["derive"], optional = true }
 serde_json = { version = "^1", optional = true }
 simdnoise = { version = "^3", optional = true }
 smol = "^2"
 tobj = { version = "^4", optional = true }
+yansi = "^1"
 zstd = { version = "^0.13", optional = true }
