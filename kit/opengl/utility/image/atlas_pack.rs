@@ -35,7 +35,16 @@ pub fn pack(w: i32, h: i32, empty: &mut Vec<Rect>, filled: &mut Vec<Rect>, min: 
 		}
 	}
 
-	empty.sort_unstable_by(|l, r| if l.contains(r) { ord::Less } else { ord::Greater });
+	empty.sort_unstable_by(|l, r| {
+		if l.contains(r) {
+			ord::Greater
+		} else if l == r {
+			ord::Equal
+		} else {
+			ord::Less
+		}
+	});
+	empty.reverse();
 	empty.dedup_by(|r, l| l.contains(r));
 
 	let mut i = 0;
@@ -53,7 +62,7 @@ pub fn pack(w: i32, h: i32, empty: &mut Vec<Rect>, filled: &mut Vec<Rect>, min: 
 	Ok(b)
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Rect {
 	pub x: i32,
 	pub y: i32,
