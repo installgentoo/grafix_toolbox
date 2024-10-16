@@ -33,7 +33,7 @@ pub mod ext {
 		fn valid(self) -> T {
 			#[cfg(debug_assertions)]
 			{
-				self.expect("E: Not valid: None")
+				self.expect("E| Not valid: None")
 			}
 			#[cfg(not(debug_assertions))]
 			{
@@ -45,7 +45,7 @@ pub mod ext {
 		fn valid(self) -> T {
 			#[cfg(debug_assertions)]
 			{
-				self.expect("E: Not valid: Err")
+				self.expect("E| Not valid: Err")
 			}
 			#[cfg(not(debug_assertions))]
 			{

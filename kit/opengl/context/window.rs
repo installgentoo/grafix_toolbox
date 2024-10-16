@@ -2,7 +2,7 @@ use super::{event::*, *};
 use crate::{math::*, sync::*, GL::FrameInfo};
 
 pub trait WindowSpec {
-	unsafe fn clipboard(&self) -> String;
+	fn clipboard(&self) -> String;
 	fn set_clipboard(&mut self, str: &str);
 	fn set_vsync(&mut self, enabled: bool);
 	fn resize(&mut self, size: uVec2);
@@ -69,7 +69,7 @@ impl GlfwWindow {
 	}
 }
 impl WindowSpec for GlfwWindow {
-	unsafe fn clipboard(&self) -> String {
+	fn clipboard(&self) -> String {
 		self.window.get_clipboard_string().unwrap_or_default()
 	}
 	fn set_clipboard(&mut self, s: &str) {

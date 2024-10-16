@@ -1,12 +1,12 @@
 pub use super::result::{UniformUnwrap, UniformUnwrapOrDefault};
 pub use text_color::term::*;
 
-pub async fn Term() -> Unblock<sync::io::Stdout> {
-	Unblock::new(sync::io::stdout())
+pub async fn Term() -> io::Stdout {
+	io::stdout()
 }
 
-pub async fn TermErr() -> Unblock<sync::io::Stderr> {
-	Unblock::new(sync::io::stderr())
+pub async fn TermErr() -> io::Stderr {
+	io::stderr()
 }
 
 pub async fn File() -> fs::File {
@@ -14,8 +14,8 @@ pub async fn File() -> fs::File {
 	unwrap(fs::File::create("log.txt").await, "couldn't create log file")
 }
 
-pub async fn Null() -> Unblock<io::Sink> {
-	Unblock::new(io::sink())
+pub async fn Null() -> io::Sink {
+	io::sink()
 }
 
 pub struct Logger;
@@ -34,7 +34,7 @@ impl Logger {
 		unwrap(unwrap_o(unsafe { LOGGER.get() }, "already exited").sender.send(Message::M(msg)), "failed to send");
 	}
 	pub fn shutdown_hook(f: impl FnOnce() + SendStat) {
-		POSTMORTEM.lock().expect("Shutdown hook add failed").push(Box(f));
+		POSTMORTEM.lock().expect("E| Shutdown hook add failed").push(Box(f));
 	}
 
 	pub fn level() -> i32 {
@@ -63,7 +63,7 @@ impl Logger {
 				}));
 				LEVEL = l;
 				let (sender, reciever) = chan::unbounded::<Message>();
-				let handle = task::spawn(async move {
+				let writer = task::Runtime().spawn(async move {
 					let mut out = out().await;
 					while let Ok(msg) = reciever.recv_async().await {
 						if let Message::M(msg) = msg {
@@ -74,7 +74,7 @@ impl Logger {
 						}
 					}
 				});
-				LoggerState { handle, sender }
+				LoggerState { writer, sender }
 			});
 		}
 	}
@@ -82,10 +82,10 @@ impl Logger {
 impl Drop for Logger {
 	fn drop(&mut self) {
 		Self::init_logger(check_order, Level::INFO);
-		POSTMORTEM.lock().expect("Shutdown hooks failed").drain(..).for_each(|f| f());
-		let LoggerState { handle, sender } = unsafe { LOGGER.take() }.valid();
+		POSTMORTEM.lock().expect("E| Shutdown hooks failed").drain(..).for_each(|f| f());
+		let LoggerState { writer, sender } = unsafe { LOGGER.take() }.valid();
 		unwrap(sender.send(Message::Close), "failed to close system");
-		task::block_on(handle);
+		task::Runtime().finish(writer);
 	}
 }
 
@@ -99,10 +99,10 @@ pub enum Level {
 }
 static mut LEVEL: Level = Level::INFO;
 static mut LOGGER: OnceLock<LoggerState> = OnceLock::new();
-static POSTMORTEM: sync::Mutex<Vec<Box<dyn FnOnce() + Send + 'static>>> = sync::Mutex::new(vec![]);
+static POSTMORTEM: Mutex<Vec<Box<dyn FnOnce() + Send>>> = Mutex::new(vec![]);
 
 struct LoggerState {
-	handle: Task<()>,
+	writer: Task<()>,
 	sender: Sender<Message>,
 }
 
@@ -164,9 +164,9 @@ fn unwrap_o<T>(v: Option<T>, msg: &str) -> T {
 	}
 }
 
-async fn check_order() -> Unblock<sync::io::Stdout> {
+async fn check_order() -> io::Stdout {
 	panic!("E| No logger! Add 'LOGGER!(logging::Term, INFO);' as first line in main()");
 }
 
-use crate::{asyn::*, lib::*, sync, text_color};
+use crate::{asyn::*, lib::*, text_color};
 use std::backtrace::Backtrace;

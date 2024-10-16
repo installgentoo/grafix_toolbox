@@ -2,23 +2,22 @@ pub mod sync {
 	pub use super::sync_pre::*;
 	pub use chan::{Receiver, Sender};
 	pub use crossbeam_channel as chan;
-	pub use std::sync::{Barrier, Mutex};
 	pub use std::{fs, io};
 }
 pub mod asyn {
 	pub use super::sync_pre::*;
 	pub use chan::{Receiver, Sender};
 	pub use flume as chan;
-	pub use smol::lock::{Barrier, Mutex};
-	pub use smol::Unblock;
-	pub use smol::{fs, io};
+	pub use tokio::{fs, io, io::AsyncRead, io::AsyncReadExt, io::AsyncWrite, io::AsyncWriteExt};
 }
 mod sync_pre {
 	pub mod task {
-		pub use smol::{block_on, future::poll_once, spawn, Timer};
+		pub use super::super::policies::task::Runtime;
+		pub use tokio::{task::*, time::sleep};
 	}
-	pub use smol::{future, prelude::*, stream, Task};
-	pub use std::sync::{atomic::*, OnceLock};
+	pub use super::policies::task::Task;
+	pub use futures_lite::{future, stream, Future, FutureExt, Stream, StreamExt};
+	pub use std::sync::{atomic::*, Barrier, Mutex, MutexGuard, OnceLock};
 	pub use std::thread::{self, JoinHandle};
 }
 #[cfg(not(feature = "adv_fs"))]

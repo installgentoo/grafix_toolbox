@@ -244,9 +244,9 @@ impl<'s: 'l, 'l> Lock::TextEdit<'s, 'l, '_> {
 							let ins = RenderLock::clipboard();
 							if beg != end {
 								history.push(Delete(text[b..e].into(), b, beg));
-								text.str().replace_range(b..e, ins);
+								text.str().replace_range(b..e, &ins);
 							} else {
-								text.str().insert_str(b, ins);
+								text.str().insert_str(b, &ins);
 							}
 							history.push(Insert(ins.into(), b, beg));
 							*caret = beg;

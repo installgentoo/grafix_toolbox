@@ -1,4 +1,4 @@
-use crate::{asyn::*, lib::*};
+use crate::{lib::*, sync::*};
 use std::pin;
 
 #[derive(Clone)]
@@ -37,7 +37,7 @@ impl<T: SendStat + Default> Lazy<T> {
 	pub fn new(stream: impl Stream<Item = T> + SendStat) -> Self {
 		let loaded = Arc::new(AtomicBool::new(false));
 		Self {
-			state: Init(task::spawn({
+			state: Init(task::Runtime().spawn({
 				let (l, mut s) = (loaded.clone(), Box::pin(stream) as pin::Pin<Box<dyn Stream<Item = T> + Send>>);
 				async move {
 					let r = s.next().await;
@@ -89,12 +89,12 @@ fn check_and_load<T: SendStat + Default>(blocking: bool, lazy: &mut Lazy<T>) -> 
 				l.store(false, Ordering::Relaxed);
 				Loading(
 					v,
-					task::spawn({
+					task::Runtime().spawn({
 						let l = loaded.clone();
 						async move {
 							let r = s.next().await;
 							while l.load(Ordering::Relaxed) {
-								task::Timer::after(time::Duration::from_millis(10)).await;
+								task::sleep(time::Duration::from_millis(10)).await;
 							}
 							l.store(true, Ordering::Relaxed);
 							(r, s)
@@ -105,10 +105,10 @@ fn check_and_load<T: SendStat + Default>(blocking: bool, lazy: &mut Lazy<T>) -> 
 			.map(|v| (v, true))
 		};
 
-		if blocking {
-			Some(reload(task::block_on(t)))
+		if blocking || t.is_ready() {
+			Some(reload(task::Runtime().finish_ref(t)))
 		} else {
-			task::block_on(task::poll_once(t)).map(reload)
+			None
 		}
 	};
 
@@ -121,7 +121,7 @@ fn check_and_load<T: SendStat + Default>(blocking: bool, lazy: &mut Lazy<T>) -> 
 		Init(mut t) => {
 			if let Some(v) = check_progress(blocking, &mut t) {
 				v.unwrap_or_else(|| {
-					FAIL!("Source {t:?} failed to start");
+					FAIL!("Source for Lazy<{}> failed to start", type_name::<T>());
 					(Quit(Def()), false)
 				})
 			} else {

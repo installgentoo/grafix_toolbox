@@ -41,47 +41,41 @@ pub mod Save {
 	}
 	type Message = (Astr, MessageType, Arc<[u8]>);
 	fn sender() -> &'static Sender<Message> {
+		use MessageType::*;
 		static SENDER: OnceLock<Sender<Message>> = OnceLock::new();
-		SENDER.get_or_init(move || {
+		SENDER.get_or_init(|| {
 			let (sn, rx) = chan::unbounded::<Message>();
-			let handle = task::spawn(async move {
+			let writer = task::Runtime().spawn(async move {
 				while let Ok(msg) = rx.recv_async().await {
-					let disk = task::spawn(async move {
-						use MessageType::*;
-						let (name, operation, data) = msg;
-						let file = match operation {
-							Write | ComprW(_) => fs::File::create(&*name).await,
-							Append => fs::OpenOptions::new().append(true).create(true).open(&*name).await,
-							Close => return false,
+					let (name, operation, data) = msg;
+					let file = match operation {
+						Close => break,
+						Write | ComprW(_) => fs::File::create(&*name).await,
+						Append => fs::OpenOptions::new().append(true).create(true).open(&*name).await,
+					};
+
+					if let Ok(mut file) = file {
+						let data = if let ComprW(l) = operation {
+							zstd::stream::encode_all(&data[..], l)
+								.explain_err(|| format!("Cannot encode data for file {name:?}"))
+								.warn()
+								.into()
+						} else {
+							data
 						};
 
-						if let Ok(mut file) = file {
-							let data = if let ComprW(l) = operation {
-								zstd::stream::encode_all(&data[..], l)
-									.explain_err(|| format!("Cannot encode data for file {name:?}"))
-									.warn()
-									.into()
-							} else {
-								data
-							};
-
-							file.write_all(&data).await.explain_err(|| format!("Cannot write {name:?}")).warn();
-							file.sync_all().await.explain_err(|| format!("Cannot sync {name:?}")).warn();
-						} else {
-							let name: PathBuf = (*name).into();
-							FAIL!("{:?}", fmt_err(file, &name));
-						}
-						true
-					});
-					if !disk.await {
-						break;
+						file.write_all(&data).await.explain_err(|| format!("Cannot write {name:?}")).warn();
+						file.sync_all().await.explain_err(|| format!("Cannot sync {name:?}")).warn();
+					} else {
+						let name: PathBuf = (*name).into();
+						FAIL!("{:?}", fmt_err(file, &name));
 					}
 				}
 			});
 
 			logging::Logger::shutdown_hook(move || {
-				sender().send(("".into(), MessageType::Close, vec![].into())).expect("E| Cannot close async write system");
-				task::block_on(handle);
+				sender().send(("".into(), Close, vec![].into())).expect("E| Cannot close async write system");
+				task::Runtime().finish(writer);
 			});
 
 			sn
@@ -177,7 +171,7 @@ fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader: impl Fn
 
 					if !_first {
 						while !p.exists() {
-							task::Timer::after(time::Duration::from_millis(100)).await;
+							task::sleep(time::Duration::from_millis(100)).await;
 						}
 					}
 

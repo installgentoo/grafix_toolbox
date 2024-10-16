@@ -35,21 +35,21 @@ macro_rules! PROFILER {
 			use GenericTimer as Timer;
 
 			pub fn Start(name: STR) {
-				let mut lock = map().lock().valid();
+				let mut lock = map();
 				let t = lock.remove(name).unwrap_or_else(Timer::new::<$t>);
 				lock.insert(name, t.start(name));
 			}
 			pub fn Stop(name: STR) {
-				let mut lock = map().lock().valid();
+				let mut lock = map();
 				let t = lock.remove(name).unwrap_or_else(Timer::new::<$t>);
 				lock.insert(name, t.stop(name));
 			}
 			pub fn Print(name: &str) {
-				let t = map().lock().valid().remove(name).expect(&format!("No timer {name:?}"));
+				let t = map().remove(name).expect(&format!("No timer {name:?}"));
 				print_impl(name, t);
 			}
 			pub fn PrintAll() {
-				let mut all = map().lock().valid().drain().collect_vec();
+				let mut all = map().drain().collect_vec();
 				all.sort_by(|(a, _), (b, _)| a.cmp(b));
 				all.into_iter().for_each(|(n, t)| print_impl(n, t));
 			}
@@ -67,15 +67,11 @@ macro_rules! PROFILER {
 				};
 				PRINT!("Timer {name:?}: {} |{i}", format());
 			}
-			fn map() -> &'static mut Mutex<HashMap<STR, Timer>> {
-				static mut MAP: OnceLock<Mutex<HashMap<&str, Timer>>> = OnceLock::new();
-				unsafe {
-					MAP.get_or_init(|| {
-						logging::Logger::shutdown_hook(PrintAll);
-						Def()
-					});
-					MAP.get_mut().valid()
-				}
+			fn map<'s>() -> MutexGuard<'s, HashMap<STR, Timer>> {
+				LazyStatic!(HashMap<STR, Timer>, {
+					logging::Logger::shutdown_hook(PrintAll);
+					Def()
+				})
 			}
 		}
 	};
@@ -116,11 +112,11 @@ impl GenericTimer {
 
 type Started = Box<dyn Stop>;
 type Done = Box<dyn Start>;
-trait Start {
+trait Start: SendStat {
 	fn start(self: Box<Self>) -> Started;
 	fn get_res(self: Box<Self>) -> (u128, u128);
 }
-trait Stop {
+trait Stop: SendStat {
 	fn stop(self: Box<Self>) -> Done;
 }
 trait New {
