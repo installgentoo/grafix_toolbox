@@ -61,6 +61,11 @@ impl GlfwWindow {
 		}
 		crate::GL!(gl::Disable(gl::DITHER));
 
+		window.glfw.set_error_callback(|e, d| match e {
+			glfw::Error::FormatUnavailable => panic!(), // Emitted on bad clipboard
+			_ => ERROR!("{e}: {d}"),
+		});
+
 		let info = FrameInfo::new((w, h));
 		Ok(Self { window, events, resized_hint: true, info })
 	}
