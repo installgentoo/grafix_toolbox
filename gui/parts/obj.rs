@@ -50,21 +50,17 @@ impl Base {
 	}
 }
 
-#[inline(always)]
 pub fn opaque(c: Color) -> bool {
 	c.3 >= 0.996
 }
-#[inline(always)]
 pub fn geom_cmp(pos: Vec2, size: Vec2, crop: &Crop, r: &Base) -> bool {
 	pos != r.pos || size != r.size || *crop != r.crop
 }
-#[inline(always)]
 pub fn ordering_cmp<S: TexSize, T: Object>(c: Color, r: &T) -> bool {
 	(S::TYPE == gl::RGBA || !opaque(c)) != r.ordered()
 }
-#[inline(always)]
 pub fn atlas_cmp<S, F>(l: *const VTex2d<S, F>, r: *const VTex2d<S, F>) -> bool {
-	Rc::ptr_eq(&unsafe { &*l }.tex, &unsafe { &*r }.tex)
+	unsafe { (&*l).eq_atlas(&*r) }
 }
 
 pub fn bound_uv((crop1, crop2): Crop, (xy1, xy2): Crop, (u1, v1, u2, v2): TexCoord) -> TexCoord {

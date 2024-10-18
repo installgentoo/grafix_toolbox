@@ -1,12 +1,11 @@
 use crate::lib::*;
-use std::cell::UnsafeCell;
 
 pub trait Fetcher<K, T> {
 	fn get(&self, _: K) -> &T;
 	fn take(&self, _: K) -> T;
 }
 
-pub struct Prefetched<'a, K, T, M>(UnsafeCell<mSelf<'a, K, T, M>>);
+pub struct Prefetched<'a, K, T, M>(Cell<mSelf<'a, K, T, M>>);
 enum mSelf<'a, K, T, M> {
 	Started(Box<Option<(K, &'a M)>>),
 	Done(&'a T),
@@ -14,10 +13,10 @@ enum mSelf<'a, K, T, M> {
 
 impl<'a, K, T, M: Fetcher<K, T>> Prefetched<'a, K, T, M> {
 	pub fn new(k: K, m: &'a M) -> Self {
-		Self(UnsafeCell::new(Started(Box(Some((k, m))))))
+		Self(Cell(Started(Box(Some((k, m))))))
 	}
 	pub fn get(&self) -> &T {
-		let s = unsafe { &mut *self.0.get() };
+		let s = unsafe { &mut *self.0.as_ptr() };
 		match s {
 			Done(v) => v,
 			Started(b) => {
@@ -40,4 +39,4 @@ impl<'a, K, T, M: Fetcher<K, T>> Prefetched<'a, K, T, M> {
 	}
 }
 
-use mSelf::{Done, Started};
+use mSelf::*;

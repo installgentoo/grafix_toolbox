@@ -49,7 +49,7 @@ impl Environment {
 		}
 
 		let lut = Self::lut();
-		let _ = ser::SERDE::ToVec(&lut).map(|v| FS::Save::Archive((cache, v)));
+		let _ = ser::SERDE::ToVec(&lut).map(|v| FS::Save::Archive((cache, v, 22)));
 		lut.into()
 	}
 	pub fn lut() -> fImage<RG> {
@@ -108,7 +108,7 @@ impl Environment {
 			})
 			.collect_arr();
 
-		let mips = TexParam::mip_levels(cubemap.param.w);
+		let mips = cubemap.param.mips_max();
 		let specular = vec![color]
 			.into_iter()
 			.chain(

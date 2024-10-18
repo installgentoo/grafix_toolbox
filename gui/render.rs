@@ -172,8 +172,8 @@ impl Renderer {
 	fn consume_events(&mut self, logics: Vec<LogicStorage>, events: &mut Vec<Event>) {
 		let Self { ref objs, focus, mouse_pos, .. } = self;
 
-		let logics = UnsafeCell::new(logics);
-		let logics = || unsafe { &mut *logics.get() }.iter_mut().rev();
+		let logics = Cell(logics);
+		let logics = || unsafe { &mut *logics.as_ptr() }.iter_mut().rev();
 		events.retain(|e| {
 			map_variant!(&MouseMove { at, .. } = e => *mouse_pos = at);
 			let refocus = if let MouseButton { state, .. } = e { state.contains(Mod::PRESS) } else { false };

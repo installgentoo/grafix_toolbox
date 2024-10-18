@@ -7,14 +7,12 @@ pub struct Sprite<'r, S> {
 	pub tex: &'r VTex2d<S, u8>,
 }
 impl<S: TexSize> Sprite<'_, S> {
-	#[inline(always)]
 	pub fn compare(&self, crop: &Crop, r: &SpriteImpl<S>) -> State {
 		let &Self { pos, size, color, tex: tex_new } = self;
 		let xyzw = (State::XYZW | State::UV).or_def(geom_cmp(pos, size, crop, &r.base));
 		let rgba = State::RGBA.or_def(color != r.base.color);
-		let tex = State::UV.or_def(!ptr::eq(tex_new, r.tex));
-		let ord = State::MISMATCH.or_def((!tex.is_empty() && atlas_cmp(tex_new, r.tex)) || (!rgba.is_empty() && ordering_cmp::<S, _>(color, r)));
-		ord | xyzw | rgba | tex
+		let ord = State::MISMATCH.or_def(!ptr::eq(r.tex, tex_new) || (!rgba.is_empty() && ordering_cmp::<S, _>(color, r)));
+		ord | xyzw | rgba
 	}
 	pub fn obj(self, crop: Crop) -> SpriteImpl<S> {
 		let Self { pos, size, color, tex } = self;
@@ -63,7 +61,7 @@ impl<S: TexSize> Object for SpriteImpl<S> {
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
 		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__col_tex]) });
 
-		let t = unsafe { &*self.tex }.tex.Bind(sampler());
+		let t = unsafe { &*self.tex }.atlas.Bind(sampler());
 		let _ = Uniforms!(s, ("tex", t));
 		b.Draw((num, offset, gl::TRIANGLES));
 	}

@@ -19,7 +19,7 @@ impl<S: TexSize, F: TexFmt, B: Buffer> TexBuffer<'_, S, F, B> {
 		);
 		GL!(glTextureBuffer(GL_TEXTURE_BUFFER::TYPE, tex.obj, fmt, buf.obj));
 		let (b, f, s) = (Dummy, Dummy, Dummy);
-		let unit = Cell::new(0);
+		let unit = Cell(0);
 		Self { tex, unit, b, f, s }
 	}
 	pub fn Bind(&self) -> TexBuffBinding {

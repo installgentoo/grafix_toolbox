@@ -42,7 +42,7 @@ impl<S: TexSize, F: TexFmt, T: Borrow<Image<S, F>>> From<T> for Tex2d<S, F> {
 }
 impl<S: TexSize, F: TexFmt> Tex2d<S, F> {
 	pub fn from_type<RS: TexSize, RF: TexFmt>(img: &Image<RS, RF>) -> Self {
-		let mut t = Tex2d::new_empty((img.w, img.h));
+		let mut t = Tex2d::new_empty((img.w, img.h), 1);
 		t.UpdateCustom::<RS, RF, _>(&img.data[..]);
 		t
 	}
@@ -51,12 +51,8 @@ impl<S: TexSize, F: TexFmt> Tex2d<S, F> {
 impl<S: TexSize, F: TexFmt> From<&[&Cube<S, F>]> for CubeTex<S, F> {
 	fn from(mips: &[&Cube<S, F>]) -> Self {
 		let w = i32(mips[0][0].w);
-		let l = TexParam::mip_levels(w);
-		let p = TexParam { w, h: w, d: 1, l };
-		ASSERT!(i32(mips.len()) <= l, "Given {} images, but only {l} mip levels", mips.len());
-		let l = mips.len();
-
-		let mut t = CubeTex::new_empty((l, w, w));
+		let p = TexParam { w, h: w, d: 1, l: i32(mips.len()) }.validate();
+		let mut t = CubeTex::new_empty((p.w, p.h), p.l);
 
 		mips.iter().enumerate().for_each(|(l, cube)| {
 			cube.iter().enumerate().for_each(|(n, i)| {

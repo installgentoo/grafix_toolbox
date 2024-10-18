@@ -135,7 +135,6 @@ pub enum ObjStore {
 	Text(TextImpl),
 }
 impl ObjStore {
-	#[inline(always)]
 	pub fn obj(&self) -> &dyn Object {
 		match self {
 			Rect(r) => r,

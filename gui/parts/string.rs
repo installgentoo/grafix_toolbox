@@ -73,7 +73,6 @@ impl<'a> Text<'_, 'a> {
 			.unwrap_or_default();
 		(size, u32(len))
 	}
-	#[inline(always)]
 	pub fn compare(&self, crop: &Crop, r: &TextImpl) -> State {
 		let &Self { pos, scale, color, text, font } = self;
 		let text = *text != *r.text;

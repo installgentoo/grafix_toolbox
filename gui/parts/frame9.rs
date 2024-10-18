@@ -8,14 +8,12 @@ pub struct Frame9<'r> {
 	pub theme: &'r VTex2d<RGBA, u8>,
 }
 impl Frame9<'_> {
-	#[inline(always)]
 	pub fn compare(&self, crop: &Crop, r: &Frame9Impl) -> State {
 		let &Self { pos, size, corner, color, theme } = self;
 		let xyzw = (State::XYZW | State::UV).or_def(geom_cmp(pos, size, crop, &r.base) || corner != r.corner);
 		let rgba = State::RGBA.or_def(color != r.base.color);
-		let tex = State::UV.or_def(!ptr::eq(theme, r.tex));
-		let ord = State::MISMATCH.or_def(!tex.is_empty() && atlas_cmp(theme, r.tex));
-		ord | xyzw | rgba | tex
+		let ord = State::MISMATCH.or_def(!ptr::eq(theme, r.tex));
+		ord | xyzw | rgba
 	}
 	pub fn obj(self, crop: Crop) -> Frame9Impl {
 		let Self { pos, size, corner, color, theme } = self;
@@ -45,7 +43,7 @@ impl Object for Frame9Impl {
 		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__frame]) });
 
 		let tex = unsafe { &*self.tex };
-		let t = tex.tex.Bind(sampler());
+		let t = tex.atlas.Bind(sampler());
 		let (x, y, w, _) = tex.region;
 		let _ = Uniforms!(s, ("tex", t), ("iThemeCoords", (x, y, w - x)));
 		b.Draw((num, offset, gl::TRIANGLES));

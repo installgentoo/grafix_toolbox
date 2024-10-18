@@ -1,3 +1,5 @@
+pub use {button::*, hypertext::*, label::*, layout::*, lineedit::*, selector::*, slider::*, textedit::*};
+
 macro_rules! element_lock {
 	($($t: ident),+) => {
 		pub mod Lock {
@@ -17,9 +19,7 @@ macro_rules! element_lock {
 		}
 	};
 }
-
 element_lock!(Button, HyperText, Label, Layout, LineEdit, Selector, Slider, TextEdit);
-pub use {button::*, hypertext::*, label::*, layout::*, lineedit::*, selector::*, slider::*, textedit::*};
 
 #[derive(Default, Debug)]
 pub struct Theme {

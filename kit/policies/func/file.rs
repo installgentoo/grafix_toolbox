@@ -24,12 +24,12 @@ pub mod Save {
 		i32: Cast<C>,
 	{
 		fn get(self) -> Args {
-			(self.0.into(), self.1.into(), i32(self.2))
+			(self.0.into(), self.1.into(), i32(self.2).clamp(1, 22))
 		}
 	}
 	impl<T: Into<Arc<[u8]>>, F: Into<Astr>> CompressArgs for (F, T) {
 		fn get(self) -> Args {
-			(self.0.into(), self.1.into(), 0)
+			(self.0.into(), self.1.into(), 1)
 		}
 	}
 
@@ -56,7 +56,9 @@ pub mod Save {
 
 					if let Ok(mut file) = file {
 						let data = if let ComprW(l) = operation {
-							zstd::stream::encode_all(&data[..], l)
+							task::spawn_blocking(move || zstd::stream::encode_all(&data[..], l))
+								.await
+								.fail()
 								.explain_err(|| format!("Cannot encode data for file {name:?}"))
 								.warn()
 								.into()

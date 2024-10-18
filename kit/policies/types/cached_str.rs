@@ -59,3 +59,8 @@ impl PartialEq for CachedStr {
 		self.str == r.str
 	}
 }
+impl PartialEq<String> for CachedStr {
+	fn eq(&self, r: &String) -> bool {
+		self.str == *r
+	}
+}

@@ -2,21 +2,18 @@ pub mod sync {
 	pub use super::sync_pre::*;
 	pub use chan::{Receiver, Sender};
 	pub use crossbeam_channel as chan;
-	pub use std::{fs, io};
 }
 pub mod asyn {
 	pub use super::sync_pre::*;
 	pub use chan::{Receiver, Sender};
 	pub use flume as chan;
-	pub use tokio::{fs, io, io::AsyncRead, io::AsyncReadExt, io::AsyncWrite, io::AsyncWriteExt};
 }
 mod sync_pre {
 	pub mod task {
 		pub use super::super::policies::task::Runtime;
 		pub use tokio::{task::*, time::sleep};
 	}
-	pub use super::policies::task::Task;
-	pub use futures_lite::{future, stream, Future, FutureExt, Stream, StreamExt};
+	pub use super::policies::task::{pre::*, Task};
 	pub use std::sync::{atomic::*, Barrier, Mutex, MutexGuard, OnceLock};
 	pub use std::thread::{self, JoinHandle};
 }
@@ -31,9 +28,8 @@ pub mod ser {
 	pub use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 }
 pub mod stdlib {
-	pub use std::cell::{Cell, RefCell, UnsafeCell};
 	pub use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
-	pub use std::{borrow::Borrow, char, fmt, fmt::Debug, iter, mem, ops, ops::Range, ptr, rc::Rc, rc::Weak, slice, sync::Arc, time};
+	pub use std::{borrow::Borrow, cell::Cell, char, fmt, fmt::Debug, iter, mem, ops, ops::Range, ptr, rc::Rc, rc::Weak, slice, sync::Arc, time};
 	pub use std::{cmp::Ordering as ord, marker::PhantomData as Dummy, mem::size_of as type_size};
 }
 pub mod lib {

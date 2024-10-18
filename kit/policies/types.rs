@@ -12,7 +12,7 @@ pub mod ext {
 	}
 	impl<T: Send + Sync> TPtr<T> {
 		pub unsafe fn new(t: &mut T) -> Self {
-			let ptr = t as *const T as usize;
+			let ptr = t as *mut T as usize;
 			Self { ptr, t: Dummy }
 		}
 		pub fn get(&self) -> &'static T {
@@ -57,9 +57,9 @@ macro_rules! LazyStatic {
 #[macro_export]
 macro_rules! LocalStatic {
 	($t: ty, $b: block) => {{
-		use std::{cell::OnceCell, cell::UnsafeCell, mem::ManuallyDrop};
-		thread_local!(static S: OnceCell<ManuallyDrop<UnsafeCell<$t>>> = Default::default());
-		let r = S.with(|f| f.get_or_init(|| ManuallyDrop::new(UnsafeCell::new($b))).get());
+		use std::{cell::OnceCell, cell::Cell, mem::ManuallyDrop};
+		thread_local!(static S: OnceCell<ManuallyDrop<Cell<$t>>> = Default::default());
+		let r = S.with(|f| f.get_or_init(|| ManuallyDrop::new(Cell::new($b))).as_ptr());
 		unsafe { &mut *r }
 	}};
 	($t: ty) => {

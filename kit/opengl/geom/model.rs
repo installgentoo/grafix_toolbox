@@ -65,7 +65,7 @@ impl Model {
 
 		let model: Res<Self> = (|| {
 			let m = Self::load_models(name, 1.)?.into_iter().next().ok_or("Empty models file")?;
-			let _ = ser::SERDE::ToVec(&m).map(|v| FS::Save::Archive((cache, v)));
+			let _ = ser::SERDE::ToVec(&m).map(|v| FS::Save::Archive((cache, v, 22)));
 			Ok(m)
 		})();
 		model

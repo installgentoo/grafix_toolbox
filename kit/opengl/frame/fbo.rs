@@ -7,7 +7,7 @@ pub struct Fbo<S, F> {
 impl<S: TexSize, F: TexFmt> Fbo<S, F> {
 	pub fn new(args: impl FboArgs) -> Self {
 		let (w, h) = args.get();
-		let tex = Tex2d::<S, F>::new_empty((w, h));
+		let tex = Tex2d::<S, F>::new_empty((w, h), 1);
 		let fb = Framebuffer::new().attach((&tex, gl::COLOR_ATTACHMENT0));
 		Self { fb, tex }
 	}

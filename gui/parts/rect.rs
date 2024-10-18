@@ -6,7 +6,6 @@ pub struct Rect {
 	pub color: Color,
 }
 impl Rect {
-	#[inline(always)]
 	pub fn compare(&self, crop: &Crop, r: &RectImpl) -> State {
 		let &Self { pos, size, color } = self;
 		let xyzw = State::XYZW.or_def(geom_cmp(pos, size, crop, &r.base));

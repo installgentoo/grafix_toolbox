@@ -121,7 +121,7 @@ fn compile(includes: &str, sources: &mut HashMap<Str, ShdState>, files: &mut [La
 		return Err(format!("Error linking program {:?}, {obj}\n{}", name.join(" "), print_shader_log(obj)));
 	}
 
-	DEBUG!("Compiled shader {}:{:?}", prog.obj, name.join(" "));
+	DEBUG!("Compiled GL shader {}:{:?}", prog.obj, name.join(" "));
 	Ok(prog)
 }
 

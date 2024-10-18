@@ -4,7 +4,7 @@ pub mod ext {
 
 pub mod pre {
 	pub use super::func::{chksum, ext::*, index::*, logging, n_iter::*, result::*, vec::*};
-	pub use super::types::{cached::*, cached_str::*, ext::*, memoized::*};
+	pub use super::types::{cached::*, cached_str::*, ext::*, memoized::Memoized};
 	pub use super::{math::pre::*, traits::*};
 
 	pub type STR = &'static str;
@@ -14,7 +14,9 @@ pub mod pre {
 	pub fn Box<T>(v: T) -> Box<T> {
 		Box::new(v)
 	}
-
+	pub fn Cell<T>(v: T) -> std::cell::Cell<T> {
+		std::cell::Cell::new(v)
+	}
 	pub fn Def<T: Default>() -> T {
 		Default::default()
 	}

@@ -60,20 +60,15 @@ pub trait Round: Copy + cmp::PartialOrd {
 }
 impl_trait_for!(Round = u8, u16, u32, u64, u128, usize);
 macro_rules! rounding {
-	($t: ty) => {
-		impl Round for $t {
+	($($t: ty),+) => {
+		$(impl Round for $t {
 			fn abs(self) -> Self {
 				self.abs()
 			}
-		}
+		})+
 	};
 }
-rounding!(i8);
-rounding!(i16);
-rounding!(i32);
-rounding!(i64);
-rounding!(i128);
-rounding!(isize);
+rounding!(i8, i16, i32, i64, i128, isize);
 impl Round for f16 {
 	fn round(self) -> Self {
 		f16(f32(self).round())
@@ -83,47 +78,35 @@ impl Round for f16 {
 	}
 }
 macro_rules! rounding_f {
-	($t: ty) => {
-		impl Round for $t {
+	($($t: ty),+) => {
+		$(impl Round for $t {
 			fn round(self) -> Self {
 				self.round()
 			}
 			fn abs(self) -> Self {
 				self.abs()
 			}
-		}
+		})+
 	};
 }
-rounding_f!(f32);
-rounding_f!(f64);
+rounding_f!(f32, f64);
 
 pub trait Pow<T> {
 	fn power(self, _: T) -> Self;
 }
 macro_rules! pow {
-	($t: ty) => {
-		impl<T> Pow<T> for $t
+	($($t: ty),+) => {
+		$(impl<T> Pow<T> for $t
 		where
 			u32: Cast<T>,
 		{
 			fn power(self, r: T) -> Self {
 				self.pow(u32(r))
 			}
-		}
+		})+
 	};
 }
-pow!(i8);
-pow!(i16);
-pow!(i32);
-pow!(i64);
-pow!(i128);
-pow!(isize);
-pow!(u8);
-pow!(u16);
-pow!(u32);
-pow!(u64);
-pow!(u128);
-pow!(usize);
+pow!(u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, usize, isize);
 impl<T> Pow<T> for f16
 where
 	i32: Cast<T>,
@@ -133,47 +116,35 @@ where
 	}
 }
 macro_rules! powi {
-	($t: ty) => {
-		impl<T> Pow<T> for $t
+	($($t: ty),+) => {
+		$(impl<T> Pow<T> for $t
 		where
 			i32: Cast<T>,
 		{
 			fn power(self, r: T) -> Self {
 				self.powi(i32(r))
 			}
-		}
+		})+
 	};
 }
-powi!(f32);
-powi!(f64);
+powi!(f32, f64);
 
 pub trait EucMod<T> {
 	fn euc_mod(self, _: T) -> Self;
 }
 macro_rules! euc_mod {
-	($t: ty) => {
-		impl<T> EucMod<T> for $t
+	($($t: ty),+) => {
+		$(impl<T> EucMod<T> for $t
 		where
 			Self: Cast<T>,
 		{
 			fn euc_mod(self, r: T) -> Self {
 				self.rem_euclid(Self::to(r))
 			}
-		}
+		})+
 	};
 }
-euc_mod!(i8);
-euc_mod!(i16);
-euc_mod!(i32);
-euc_mod!(i64);
-euc_mod!(i128);
-euc_mod!(isize);
-euc_mod!(u8);
-euc_mod!(u16);
-euc_mod!(u32);
-euc_mod!(u64);
-euc_mod!(u128);
-euc_mod!(usize);
+euc_mod!(u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, f32, f64, usize, isize);
 impl<T> EucMod<T> for f16
 where
 	f32: Cast<T>,
@@ -182,8 +153,6 @@ where
 		f16(self.to_f32().rem_euclid(f32(r)))
 	}
 }
-euc_mod!(f32);
-euc_mod!(f64);
 
 pub trait Precise: Default + PartialEq {
 	fn mix(self, a: f32, r: Self) -> Self;
@@ -193,31 +162,18 @@ pub trait Precise: Default + PartialEq {
 	}
 }
 macro_rules! sqrt {
-	($t: ty) => {
-		impl Precise for $t {
+	($($t: ty),+) => {
+		$(impl Precise for $t {
 			fn mix(self, a: f32, r: Self) -> Self {
 				Self::to(f32(self) * (1. - a) + f32(r) * a)
 			}
 			fn root(self) -> Self {
 				Self::to(f32(self).sqrt())
 			}
-		}
+		})+
 	};
 }
-sqrt!(i8);
-sqrt!(i16);
-sqrt!(i32);
-sqrt!(i64);
-sqrt!(i128);
-sqrt!(isize);
-sqrt!(u8);
-sqrt!(u16);
-sqrt!(u32);
-sqrt!(u64);
-sqrt!(u128);
-sqrt!(usize);
-sqrt!(f16);
-sqrt!(f32);
+sqrt!(u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, f16, f32, usize, isize);
 impl Precise for f64 {
 	fn mix(self, a: f32, r: Self) -> Self {
 		let a = f64(a);

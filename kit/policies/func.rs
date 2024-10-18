@@ -59,7 +59,6 @@ pub mod ext {
 		fn or_val(self, filter: bool, val: Self) -> Self;
 	}
 	impl<T: Default> OrAssignment for T {
-		#[inline(always)]
 		fn or_def(self, filter: bool) -> Self {
 			if filter {
 				self
@@ -67,7 +66,6 @@ pub mod ext {
 				Self::default()
 			}
 		}
-		#[inline(always)]
 		fn or_val(self, filter: bool, v: Self) -> Self {
 			if filter {
 				self

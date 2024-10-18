@@ -60,7 +60,7 @@ where
 		.into_iter()
 		.map(|(id, reg)| {
 			let region = (0.5, -0.5, 0.5, -0.5).sum(reg).div((max_w, max_h, max_w, max_h));
-			(id, VTex2d { region, tex: tex.clone() })
+			(id, VTex2d { region, atlas: tex.clone() })
 		})
 		.collect();
 

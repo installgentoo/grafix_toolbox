@@ -1,9 +1,11 @@
 #[cfg(not(debug_assertions))]
 #[macro_export]
-#[allow(clippy::macro_metavars_in_unsafe)]
 macro_rules! GL {
 	($fun: expr) => {{
-		unsafe { $fun }
+		#[allow(clippy::macro_metavars_in_unsafe, unused_unsafe)]
+		unsafe {
+			$fun
+		}
 	}};
 }
 

@@ -1,4 +1,8 @@
-use crate::lib::*;
+pub mod pre {
+	pub use futures_lite::{future, stream, Future, FutureExt, Stream, StreamExt};
+	pub use io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+	pub use tokio::{fs, io};
+}
 
 pub fn Runtime() -> &'static RT {
 	static S: OnceLock<RT> = OnceLock::new();
@@ -29,6 +33,9 @@ pub struct RT(rt::Runtime);
 
 pub struct Task<T>(Option<tokio::task::JoinHandle<T>>);
 impl<T> Task<T> {
+	pub fn new_uninit() -> Self {
+		Self(None)
+	}
 	pub fn is_ready(&self) -> bool {
 		self.0.as_ref().map_or(false, |s| s.is_finished())
 	}
@@ -41,5 +48,4 @@ impl<T> Drop for Task<T> {
 	}
 }
 
-use std::{future::Future, sync::OnceLock};
-use tokio::runtime as rt;
+use {crate::lib::*, pre::*, std::sync::OnceLock, tokio::runtime as rt};

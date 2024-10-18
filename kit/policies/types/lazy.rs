@@ -2,29 +2,29 @@ use crate::{lib::*, sync::*};
 use std::pin;
 
 #[derive(Clone)]
-pub struct RcLazy<T>(Rc<UnsafeCell<Lazy<T>>>);
+pub struct RcLazy<T>(Rc<Cell<Lazy<T>>>);
 impl<T: SendStat + Default> RcLazy<T> {
 	pub fn changed(&mut self) -> bool {
-		unsafe { &mut *self.0.get() }.changed()
+		unsafe { &mut *self.0.as_ptr() }.changed()
 	}
 	pub fn get(&mut self) -> &mut T {
-		unsafe { &mut *self.0.get() }.get()
+		unsafe { &mut *self.0.as_ptr() }.get()
 	}
 }
 impl<T> ops::Deref for RcLazy<T> {
 	type Target = Lazy<T>;
 	fn deref(&self) -> &Self::Target {
-		unsafe { &*self.0.get() }
+		unsafe { &*self.0.as_ptr() }
 	}
 }
 impl<T> ops::DerefMut for RcLazy<T> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
-		unsafe { &mut *self.0.get() }
+		unsafe { &mut *self.0.as_ptr() }
 	}
 }
 impl<T> From<Lazy<T>> for RcLazy<T> {
 	fn from(s: Lazy<T>) -> Self {
-		let s = Rc::new(UnsafeCell::new(s));
+		let s = Rc::new(Cell(s));
 		Self(s)
 	}
 }
@@ -71,7 +71,7 @@ impl<T: SendStat + Default> Lazy<T> {
 	pub fn take(mut self) -> T {
 		self.get();
 
-		match mem::take(&mut self.state) {
+		match self.state {
 			Loading(v_last, _) => v_last,
 			Quit(v) => v,
 			_ => unreachable!(),
@@ -112,8 +112,7 @@ fn check_and_load<T: SendStat + Default>(blocking: bool, lazy: &mut Lazy<T>) -> 
 		}
 	};
 
-	let (s, changed) = match mem::take(state) {
-		TempNone => unreachable!(),
+	let (s, changed) = match mem::replace(state, Init(Task::new_uninit())) {
 		s @ Quit(_) => {
 			loaded.store(false, Ordering::Relaxed);
 			(s, false)
@@ -141,13 +140,10 @@ fn check_and_load<T: SendStat + Default>(blocking: bool, lazy: &mut Lazy<T>) -> 
 	changed
 }
 
-#[derive(Default)]
 enum State<T> {
 	Init(Task<(Option<T>, Source<T>)>),
 	Loading(T, Task<(Option<T>, Source<T>)>),
 	Quit(T),
-	#[default]
-	TempNone,
 }
 use State::*;
 type Source<T> = pin::Pin<Box<dyn Stream<Item = T> + Send>>;

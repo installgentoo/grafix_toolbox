@@ -27,7 +27,6 @@ impl Logger {
 		Self::init_logger(out, l);
 		Self
 	}
-	#[inline(always)]
 	pub fn log(msg: String) {
 		Self::init_logger(check_order, Level::INFO);
 

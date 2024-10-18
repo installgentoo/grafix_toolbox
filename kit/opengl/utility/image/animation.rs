@@ -36,7 +36,7 @@ impl<'a, S: TexSize> Animation<'a, S> {
 		if frames.is_empty() {
 			Err(format!("Empty animation file {anim_desc}"))
 		} else {
-			Ok(Self { frames, c: Cell::new(0), a: Dummy })
+			Ok(Self { frames, c: Cell(0), a: Dummy })
 		}
 	}
 	pub fn frame(&self, t: f32) -> &VTex2d<S, u8> {

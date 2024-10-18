@@ -43,7 +43,7 @@ impl Font {
 		let font: Res<_> = (|| {
 			let file = FS::Load::File(format!("res/{name}.ttf"))?;
 			let font = Self::new(&file, alphabet)?;
-			let _ = ser::SERDE::ToVec(&font).map(|v| FS::Save::Archive((cache, v)));
+			let _ = ser::SERDE::ToVec(&font).map(|v| FS::Save::Archive((cache, v, 3)));
 			Ok(font)
 		})();
 		font.explain_err(|| format!("Cannot load font {name:?}")).warn()
@@ -124,7 +124,7 @@ impl Font {
 			.into_iter()
 			.map(|(c, coord, adv)| {
 				let uv = atlas.remove(&c).map_or((0., 0., 0., 0.), |e| {
-					tex = Some(e.tex);
+					tex = Some(e.atlas);
 					e.region
 				});
 				let empty = uv.x() == uv.z() || uv.y() == uv.w();
