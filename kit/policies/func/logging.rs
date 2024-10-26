@@ -61,10 +61,10 @@ impl Logger {
 					));
 				}));
 				LEVEL = l;
-				let (sender, reciever) = chan::unbounded::<Message>();
+				let (sender, mut rx) = chan::unbounded::<Message>();
 				let writer = task::Runtime().spawn(async move {
 					let mut out = out().await;
-					while let Ok(msg) = reciever.recv_async().await {
+					while let Some(msg) = rx.recv().await {
 						if let Message::M(msg) = msg {
 							unwrap(out.write_all(msg.as_bytes()).await, "failed write");
 						} else {

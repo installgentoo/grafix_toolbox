@@ -9,16 +9,16 @@ impl Default for Slider {
 		Self { pip_pos: 1. }
 	}
 }
-impl<'s: 'l, 'l> Lock::Slider<'s, 'l, '_> {
-	pub fn draw(self, pos: Vec2, size: Vec2, pip_size: f32) -> f32 {
-		let Self { s, r, t } = self;
-
+impl Slider {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, (pos, size): Geom, pip_size: f32) -> f32 {
 		let vert = size.y() > size.x();
 		let o = move |v: Vec2| if vert { v.y() } else { v.x() };
 		let set_pip = move |v: f32| ((v - o(pos)) / o(size)).clamp(0., 1.);
 
-		let id = LUID(s);
-		let Slider { pip_pos } = s;
+		let id = LUID(self);
+		let Slider { pip_pos } = self;
+
+		*pip_pos = pip_pos.clamp(0., 1.);
 
 		let p = *pip_pos;
 		r.draw_with_logic(
@@ -30,7 +30,7 @@ impl<'s: 'l, 'l> Lock::Slider<'s, 'l, '_> {
 					MouseButton { state, .. } if state.pressed() => *pip_pos = set_pip(o(mouse_pos)),
 					MouseMove { at, .. } if focused => *pip_pos = set_pip(o(at)),
 					Scroll { at, .. } => {
-						*pip_pos = (*pip_pos + o(at.mul((-1, 1))) * pip_size).clamp(0., 1.);
+						*pip_pos += o(at.mul((-1, 1))) * pip_size;
 						return Accept;
 					}
 					_ => (),
@@ -50,5 +50,12 @@ impl<'s: 'l, 'l> Lock::Slider<'s, 'l, '_> {
 			color: t.highlight,
 		});
 		p
+	}
+}
+
+impl<'s: 'l, 'l> Lock::Slider<'s, 'l, '_> {
+	pub fn draw(self, g: Geom, p: f32) -> f32 {
+		let Self { s, r, t } = self;
+		s.draw(r, t, g, p)
 	}
 }

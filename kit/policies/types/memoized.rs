@@ -1,5 +1,10 @@
 use crate::lib::*;
 
+pub struct MemRes<T> {
+	pub changed: bool,
+	pub val: T,
+}
+
 pub trait MemoizedArgs<A> {
 	fn take(&self) -> A;
 	fn equal(&self, r: &A) -> bool;
@@ -18,7 +23,7 @@ impl<T, A: PC> Memoized<T, A> {
 	pub fn new(func: fn(&A) -> T, a: impl Into<A>) -> Self {
 		Self { last_args: Cell(a.into()), func, val: Cell(None) }
 	}
-	pub fn apply(&self, a: impl MemoizedArgs<A>) -> (bool, &T) {
+	pub fn apply(&self, a: impl MemoizedArgs<A>) -> MemRes<&T> {
 		let Self { last_args, func, val } = self;
 		let changed = if unsafe { &*val.as_ptr() }.is_none() || *self != a {
 			let a = a.take();
@@ -29,7 +34,7 @@ impl<T, A: PC> Memoized<T, A> {
 			false
 		};
 
-		(changed, unsafe { &*val.as_ptr() }.as_ref().valid())
+		MemRes { changed, val: unsafe { &*val.as_ptr() }.as_ref().valid() }
 	}
 	pub fn get_mut(&mut self) -> &mut T {
 		let Self { last_args, func, val } = self;
@@ -213,4 +218,4 @@ impl<A1: PC, A2: PC, A3: PC, A4: PC> MemoizedArgs<(A1, A2, A3, A4)> for (&A1, &A
 	}
 }
 
-trait_alias!(PC, PartialEq + Clone);
+trait_alias!(pub PC, PartialEq + Clone);

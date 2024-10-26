@@ -7,14 +7,14 @@ pub struct Sprite<'r, S> {
 	pub tex: &'r VTex2d<S, u8>,
 }
 impl<S: TexSize> Sprite<'_, S> {
-	pub fn compare(&self, crop: &Crop, r: &SpriteImpl<S>) -> State {
+	pub fn compare(&self, crop: &Geom, r: &SpriteImpl<S>) -> State {
 		let &Self { pos, size, color, tex: tex_new } = self;
 		let xyzw = (State::XYZW | State::UV).or_def(geom_cmp(pos, size, crop, &r.base));
 		let rgba = State::RGBA.or_def(color != r.base.color);
 		let ord = State::MISMATCH.or_def(!ptr::eq(r.tex, tex_new) || (!rgba.is_empty() && ordering_cmp::<S, _>(color, r)));
 		ord | xyzw | rgba
 	}
-	pub fn obj(self, crop: Crop) -> SpriteImpl<S> {
+	pub fn obj(self, crop: Geom) -> SpriteImpl<S> {
 		let Self { pos, size, color, tex } = self;
 		SpriteImpl { base: Base { pos, size, crop, color }, tex }
 	}
@@ -28,18 +28,18 @@ impl<S: TexSize> SpriteImpl<S> {
 		self.ordered() == r.ordered() && atlas_cmp(self.tex, r.tex)
 	}
 }
-impl<S: TexSize> Object for SpriteImpl<S> {
+impl<S: TexSize> Primitive for SpriteImpl<S> {
 	fn base(&self) -> &Base {
 		&self.base
 	}
 	fn write_mesh(&self, to_clip: Vec2, BatchedObj { z, state, xyzw, rgba, uv }: BatchedObj) {
 		if state.contains(State::XYZW | State::UV) {
 			let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <_>::to({
-				let (to_clip, (crop1, crop2), &Base { pos, size, .. }) = (to_clip, self.base.bound_box(), self.base());
+				let (to_clip, crop @ (p1, p2), &Base { pos, size, .. }) = (to_clip, self.base.bound_box(), self.base());
 				let (xy1, xy2, uv) = (pos, pos.sum(size), unsafe { &*self.tex }.region);
-				let uv = bound_uv((crop1, crop2), (xy1, xy2), uv);
+				let uv = bound_uv(crop, (xy1, xy2), uv);
 
-				(crop1.mul(to_clip), crop2.mul(to_clip), uv)
+				(p1.mul(to_clip), p2.mul(to_clip), uv)
 			});
 			let O = f16::ZERO;
 
@@ -67,7 +67,7 @@ impl<S: TexSize> Object for SpriteImpl<S> {
 	}
 
 	fn ordered(&self) -> bool {
-		S::TYPE == gl::RGBA || Object::ordered(self)
+		S::TYPE == gl::RGBA || Primitive::ordered(self)
 	}
 }
 

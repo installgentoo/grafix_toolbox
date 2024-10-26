@@ -1,6 +1,6 @@
 [package]
 name = "grafix-toolbox"
-version = "0.8.28"
+version = "0.8.29"
 authors = ["Alexander Drozdoff"]
 edition = "2021"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
@@ -14,7 +14,7 @@ gl45 = []
 profiling = []
 
 adv_fs = ["bincode", "serde", "serde_json", "half/serde", "zstd"]
-rng = ["fastrand", "simdnoise"]
+rng = ["fastrand"]
 fsnotify = ["notify"]
 
 adv_cg = ["hdr", "obj", "sdf"]
@@ -38,21 +38,18 @@ path = "./crate.rs"
 [dependencies]
 bincode = { version = "^1", optional = true }
 bitflags = "^2"
-crossbeam-channel = "^0.5"
 fastrand = { version = "^2", optional = true }
-flume = "^0.11"
 futures-lite = { version = "^2", default-features = false }
 gl = "^0.14"
 glfw = "^0.58"
 half = "^2"
 image = { version = "^0.25", default-features = false }
 nalgebra = { version = "^0.33", features = ["std", "serde-serialize"], default-features = false }
-notify = { version = "^6", optional = true }
+notify = { version = "^7", optional = true }
 rusttype = { version = "^0.9", optional = true }
 serde = { version = "^1", features = ["derive"], optional = true }
 serde_json = { version = "^1", optional = true }
-simdnoise = { version = "^3", optional = true }
 tobj = { version = "^4", optional = true }
-tokio = { version = "^1", features = ["rt-multi-thread", "io-util", "io-std", "fs", "time"], default-features = false }
+tokio = { version = "^1", features = ["rt-multi-thread", "sync", "io-util", "io-std", "fs", "time"], default-features = false }
 yansi = "^1"
 zstd = { version = "^0.13", optional = true }

@@ -1,12 +1,16 @@
 pub mod sync {
 	pub use super::sync_pre::*;
-	pub use chan::{Receiver, Sender};
-	pub use crossbeam_channel as chan;
+	pub use std::sync::mpsc::{Receiver, SyncSender as Sender};
+	pub mod chan {
+		pub use std::sync::mpsc::sync_channel as bounded;
+	}
 }
 pub mod asyn {
 	pub use super::sync_pre::*;
-	pub use chan::{Receiver, Sender};
-	pub use flume as chan;
+	pub mod chan {
+		pub use tokio::sync::mpsc::unbounded_channel as unbounded;
+	}
+	pub use tokio::sync::mpsc::{UnboundedReceiver as Receiver, UnboundedSender as Sender};
 }
 mod sync_pre {
 	pub mod task {

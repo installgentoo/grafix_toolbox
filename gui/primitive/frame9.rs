@@ -8,14 +8,14 @@ pub struct Frame9<'r> {
 	pub theme: &'r VTex2d<RGBA, u8>,
 }
 impl Frame9<'_> {
-	pub fn compare(&self, crop: &Crop, r: &Frame9Impl) -> State {
+	pub fn compare(&self, crop: &Geom, r: &Frame9Impl) -> State {
 		let &Self { pos, size, corner, color, theme } = self;
 		let xyzw = (State::XYZW | State::UV).or_def(geom_cmp(pos, size, crop, &r.base) || corner != r.corner);
 		let rgba = State::RGBA.or_def(color != r.base.color);
 		let ord = State::MISMATCH.or_def(!ptr::eq(theme, r.tex));
 		ord | xyzw | rgba
 	}
-	pub fn obj(self, crop: Crop) -> Frame9Impl {
+	pub fn obj(self, crop: Geom) -> Frame9Impl {
 		let Self { pos, size, corner, color, theme } = self;
 		Frame9Impl { base: Base { pos, size, crop, color }, corner, tex: theme }
 	}
@@ -30,7 +30,7 @@ impl Frame9Impl {
 		self.tex == r.tex
 	}
 }
-impl Object for Frame9Impl {
+impl Primitive for Frame9Impl {
 	fn base(&self) -> &Base {
 		&self.base
 	}

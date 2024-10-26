@@ -44,9 +44,9 @@ pub mod Save {
 		use MessageType::*;
 		static SENDER: OnceLock<Sender<Message>> = OnceLock::new();
 		SENDER.get_or_init(|| {
-			let (sn, rx) = chan::unbounded::<Message>();
+			let (sn, mut rx) = chan::unbounded::<Message>();
 			let writer = task::Runtime().spawn(async move {
-				while let Ok(msg) = rx.recv_async().await {
+				while let Some(msg) = rx.recv().await {
 					let (name, operation, data) = msg;
 					let file = match operation {
 						Close => break,
@@ -75,9 +75,12 @@ pub mod Save {
 				}
 			});
 
-			logging::Logger::shutdown_hook(move || {
-				sender().send(("".into(), Close, vec![].into())).expect("E| Cannot close async write system");
-				task::Runtime().finish(writer);
+			logging::Logger::shutdown_hook({
+				let sn = sn.clone();
+				move || {
+					sn.send(("".into(), Close, vec![].into())).expect("E| Cannot close async write system");
+					task::Runtime().finish(writer);
+				}
 			});
 
 			sn
@@ -145,15 +148,15 @@ fn lazy_read<T: Default, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader:
 }
 
 fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader: impl FnOnce(Arc<Path>) -> F + Clone) -> impl Stream<Item = T> {
-	let (sn, rx) = chan::bounded::<()>(1);
+	let rx = Arc::new(Notify::new());
 	let p: Arc<Path> = PathBuf::from(&*p.into()).into();
 
 	stream::unfold(None, move |w| {
-		let (p, l, _sn, rx) = (p.clone(), loader.clone(), sn.clone(), rx.clone());
+		let (p, l, _sn, rx) = (p.clone(), loader.clone(), rx.clone(), rx.clone());
 		async move {
 			let _first = w.is_none();
 			if let Some(_w) = w {
-				let _ = rx.recv_async().await;
+				let _ = rx.notified().await;
 			}
 
 			let w = {
@@ -164,7 +167,7 @@ fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader: impl Fn
 					let mut w = {
 						let p = p.clone();
 						Res(recommended_watcher(move |r| match r {
-							Ok(_) => _sn.try_send(()).ok().sink(),
+							Ok(_) => _sn.notify_waiters(),
 							Err(e) => FAIL!("File {p:?}: {e}"),
 						}))
 					}

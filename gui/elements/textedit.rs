@@ -14,11 +14,11 @@ pub struct TextEdit {
 	scrollbar: Slider,
 	pub text: CachedStr,
 }
-impl<'s: 'l, 'l> Lock::TextEdit<'s, 'l, '_> {
-	pub fn draw(self, pos: Vec2, size: Vec2, scale: f32, readonly: bool) {
+impl TextEdit {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, layout @ (pos, size): Geom, scale: f32, readonly: bool) {
 		let SCR_PAD = 0.02;
 		let CUR_PAD = 0.01;
-		let Self { s, r, t } = self;
+		let s = self;
 
 		let font = &t.font;
 		if s.text.changed() || scale != s.scale || size != s.size {
@@ -63,7 +63,7 @@ impl<'s: 'l, 'l> Lock::TextEdit<'s, 'l, '_> {
 		};
 		let (start, len) = ulVec2(vis_range);
 
-		let _c = r.clip(pos, size);
+		let _c = r.clip(layout);
 
 		r.draw(Rect {
 			pos: offset.sum(pos),
@@ -339,8 +339,15 @@ impl<'s: 'l, 'l> Lock::TextEdit<'s, 'l, '_> {
 
 		if whole_text_h > size.y() {
 			let visible_h = size.y() / whole_text_h;
-			scrollbar.lock(r).draw(pos.sum((size.x() - SCR_PAD, 0.)), (SCR_PAD, size.y()), visible_h);
+			scrollbar.lock(r).draw((pos.sum((size.x() - SCR_PAD, 0.)), (SCR_PAD, size.y())), visible_h);
 		}
+	}
+}
+
+impl<'s: 'l, 'l> Lock::TextEdit<'s, 'l, '_> {
+	pub fn draw(self, g: Geom, sc: f32, re: bool) {
+		let Self { s, r, t } = self;
+		s.draw(r, t, g, sc, re)
 	}
 }
 

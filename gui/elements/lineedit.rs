@@ -8,10 +8,10 @@ pub struct LineEdit {
 	caret: usize,
 	pub text: CachedStr,
 }
-impl<'s: 'l, 'l> Lock::LineEdit<'s, 'l, '_> {
-	pub fn draw(self, pos: Vec2, size: Vec2) {
+impl LineEdit {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, (pos, size): Geom) {
 		let CUR_PAD = 0.01;
-		let Self { s, r, t } = self;
+		let s = self;
 
 		if s.text.changed() || s.size != size {
 			let (offset, scale) = util::fit_text(&s.text, t, size);
@@ -87,5 +87,12 @@ impl<'s: 'l, 'l> Lock::LineEdit<'s, 'l, '_> {
 			},
 			id,
 		);
+	}
+}
+
+impl<'s: 'l, 'l> Lock::LineEdit<'s, 'l, '_> {
+	pub fn draw(self, g: Geom) {
+		let Self { s, r, t } = self;
+		s.draw(r, t, g)
 	}
 }

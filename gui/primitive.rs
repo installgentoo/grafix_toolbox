@@ -1,6 +1,16 @@
-use super::*;
+pub mod prim {
+	pub use super::{Frame9, Rect, Sprite, Sprite9, Text};
+}
 
-pub trait Object {
+pub use {frame9::*, rect::*, sprite::*, sprite9::*, text::*};
+
+mod frame9;
+mod rect;
+mod sprite;
+mod sprite9;
+mod text;
+
+pub trait Primitive {
 	fn base(&self) -> &Base;
 	fn write_mesh(&self, aspect: Vec2, _: BatchedObj);
 	fn batch_draw(&self, _: &VaoBinding<u16>, range: (u16, u16));
@@ -34,15 +44,15 @@ pub struct State: u32 {
 
 #[derive(Debug)]
 pub struct Base {
-	pub pos: Vec2,
-	pub size: Vec2,
-	pub crop: Crop,
-	pub color: Color,
+	pos: Vec2,
+	size: Vec2,
+	crop: Geom,
+	color: Color,
 }
 impl Base {
-	pub fn bound_box(&self) -> Crop {
-		let &Self { pos, size, crop: (crop1, crop2), .. } = self;
-		(pos.clmp(crop1, crop2), pos.sum(size).clmp(crop1, crop2))
+	pub fn bound_box(&self) -> Geom {
+		let &Self { pos, size, crop: (p1, p2), .. } = self;
+		(pos.clmp(p1, p2), pos.sum(size).clmp(p1, p2))
 	}
 	pub fn intersects(&self, r: &Self) -> bool {
 		let ((b1, b2), (rb1, rb2)) = (self.bound_box(), r.bound_box());
@@ -50,26 +60,31 @@ impl Base {
 	}
 }
 
-pub fn opaque(c: Color) -> bool {
+fn opaque(c: Color) -> bool {
 	c.3 >= 0.996
 }
-pub fn geom_cmp(pos: Vec2, size: Vec2, crop: &Crop, r: &Base) -> bool {
-	pos != r.pos || size != r.size || *crop != r.crop
+
+fn geom_cmp(pos: Vec2, size: Vec2, bb: &Geom, r: &Base) -> bool {
+	pos != r.pos || size != r.size || *bb != r.crop
 }
-pub fn ordering_cmp<S: TexSize, T: Object>(c: Color, r: &T) -> bool {
+
+fn ordering_cmp<S: TexSize, T: Primitive>(c: Color, r: &T) -> bool {
 	(S::TYPE == gl::RGBA || !opaque(c)) != r.ordered()
 }
-pub fn atlas_cmp<S, F>(l: *const VTex2d<S, F>, r: *const VTex2d<S, F>) -> bool {
+
+fn atlas_cmp<S, F>(l: *const VTex2d<S, F>, r: *const VTex2d<S, F>) -> bool {
 	unsafe { (&*l).eq_atlas(&*r) }
 }
 
-pub fn bound_uv((crop1, crop2): Crop, (xy1, xy2): Crop, (u1, v1, u2, v2): TexCoord) -> TexCoord {
+fn bound_uv(_crop @ (p1, p2): Geom, (xy1, xy2): Geom, (u1, v1, u2, v2): TexCoord) -> TexCoord {
 	let wh = (u2 - u1, v2 - v1).div(xy2.sub(xy1));
-	let (u1, v1) = (u1, v1).sum(wh.mul(crop1.sub(xy1)).mul(crop1.gt(xy1)));
-	let (u2, v2) = (u2, v2).sub(wh.mul(xy2.sub(crop2)).mul(crop2.ls(xy2)));
+	let (u1, v1) = (u1, v1).sum(wh.mul(p1.sub(xy1)).mul(p1.gt(xy1)));
+	let (u2, v2) = (u2, v2).sub(wh.mul(xy2.sub(p2)).mul(p2.ls(xy2)));
 	(u1, v1, u2, v2)
 }
 
-pub fn rect_idxs((start, size): (u16, u16)) -> Box<[u16]> {
+fn rect_idxs((start, size): (u16, u16)) -> Box<[u16]> {
 	(start..(start + size)).step_by(4).flat_map(|i| [i, i + 1, i + 3, i + 3, i + 1, i + 2]).collect()
 }
+
+use super::*;

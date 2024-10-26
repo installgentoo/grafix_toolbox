@@ -7,9 +7,9 @@ pub struct Label {
 	scale: f32,
 	text: Str,
 }
-impl<'s: 'l, 'l> Lock::Label<'s, 'l, '_> {
-	pub fn draw(self, pos: Vec2, size: Vec2, text: &str) {
-		let Self { s, r, t } = self;
+impl Label {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, (pos, size): Geom, text: &str) {
+		let s = self;
 
 		if *s.text != *text || s.size != size {
 			let (offset, scale) = util::fit_text(text, t, size);
@@ -25,5 +25,12 @@ impl<'s: 'l, 'l> Lock::Label<'s, 'l, '_> {
 			text,
 			font: &t.font,
 		});
+	}
+}
+
+impl<'s: 'l, 'l> Lock::Label<'s, 'l, '_> {
+	pub fn draw(self, g: Geom, te: &str) {
+		let Self { s, r, t } = self;
+		s.draw(r, t, g, te)
 	}
 }

@@ -4,7 +4,7 @@ pub mod ext {
 
 pub mod pre {
 	pub use super::func::{chksum, ext::*, index::*, logging, n_iter::*, result::*, vec::*};
-	pub use super::types::{cached::*, cached_str::*, ext::*, memoized::Memoized};
+	pub use super::types::{cached::*, cached_str::*, ext::*, memoized::MemRes, memoized::Memoized};
 	pub use super::{math::pre::*, traits::*};
 
 	pub type STR = &'static str;

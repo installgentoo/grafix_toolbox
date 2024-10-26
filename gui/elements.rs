@@ -1,26 +1,5 @@
 pub use {button::*, hypertext::*, label::*, layout::*, lineedit::*, selector::*, slider::*, textedit::*};
 
-macro_rules! element_lock {
-	($($t: ident),+) => {
-		pub mod Lock {
-			#![allow(dead_code)]
-			$(impl super::$t {
-				pub fn lock<'s, 'l, 'r>(&'s mut self, r: &'r mut super::RenderLock<'l>) -> $t<'s, 'l, 'r>
-				{
-					let t = r.theme();
-					$t { s: self, r, t }
-				}
-			}
-			pub struct $t<'s, 'l, 'r> {
-				pub(super) s: &'s mut super::$t,
-				pub(super) r: &'r mut super::RenderLock<'l>,
-				pub(super) t: &'l super::Theme,
-			})+
-		}
-	};
-}
-element_lock!(Button, HyperText, Label, Layout, LineEdit, Selector, Slider, TextEdit);
-
 #[derive(Default, Debug)]
 pub struct Theme {
 	pub easing: f32,
@@ -32,7 +11,7 @@ pub struct Theme {
 	pub text: Color,
 	pub text_focus: Color,
 	pub text_highlight: Color,
-	pub font: Font,
+	pub font: Rc<Font>,
 	pub font_size: f32,
 }
 
@@ -45,5 +24,27 @@ mod selector;
 mod slider;
 mod textedit;
 mod util;
+
+macro_rules! element_lock {
+	($($t: ident),+) => {
+		pub(super) mod Lock {
+			#![allow(dead_code)]
+			$(impl super::$t {
+				pub fn lock<'s, 'l: 'a, 'a>(&'s mut self, r: &'a mut RenderLock<'l>) -> $t<'s, 'l, 'a>
+				{
+					let t = r.theme();
+					$t { s: self, r, t }
+				}
+			}
+			pub struct $t<'s, 'l: 'a, 'a> {
+				pub(super) s: &'s mut super::$t,
+				pub(super) r: &'a mut RenderLock<'l>,
+				pub(super) t: &'l Theme,
+			})+
+			use super::*;
+		}
+	};
+}
+element_lock!(Button, HyperText, Label, Layout, LineEdit, Selector, Slider, TextEdit);
 
 use {super::*, util::Caret};

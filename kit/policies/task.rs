@@ -1,7 +1,7 @@
 pub mod pre {
 	pub use futures_lite::{future, stream, Future, FutureExt, Stream, StreamExt};
 	pub use io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
-	pub use tokio::{fs, io};
+	pub use tokio::{fs, io, sync::Notify};
 }
 
 pub fn Runtime() -> &'static RT {

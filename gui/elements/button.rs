@@ -10,9 +10,9 @@ pub struct Button {
 	pub pressed: bool,
 	pub hovered: bool,
 }
-impl<'s: 'l, 'l> Lock::Button<'s, 'l, '_> {
-	pub fn draw(self, pos: Vec2, size: Vec2, text: &str) -> bool {
-		let Self { s, r, t } = self;
+impl Button {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, (pos, size): Geom, text: &str) -> bool {
+		let s = self;
 
 		if *s.text != *text || s.size != size {
 			let (offset, scale) = util::fit_text(text, t, size);
@@ -50,5 +50,12 @@ impl<'s: 'l, 'l> Lock::Button<'s, 'l, '_> {
 			font: &t.font,
 		});
 		p
+	}
+}
+
+impl<'s: 'l, 'l> Lock::Button<'s, 'l, '_> {
+	pub fn draw(self, g: Geom, te: &str) -> bool {
+		let Self { s, r, t } = self;
+		s.draw(r, t, g, te)
 	}
 }

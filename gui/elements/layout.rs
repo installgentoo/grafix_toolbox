@@ -6,14 +6,13 @@ pub struct Layout {
 	pub pos: Vec2,
 	pub size: Vec2,
 }
-impl<'s: 'l, 'l> Lock::Layout<'s, 'l, '_> {
-	pub fn draw(self, content: impl FnOnce(&mut RenderLock<'l>, Crop)) {
+impl Layout {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, content: impl FnOnce(&mut RenderLock<'l>, Geom)) {
 		let TOP_PAD = 0.05;
 		let CRN_PAD = 0.04;
-		let Self { s, r, t } = self;
 
-		let id = LUID(s);
-		let Layout { click, pos, size } = s;
+		let id = LUID(self);
+		let Layout { click, pos, size } = self;
 		{
 			let c = r.to_clip();
 			let (lb, ru) = ((-1., -1.).div(c), (1., 1.).div(c));
@@ -74,8 +73,15 @@ impl<'s: 'l, 'l> Lock::Layout<'s, 'l, '_> {
 		);
 
 		let (pos, size) = layout;
-		let _c = r.clip(pos, size);
+		let _c = r.clip(layout);
 		r.draw(Rect { pos, size, color: t.bg });
 		content(r, layout);
+	}
+}
+
+impl<'s: 'l, 'l> Lock::Layout<'s, 'l, '_> {
+	pub fn draw(self, c: impl FnOnce(&mut RenderLock<'l>, Geom)) {
+		let Self { s, r, t } = self;
+		s.draw(r, t, c)
 	}
 }

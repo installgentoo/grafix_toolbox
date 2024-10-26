@@ -10,69 +10,69 @@ pub struct Batch {
 	pub xyzw: Vec<f16>,
 	pub uv: Vec<f16>,
 	pub rgba: Vec<u8>,
-	idxs: Vec<Obj>,
+	objs: Vec<Obj>,
 }
 impl Batch {
 	pub fn new(z: u32) -> Self {
-		Self { idxs: vec![Obj { idx: z, size: 0 }], ..Def() }
+		Self { objs: vec![Obj { idx: z, size: 0 }], ..Def() }
 	}
-	pub fn typ<'a>(&self, objs: &'a [Primitive]) -> &'a ObjStore {
-		get(objs, self.idxs.first().valid())
+	pub fn typ<'a>(&self, cache: &'a [PrimCache]) -> &'a PrimImpl {
+		get(cache, self.objs.first().valid())
 	}
-	pub fn contains(&self, objs: &[Primitive], (o, z): (&ObjStore, u32)) -> bool {
-		let (t, idxs) = (self.typ(objs), &self.idxs);
-		t.batchable(o) && idxs.binary_search_by(|o| o.idx.cmp(&z)).is_ok()
+	pub fn contains(&self, cache: &[PrimCache], (o, z): (&PrimImpl, u32)) -> bool {
+		let (t, objs) = (self.typ(cache), &self.objs);
+		t.batchable(o) && objs.binary_search_by(|o| o.idx.cmp(&z)).is_ok()
 	}
-	pub fn covers(&self, objs: &[Primitive], (o, z): (&ObjStore, u32)) -> bool {
-		let (t, idxs, obj) = (self.typ(objs), self.idxs.iter(), o.obj());
+	pub fn covers(&self, cache: &[PrimCache], (o, z): (&PrimImpl, u32)) -> bool {
+		let (t, objs, obj) = (self.typ(cache), self.objs.iter(), o.obj());
 
 		!(t.batchable(o)
 			|| !t.obj().ordered()
-			|| !idxs.take_while(|i| i.idx <= z).any(|i| {
-				let l = get(objs, i).obj().base();
+			|| !objs.take_while(|i| i.idx <= z).any(|i| {
+				let l = get(cache, i).obj().base();
 				l.intersects(obj.base())
 			}))
 	}
-	pub fn covered(&self, objs: &[Primitive], (o, z): (&ObjStore, u32)) -> bool {
-		let (t, idxs, obj) = (self.typ(objs), self.idxs.iter(), o.obj());
+	pub fn covered(&self, cache: &[PrimCache], (o, z): (&PrimImpl, u32)) -> bool {
+		let (t, objs, obj) = (self.typ(cache), self.objs.iter(), o.obj());
 		!(t.batchable(o)
 			|| !t.obj().ordered()
-			|| !idxs.rev().take_while(|i| i.idx >= z).any(|i| {
-				let l = get(objs, i).obj().base();
+			|| !objs.rev().take_while(|i| i.idx >= z).any(|i| {
+				let l = get(cache, i).obj().base();
 				l.intersects(obj.base())
 			}))
 	}
-	pub fn shrink_and_empty(&mut self, objs: &mut [Primitive], z: u32) -> bool {
-		let idxs = &mut self.idxs;
-		let l = idxs.iter().rposition(|i| i.idx < z).map(|i| i + 1).unwrap_or(0);
-		if !idxs[l..].is_empty() {
-			idxs.drain(l..).for_each(|o| objs.at_mut(o.idx).state = State::MISMATCH);
-			idxs.first().map(|o| objs.at_mut(o.idx).state |= State::BATCH_RESIZED);
+	pub fn shrink_and_empty(&mut self, cache: &mut [PrimCache], z: u32) -> bool {
+		let objs = &mut self.objs;
+		let l = objs.iter().rposition(|i| i.idx < z).map(|i| i + 1).unwrap_or(0);
+		if !objs[l..].is_empty() {
+			objs.drain(l..).for_each(|o| cache.at_mut(o.idx).state = State::MISMATCH);
+			objs.first().map(|o| cache.at_mut(o.idx).state |= State::BATCH_RESIZED);
 		}
-		idxs.is_empty()
+		objs.is_empty()
 	}
-	pub fn try_add(&mut self, objs: &[Primitive], (o, z): (&ObjStore, u32)) -> bool {
-		if !self.typ(objs).batchable(o) {
+	pub fn try_add(&mut self, cache: &[PrimCache], (o, z): (&PrimImpl, u32)) -> bool {
+		if !self.typ(cache).batchable(o) {
 			return false;
 		}
 
-		self.idxs.push(Obj { idx: z, size: 0 });
+		self.objs.push(Obj { idx: z, size: 0 });
 		true
 	}
-	pub fn interferes(&self, objs: &[Primitive], o: &ObjStore) -> bool {
-		let (t, mut idxs, obj) = (self.typ(objs).obj(), self.idxs.iter(), o.obj());
+	pub fn interferes(&self, cache: &[PrimCache], o: &PrimImpl) -> bool {
+		let (t, mut objs, obj) = (self.typ(cache).obj(), self.objs.iter(), o.obj());
 		t.ordered()
 			&& obj.ordered()
-			&& idxs.any(|i| {
-				let l = get(objs, i).obj().base();
+			&& objs.any(|i| {
+				let l = get(cache, i).obj().base();
 				l.intersects(obj.base())
 			})
 	}
-	pub fn redraw(&mut self, aspect: Vec2, objs: &[Primitive]) -> (u32, State) {
-		let Self { xyzw, rgba, uv, idxs, .. } = self;
+	pub fn redraw(&mut self, aspect: Vec2, cache: &[PrimCache]) -> (u32, State) {
+		let Self { xyzw, rgba, uv, objs, .. } = self;
 
-		let (len, mut state) = idxs.iter_mut().fold((0, State::empty()), |(start, flush), Obj { idx, size }| {
-			let &Primitive { state, ref o } = objs.at(*idx);
+		let (len, mut state) = objs.iter_mut().fold((0, State::empty()), |(start, flush), Obj { idx, size }| {
+			let &PrimCache { state, ref o } = cache.at(*idx);
 			let (obj, idx) = (o.obj(), *idx);
 
 			let (new_size, state) = (|| {
@@ -141,6 +141,6 @@ impl Batch {
 		(len, state)
 	}
 }
-fn get<'a>(objs: &'a [Primitive], o: &Obj) -> &'a ObjStore {
-	&objs.at(o.idx).o
+fn get<'a>(cache: &'a [PrimCache], o: &Obj) -> &'a PrimImpl {
+	&cache.at(o.idx).o
 }

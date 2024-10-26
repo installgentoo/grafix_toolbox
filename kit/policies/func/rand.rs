@@ -1,7 +1,6 @@
 use crate::lib::*;
 
 pub use fastrand::Rng;
-pub use simdnoise::NoiseBuilder as noise;
 
 pub trait GenRange<T> {
 	fn in_range<S: RngExtensions<T>>(&mut self, range: S) -> T;

@@ -6,14 +6,14 @@ pub struct Rect {
 	pub color: Color,
 }
 impl Rect {
-	pub fn compare(&self, crop: &Crop, r: &RectImpl) -> State {
+	pub fn compare(&self, crop: &Geom, r: &RectImpl) -> State {
 		let &Self { pos, size, color } = self;
 		let xyzw = State::XYZW.or_def(geom_cmp(pos, size, crop, &r.base));
 		let rgba = State::RGBA.or_def(color != r.base.color);
 		let ord = State::MISMATCH.or_def(!rgba.is_empty() && (!opaque(color) != r.ordered()));
 		ord | xyzw | rgba
 	}
-	pub fn obj(self, crop: Crop) -> RectImpl {
+	pub fn obj(self, crop: Geom) -> RectImpl {
 		let Self { pos, size, color } = self;
 		RectImpl { base: Base { pos, size, crop, color } }
 	}
@@ -26,15 +26,15 @@ impl RectImpl {
 		self.ordered() == r.ordered()
 	}
 }
-impl Object for RectImpl {
+impl Primitive for RectImpl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
 	fn write_mesh(&self, to_clip: Vec2, BatchedObj { z, state, xyzw, rgba, .. }: BatchedObj) {
 		if state.contains(State::XYZW) {
 			let ((x1, y1), (x2, y2)) = <_>::to({
-				let (to_clip, (crop1, crop2)) = (to_clip, self.base.bound_box());
-				(crop1.mul(to_clip), crop2.mul(to_clip))
+				let (to_clip, _crop @ (p1, p2)) = (to_clip, self.base.bound_box());
+				(p1.mul(to_clip), p2.mul(to_clip))
 			});
 			let O = f16::ZERO;
 

@@ -70,10 +70,10 @@ pub struct HyperText {
 	popup: Option<(usize, Vec2, Box<Self>)>,
 	pub text: CachedStr,
 }
-impl<'s: 'l, 'l> Lock::HyperText<'s, 'l, '_> {
-	pub fn draw(self, pos: Vec2, size: Vec2, scale: f32, db: &HyperDB) {
+impl HyperText {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, layout @ (pos, size): Geom, scale: f32, db: &HyperDB) {
 		let SCR_PAD = 0.01;
-		let Self { s, r, t } = self;
+		let s = self;
 
 		let font = &t.font;
 		if s.text.changed() || scale != s.scale || size != s.size {
@@ -99,7 +99,7 @@ impl<'s: 'l, 'l> Lock::HyperText<'s, 'l, '_> {
 		};
 		let (start, len) = ulVec2(vis_range);
 
-		let _c = r.clip(pos, size);
+		let _c = r.clip(layout);
 
 		r.draw(Rect { pos, size, color: t.bg });
 		*hovered = r.hovered();
@@ -198,7 +198,7 @@ impl<'s: 'l, 'l> Lock::HyperText<'s, 'l, '_> {
 				id,
 			);
 			let visible_h = size.y() / whole_text_h;
-			scrollbar.lock(r).draw(pos.sum((size.x() - SCR_PAD, 0.)), (SCR_PAD, size.y()), visible_h);
+			scrollbar.lock(r).draw((pos.sum((size.x() - SCR_PAD, 0.)), (SCR_PAD, size.y())), visible_h);
 		}
 
 		if !hover && !child_hovered(popup) && timeout(true) {
@@ -207,9 +207,16 @@ impl<'s: 'l, 'l> Lock::HyperText<'s, 'l, '_> {
 		}
 
 		if let Some((_, pos, p)) = popup {
-			let size = p.size;
-			p.lock(r).draw(*pos, size, scale, db);
+			let layout = (*pos, p.size);
+			p.lock(r).draw(layout, scale, db);
 		}
+	}
+}
+
+impl<'s: 'l, 'l> Lock::HyperText<'s, 'l, '_> {
+	pub fn draw(self, g: Geom, sc: f32, d: &HyperDB) {
+		let Self { s, r, t } = self;
+		s.draw(r, t, g, sc, d)
 	}
 }
 

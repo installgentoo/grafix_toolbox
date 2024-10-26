@@ -147,7 +147,7 @@ impl ShaderManager {
 	pub fn CleanCache() {
 		ShaderManager::get().sn.send(Clean).valid();
 	}
-	fn inline_source(name: &str, source: &[&str]) {
+	pub(super) fn inline_source(name: &str, source: &[&str]) {
 		ShaderManager::get().sn.send(Inline((name.into(), source.concat()))).valid();
 	}
 	fn get() -> &'static mut Self {
@@ -165,13 +165,4 @@ impl ShaderManager {
 	}
 }
 
-impl From<I> for Str {
-	fn from(v: I) -> Self {
-		let InlineShader(v, v_t) = v;
-		ShaderManager::inline_source(v, v_t);
-		v.into()
-	}
-}
-
-type I = InlineShader;
 type Uniforms = HashMap<u32, (i32, Option<CachedUni>)>;

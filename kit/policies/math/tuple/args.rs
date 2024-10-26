@@ -80,4 +80,4 @@ where
 	}
 }
 
-trait_alias!(ToZero, Cast<u32> + Copy + Default);
+trait_alias!(pub(super) ToZero, Cast<u32> + Copy + Default);

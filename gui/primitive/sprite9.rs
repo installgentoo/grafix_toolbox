@@ -8,14 +8,14 @@ pub struct Sprite9<'r, S> {
 	pub tex: &'r VTex2d<S, u8>,
 }
 impl<S: TexSize> Sprite9<'_, S> {
-	pub fn compare(&self, crop: &Crop, r: &Sprite9Impl<S>) -> State {
+	pub fn compare(&self, crop: &Geom, r: &Sprite9Impl<S>) -> State {
 		let &Self { pos, size, corner, color, tex: tex_new } = self;
 		let xyzw = (State::XYZW | State::UV).or_def(geom_cmp(pos, size, crop, &r.base) || corner != r.corner);
 		let rgba = State::RGBA.or_def(color != r.base.color);
 		let ord = State::MISMATCH.or_def(!ptr::eq(r.tex, tex_new) || (!rgba.is_empty() && ordering_cmp::<S, _>(color, r)));
 		ord | xyzw | rgba
 	}
-	pub fn obj(self, crop: Crop) -> Sprite9Impl<S> {
+	pub fn obj(self, crop: Geom) -> Sprite9Impl<S> {
 		let Self { pos, size, corner, color, tex } = self;
 		Sprite9Impl { base: Base { pos, size, crop, color }, corner, tex }
 	}
@@ -30,7 +30,7 @@ impl<S: TexSize> Sprite9Impl<S> {
 		self.ordered() == r.ordered() && atlas_cmp(self.tex, r.tex)
 	}
 }
-impl<S: TexSize> Object for Sprite9Impl<S> {
+impl<S: TexSize> Primitive for Sprite9Impl<S> {
 	fn base(&self) -> &Base {
 		&self.base
 	}
@@ -51,37 +51,28 @@ impl<S: TexSize> Object for Sprite9Impl<S> {
 		16
 	}
 	fn ordered(&self) -> bool {
-		S::TYPE == gl::RGBA || Object::ordered(self)
+		S::TYPE == gl::RGBA || Primitive::ordered(self)
 	}
 	fn gen_idxs(&self, (start, size): (u16, u16)) -> Box<[u16]> {
 		sprite9_idxs((start, size))
 	}
 }
 
-type Sprite9Desc = (Vec2, Vec2, Vec2, Vec2, Crop, TexCoord, Color);
-pub fn write_sprite9((to_clip, pos, size, corner, (crop1, crop2), (u1, v1, u2, v2), color): Sprite9Desc, BatchedObj { z, state, xyzw, rgba, uv }: BatchedObj) {
+type Sprite9Desc = (Vec2, Vec2, Vec2, Vec2, Geom, TexCoord, Color);
+pub fn write_sprite9((to_clip, pos, size, corner, _crop @ (p1, p2), (u1, v1, u2, v2), color): Sprite9Desc, BatchedObj { z, state, xyzw, rgba, uv }: BatchedObj) {
 	if state.contains(State::XYZW) {
 		let (((x1, y1), (x2, y2), (m1x, m1y), (m2x, m2y)), (u1, v1, u2, v2), (m1u, m1v, m2u, m2v)) = <_>::to({
 			let (xy1, xy2) = (pos, pos.sum(size));
 			let (m1, m2, ms) = (xy1.sum(corner), xy2.sub(corner), corner);
 			let (uv, muv) = {
 				let wh = (u2 - u1, v2 - v1).div(ms);
-				let (u1m, v1m) = (u1, v1).sum(wh.mul(m1.sub(crop2)).mul(crop2.ls(m1)));
-				let (u2m, v2m) = (u1, v1).sum(wh.mul(crop1.sub(m2)).mul(crop1.gt(m2)));
-				let (u1, v1) = (u2, v2).sub(wh.mul(crop1.sub(xy1)));
-				let (u2, v2) = (u2, v2).sub(wh.mul(xy2.sub(crop2)));
+				let (u1m, v1m) = (u1, v1).sum(wh.mul(m1.sub(p2)).mul(p2.ls(m1)));
+				let (u2m, v2m) = (u1, v1).sum(wh.mul(p1.sub(m2)).mul(p1.gt(m2)));
+				let (u1, v1) = (u2, v2).sub(wh.mul(p1.sub(xy1)));
+				let (u2, v2) = (u2, v2).sub(wh.mul(xy2.sub(p2)));
 				((u1, v2, u2, v1), (u1m, v2m, u2m, v1m))
 			};
-			(
-				(
-					crop1.mul(to_clip),
-					crop2.mul(to_clip),
-					m1.clmp(crop1, crop2).mul(to_clip),
-					m2.clmp(crop1, crop2).mul(to_clip),
-				),
-				uv,
-				muv,
-			)
+			((p1.mul(to_clip), p2.mul(to_clip), m1.clmp(p1, p2).mul(to_clip), m2.clmp(p1, p2).mul(to_clip)), uv, muv)
 		});
 		let O = f16::ZERO;
 

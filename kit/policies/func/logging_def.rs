@@ -43,9 +43,9 @@ macro_rules! ERROR {
 macro_rules! ERROR_IMPL {
 	($($t: tt)+) => {{
 		use $crate::logging::*;
-		let E = "E|".red().bold();
+		let e = "E|".red().bold();
 		let bt = process_backtrace(std::backtrace::Backtrace::force_capture());
-		Logger::log(format!("{E} {bt}{E} {} |{}:{}|{}\n", format!($($t)+).red(), file!(), line!(), std::thread::current().name().unwrap_or("???")));
+		Logger::log(format!("{e} {bt}{e} {} |{}:{}|{}\n", format!($($t)+).red(), file!(), line!(), std::thread::current().name().unwrap_or("???")));
 		std::panic::set_hook(std::boxed::Box::new(|_| {}));
 		panic!();
 	}};
@@ -73,8 +73,8 @@ macro_rules! WARN_IMPL {
 	($($t: tt)+) => {{
 		use $crate::logging::*;
 		if Level::WARNING as i32 <= Logger::level() {
-			let W = "W| ".red().to_string();
-			Logger::log([&W, &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
+			let w = "W| ".red().to_string();
+			Logger::log([&w, &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
 		}
 	}};
 }

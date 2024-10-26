@@ -9,18 +9,21 @@ macro_rules! impl_trait_for {
 
 // TODO replace with trait aliases
 macro_rules! trait_alias {
-	($t: ident, $($b: tt)+ ) => {
-		pub trait $t: $($b)+ {}
+	($p: vis $t: ident, $($b: tt)+ ) => {
+		$p trait $t: $($b)+ {}
 		impl<T: $($b)+> $t for T {}
+	};
+	($t: ident, $($b: tt)+ ) => {
+		trait_alias!(pub(self) $t, $($b)+);
 	};
 }
 
-trait_alias!(SendStat, 'static + Send);
+trait_alias!(pub SendStat, 'static + Send);
 
 #[cfg(feature = "adv_fs")]
-trait_alias!(TrivialBound, 'static + Debug + Default + Copy + PartialEq + serde::Serialize + serde::de::DeserializeOwned);
+trait_alias!(pub TrivialBound, 'static + Debug + Default + Copy + PartialEq + serde::Serialize + serde::de::DeserializeOwned);
 #[cfg(not(feature = "adv_fs"))]
-trait_alias!(TrivialBound, 'static + Debug + Default + Copy + PartialEq);
+trait_alias!(pub TrivialBound, 'static + Debug + Default + Copy + PartialEq);
 
 macro_rules! derive_common_VAL {
 	($($t: tt)+) => {

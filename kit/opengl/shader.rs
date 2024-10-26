@@ -10,8 +10,15 @@ macro_rules! SHADER {
 		pub const $n: $crate::GL::macro_uses::InlineShader = $crate::GL::macro_uses::InlineShader(stringify!($n), &[$($body,)+]);
 	};
 }
-
 pub struct InlineShader(pub STR, pub &'static [STR]);
+impl From<I> for Str {
+	fn from(v: I) -> Self {
+		let InlineShader(v, v_t) = v;
+		ShaderManager::inline_source(v, v_t);
+		v.into()
+	}
+}
+type I = InlineShader;
 
 mod args;
 mod compiler;

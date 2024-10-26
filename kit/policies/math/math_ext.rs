@@ -1,7 +1,7 @@
 pub use ops::Neg;
 
 trait_alias!(
-	Number,
+	pub Number,
 	Cast<i32>
 		+ Default
 		+ ops::Add<Output = Self>

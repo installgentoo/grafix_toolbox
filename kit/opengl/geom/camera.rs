@@ -36,15 +36,15 @@ impl FocusCam {
 		}
 	}
 	pub fn set_proj(&mut self, f: &impl Frame, (fov, far): Vec2) {
-		if self.proj.apply((f.size(), (fov, far))).0 {
+		if self.proj.apply((f.size(), (fov, far))).changed {
 			self.view_proj.replace(None);
 		}
 	}
 	pub fn set_polar(&mut self, polar_zoom: Vec3) {
 		let Self { target, orient, view, view_proj, inv_view, .. } = self;
 
-		let (c, (o, p)) = orient.apply((&polar_zoom, &*target));
-		if c && view.apply((o, p)).0 {
+		let MemRes { changed, val } = orient.apply((&polar_zoom, &*target));
+		if changed && view.apply(val).changed {
 			view_proj.replace(None);
 			inv_view.replace(None);
 		}

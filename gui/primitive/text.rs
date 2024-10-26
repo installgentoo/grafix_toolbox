@@ -73,7 +73,7 @@ impl<'a> Text<'_, 'a> {
 			.unwrap_or_default();
 		(size, u32(len))
 	}
-	pub fn compare(&self, crop: &Crop, r: &TextImpl) -> State {
+	pub fn compare(&self, crop: &Geom, r: &TextImpl) -> State {
 		let &Self { pos, scale, color, text, font } = self;
 		let text = *text != *r.text;
 		let xyzw = (State::XYZW | State::UV).or_def(pos != r.base.pos || scale != r.scale || *crop != r.base.crop || text);
@@ -81,7 +81,7 @@ impl<'a> Text<'_, 'a> {
 		let ord = State::MISMATCH.or_def(text && !ptr::eq(font, r.font));
 		ord | xyzw | rgba
 	}
-	pub fn obj(self, crop: Crop) -> TextImpl {
+	pub fn obj(self, crop: Geom) -> TextImpl {
 		let Self { pos, scale, color, text, font } = self;
 		let (size, len) = Self::size_and_len(text, font, scale);
 		TextImpl {
@@ -89,7 +89,7 @@ impl<'a> Text<'_, 'a> {
 			scale,
 			len,
 			text: text.into(),
-			font: unsafe { mem::transmute(font) },
+			font,
 		}
 	}
 }
@@ -99,14 +99,14 @@ pub struct TextImpl {
 	scale: f32,
 	len: u32,
 	text: Str,
-	font: &'static Font,
+	font: *const Font,
 }
 impl TextImpl {
 	pub fn batchable(&self, r: &Self) -> bool {
 		ptr::eq(self.font, r.font)
 	}
 }
-impl Object for TextImpl {
+impl Primitive for TextImpl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
@@ -116,7 +116,7 @@ impl Object for TextImpl {
 		}
 
 		let &Self {
-			base: Base { pos, color, crop: (crop1, crop2), .. },
+			base: Base { pos, color, crop: (p1, p2), .. },
 			scale,
 			len,
 			ref text,
@@ -124,7 +124,7 @@ impl Object for TextImpl {
 		} = self;
 
 		if state.contains(State::XYZW) {
-			let (to_clip, s) = (to_clip, scale);
+			let font = unsafe { &*font };
 
 			let (mut x, mut last_c) = (-0.5 * first_glyph(font, text).x(), 0 as char);
 			for c in text.chars() {
@@ -133,11 +133,11 @@ impl Object for TextImpl {
 
 				if let Some(&Glyph { coord: (x1, y1, x2, y2), uv: u, adv }) = font.glyph(c) {
 					let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <_>::to({
-						let xy1 = pos.sum((x + x1, y1).mul(s));
-						let xy2 = pos.sum((x + x2, y2).mul(s));
-						let uv = bound_uv((crop1, crop2), (xy1, xy2), u);
-						let xy1 = xy1.clmp(crop1, crop2).mul(to_clip);
-						let xy2 = xy2.clmp(crop1, crop2).mul(to_clip);
+						let xy1 = pos.sum((x + x1, y1).mul(scale));
+						let xy2 = pos.sum((x + x2, y2).mul(scale));
+						let uv = bound_uv((p1, p2), (xy1, xy2), u);
+						let xy1 = xy1.clmp(p1, p2).mul(to_clip);
+						let xy2 = xy2.clmp(p1, p2).mul(to_clip);
 						(xy1, xy2, uv)
 					});
 					let O = f16::ZERO;
@@ -165,7 +165,7 @@ impl Object for TextImpl {
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
 		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui_sdftext]) });
 
-		let t = self.font.tex().Bind(sampler());
+		let t = unsafe { &*self.font }.tex().Bind(sampler());
 		let _ = Uniforms!(s, ("tex", t));
 		b.Draw((num, offset, gl::TRIANGLES));
 	}

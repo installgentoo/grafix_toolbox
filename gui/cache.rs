@@ -1,16 +1,48 @@
 use super::*;
 
+pub trait DrawablePrimitive<'r> {
+	fn draw(self, _: u32, _: &Geom, _: &mut Renderer);
+}
+macro_rules! DRAWABLE {
+	($t: ty, $draw_spec: ident) => {
+		impl<'r> DrawablePrimitive<'r> for $t {
+			fn draw(self, obj_n: u32, clip: &Geom, r: &mut Renderer) {
+				use PrimImpl::$draw_spec as object;
+				if obj_n < u32(r.cache.objs.len()) {
+					let PrimCache { state, o, .. } = r.cache.get_mut(obj_n);
+					if let object(l) = o {
+						*state = self.compare(clip, l) | r.status;
+						if !state.contains(State::MISMATCH) {
+							if !state.is_empty() {
+								r.flush |= *state;
+								*o = object(self.obj(*clip));
+							}
+							return;
+						}
+					}
+
+					r.cache.shrink(obj_n);
+				}
+
+				r.flush |= State::FULL;
+				let p = PrimCache { state: State::MISMATCH, o: object(self.obj(*clip)) };
+				r.cache.objs.push(p);
+			}
+		}
+	};
+}
+
 #[derive(Default)]
-pub struct Objects {
+pub struct RenderCache {
 	pub batches: Vec<Batch>,
-	pub objs: Vec<Primitive>,
+	pub objs: Vec<PrimCache>,
 	pub first_transparent: usize,
 }
-impl Objects {
-	pub fn get(&self, at: u32) -> &Primitive {
+impl RenderCache {
+	pub fn get(&self, at: u32) -> &PrimCache {
 		self.objs.at(at)
 	}
-	pub fn get_mut(&mut self, at: u32) -> &mut Primitive {
+	pub fn get_mut(&mut self, at: u32) -> &mut PrimCache {
 		self.objs.at_mut(at)
 	}
 	pub fn shrink(&mut self, to: u32) {
@@ -33,7 +65,7 @@ impl Objects {
 		if let Some(first_invalid) = objs
 			.iter()
 			.enumerate()
-			.find(|(n, Primitive { state, o, .. })| {
+			.find(|(n, PrimCache { state, o, .. })| {
 				let overlapping = || state.contains(State::XYZW) && o.obj().ordered() && overlaps(o, u32(*n));
 				state.contains(State::MISMATCH) || overlapping()
 			})
@@ -121,11 +153,11 @@ impl Objects {
 	}
 }
 
-pub struct Primitive {
+pub struct PrimCache {
 	pub state: State,
-	pub o: ObjStore,
+	pub o: PrimImpl,
 }
-pub enum ObjStore {
+pub enum PrimImpl {
 	Rect(RectImpl),
 	ImgRGB(SpriteImpl<RGB>),
 	ImgRGBA(SpriteImpl<RGBA>),
@@ -134,8 +166,8 @@ pub enum ObjStore {
 	Frame9(Frame9Impl),
 	Text(TextImpl),
 }
-impl ObjStore {
-	pub fn obj(&self) -> &dyn Object {
+impl PrimImpl {
+	pub fn obj(&self) -> &dyn Primitive {
 		match self {
 			Rect(r) => r,
 			ImgRGB(r) => r,
@@ -159,4 +191,4 @@ impl ObjStore {
 		}
 	}
 }
-use ObjStore::*;
+use PrimImpl::*;
