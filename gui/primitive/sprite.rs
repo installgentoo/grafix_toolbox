@@ -59,7 +59,7 @@ impl<S: TexSize> Primitive for SpriteImpl<S> {
 		}
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__col_tex]) });
+		let s = LeakyStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__col_tex]) });
 
 		let t = unsafe { &*self.tex }.atlas.Bind(sampler());
 		let _ = Uniforms!(s, ("tex", t));
@@ -72,7 +72,7 @@ impl<S: TexSize> Primitive for SpriteImpl<S> {
 }
 
 pub fn sampler() -> &'static Sampler {
-	LocalStatic!(Rc<Sampler>, { Sampler::linear() })
+	LeakyStatic!(Rc<Sampler>, { Sampler::linear() })
 }
 
 SHADER!(

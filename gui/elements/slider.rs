@@ -10,12 +10,13 @@ impl Default for Slider {
 	}
 }
 impl Slider {
-	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, (pos, size): Geom, pip_size: f32) -> f32 {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, Surface { pos, size }: Surface, pip_size: f32) -> f32 {
+		let id = ref_UUID(self);
+
 		let vert = size.y() > size.x();
 		let o = move |v: Vec2| if vert { v.y() } else { v.x() };
 		let set_pip = move |v: f32| ((v - o(pos)) / o(size)).clamp(0., 1.);
 
-		let id = LUID(self);
 		let Slider { pip_pos } = self;
 
 		*pip_pos = pip_pos.clamp(0., 1.);
@@ -54,8 +55,8 @@ impl Slider {
 }
 
 impl<'s: 'l, 'l> Lock::Slider<'s, 'l, '_> {
-	pub fn draw(self, g: Geom, p: f32) -> f32 {
-		let Self { s, r, t } = self;
-		s.draw(r, t, g, p)
+	pub fn draw(self, g: impl Into<Surface>) -> f32 {
+		let (Self { s, r, t }, g) = (self, g.into());
+		s.draw(r, t, g, g.size.y().min(g.size.x()))
 	}
 }

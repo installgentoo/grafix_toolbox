@@ -34,6 +34,12 @@ pub const fn const_fnv1_u32(s: &[u32]) -> u32 {
 	fnv
 }
 
+pub fn ref_UUID<T>(s: &T) -> usize {
+	let t = (const_fnv1(std::any::type_name::<T>().as_bytes()) as usize) << 32;
+	let p = &raw const *s as usize;
+	p ^ t
+}
+
 #[macro_export]
 macro_rules! ID {
 	($n: expr) => {{

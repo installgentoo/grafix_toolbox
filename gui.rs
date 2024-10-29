@@ -59,7 +59,7 @@ macro_rules! storage {
 		}
 	}
 }
-storage!(Button, HyperText, Label, Layout, LineEdit, Selector, Slider, TextEdit);
+storage!(Button, HyperText, Label, Layout, LineEdit, Selector, Slider, SliderNum, TextEdit);
 
 #[macro_use]
 mod cache;
@@ -73,10 +73,6 @@ type Geom = (Vec2, Vec2);
 type Color = Vec4;
 type TexCoord = Vec4;
 type LogicId = usize;
-
-fn LUID<T>(v: &T) -> LogicId {
-	v as *const T as usize
-}
 
 struct LogicStorage<'s> {
 	id: LogicId,

@@ -7,7 +7,7 @@ pub fn iter2d<T: Rangeable>(args: impl IterArgs2d<T>) -> impl Iterator<Item = ve
 	let ident = T::to(1);
 	iter::from_fn(move || {
 		if y >= h {
-			return None;
+			None?
 		}
 		let ret = Some((x, y));
 
@@ -26,7 +26,7 @@ pub fn iter3d<T: Rangeable>(args: impl IterArgs3d<T>) -> impl Iterator<Item = ve
 	let ident = T::to(1);
 	iter::from_fn(move || {
 		if z >= d {
-			return None;
+			None?
 		}
 		let ret = Some((x, y, z));
 

@@ -50,7 +50,7 @@ macro_rules! PROFILER {
 			}
 			pub fn PrintAll() {
 				let mut all = map().drain().collect_vec();
-				all.sort_by(|(a, _), (b, _)| a.cmp(b));
+				all.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
 				all.into_iter().for_each(|(n, t)| print_impl(n, t));
 			}
 

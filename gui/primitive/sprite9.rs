@@ -40,7 +40,7 @@ impl<S: TexSize> Primitive for Sprite9Impl<S> {
 		write_sprite9((to_clip, pos, size, (c, c), crop, (u1, v2, u2, v1), color), range);
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__col_tex]) });
+		let s = LeakyStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__col_tex]) });
 
 		let t = unsafe { &*self.tex }.atlas.Bind(sampler());
 		let _ = Uniforms!(s, ("src", t));

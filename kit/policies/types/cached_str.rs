@@ -17,12 +17,21 @@ impl CachedStr {
 		Self { str, old_str, accessed: true }
 	}
 	pub fn changed(&mut self) -> bool {
-		let Self { ref str, old_str, accessed } = self;
-		if !*accessed || str[..] == old_str[..] {
+		if !self.check() {
 			return false;
 		}
+
+		let Self { ref str, old_str, accessed } = self;
 		*accessed = false;
 		*old_str = str.clone().into();
+		true
+	}
+	pub fn check(&mut self) -> bool {
+		let Self { ref str, old_str, accessed } = self;
+		if !*accessed || str[..] == old_str[..] {
+			*accessed = false;
+			return false;
+		}
 		true
 	}
 }

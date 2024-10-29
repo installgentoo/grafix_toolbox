@@ -2,10 +2,11 @@
 use super::*;
 
 pub fn fit_text(text: &str, t: &Theme, size: Vec2) -> (Vec2, f32) {
-	let scale = t.font_size * size.y();
+	let scale = t.font_size;
 	let text_size = Text::size(text, &t.font, scale);
 	if text_size.x() > 0. {
-		let r = (size.x() / text_size.x()).min(1.);
+		let r = size.div(text_size);
+		let r = r.x().min(r.y() * 2.).min(1.);
 		(size.sub(text_size.mul(r)).mul(0.5), scale * r)
 	} else {
 		((size.x(), size.y() - scale).mul(0.5), scale)

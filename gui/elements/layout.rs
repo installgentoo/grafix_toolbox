@@ -10,8 +10,8 @@ impl Layout {
 	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, content: impl FnOnce(&mut RenderLock<'l>, Geom)) {
 		let TOP_PAD = 0.05;
 		let CRN_PAD = 0.04;
+		let id = ref_UUID(self);
 
-		let id = LUID(self);
 		let Layout { click, pos, size } = self;
 		{
 			let c = r.to_clip();
@@ -73,8 +73,8 @@ impl Layout {
 		);
 
 		let (pos, size) = layout;
-		let _c = r.clip(layout);
 		r.draw(Rect { pos, size, color: t.bg });
+		let _c = r.clip(layout);
 		content(r, layout);
 	}
 }

@@ -3,7 +3,7 @@ use crate::GL::{mesh::*, *};
 
 impl<S, F> Tex2d<S, F> {
 	pub fn Cast<RS: TexSize, RF: TexFmt>(&self, minification: i32) -> Tex2d<RS, RF> {
-		let s = LocalStatic!(Shader, { Shader::pure([vs_mesh__2d_screen, ps_mesh__2d_screen]) });
+		let s = LeakyStatic!(Shader, { Shader::pure([vs_mesh__2d_screen, ps_mesh__2d_screen]) });
 		let sampl = &Sampler::linear();
 
 		GLSave!(BLEND);

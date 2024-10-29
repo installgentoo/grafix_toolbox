@@ -35,17 +35,18 @@ pub fn compiler(data_rx: Receiver<ShaderTask>, res_sn: Sender<(ShdResult, Fence)
 						mem::take(p.get())
 							.drain(..)
 							.filter_map(|ShdSrc { name, src, .. }| {
-								if let Some(s) = sources.get_mut(&name) {
-									if matches!(s, Source { src: s } | Compiled { src: s, .. } if *s == src) {
-										return None;
-									}
+								let Some(s) = sources.get_mut(&name) else {
+									sources.insert(name, Source { src });
+									None?
+								};
 
-									*s = Source { src };
-									return Some(name);
+								if matches!(s, Source { src: s } | Compiled { src: s, .. } if *s == src) {
+									None?
 								}
 
-								sources.insert(name, Source { src });
-								None
+								*s = Source { src };
+
+								Some(name)
 							})
 							.collect()
 					})
@@ -80,18 +81,17 @@ pub fn compiler(data_rx: Receiver<ShaderTask>, res_sn: Sender<(ShdResult, Fence)
 fn compile(includes: &str, sources: &mut HashMap<Str, ShdState>, files: &mut [Lazy<Vec<ShdSrc>>], name: &[Str]) -> Res<ShdProg> {
 	let get_object = |name: &Str| -> Res<_> {
 		let get = |s: &mut HashMap<_, _>| {
-			if let Some(state) = s.get_mut(name) {
-				match state {
-					Compiled { obj, .. } => return Ok(obj.obj()),
-					Source { src } => {
-						let c_src = CString::new([includes, src].concat()).explain_err(|| format!("Malformed string in shader {name:?}")).fail();
-						let (o, new) = ShaderObj::new(name, &c_src).map(|obj| (obj.obj(), Compiled { src: mem::take(src), obj }))?;
-						*state = new;
-						return Ok(o);
-					}
+			let state = s.get_mut(name).ok_or_else(|| format!("No shader {name:?} in loaded sources"))?;
+
+			Ok(match state {
+				Compiled { obj, .. } => obj.obj(),
+				Source { src } => {
+					let c_src = CString::new([includes, src].concat()).explain_err(|| format!("Malformed string in shader {name:?}")).fail();
+					let (o, new) = ShaderObj::new(name, &c_src).map(|obj| (obj.obj(), Compiled { src: mem::take(src), obj }))?;
+					*state = new;
+					o
 				}
-			}
-			Err(format!("No shader {name:?} in loaded sources"))
+			})
 		};
 
 		if let Ok(o) = get(sources) {

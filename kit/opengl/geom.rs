@@ -1,7 +1,6 @@
 pub use {camera::*, mesh::*, model::*};
 
 pub mod Screen {
-	use super::*;
 	struct Model {
 		vao: Vao<u8>,
 		_xyuv: AttrArr<i8>,
@@ -9,7 +8,7 @@ pub mod Screen {
 	pub fn Draw() {
 		GLSave!(DEPTH_TEST);
 		GLDisable!(DEPTH_TEST);
-		LocalStatic!(Model, {
+		LeakyStatic!(Model, {
 			#[rustfmt::skip]
 			let _xyuv = AttrArr::new(&[ -1, -1, 0, 0,  3, -1, 2, 0,  -1, 3, 0, 2 ][..]);
 			let mut vao = Vao::new();
@@ -21,17 +20,17 @@ pub mod Screen {
 		.DrawUnindexed(3);
 		GLRestore!(DEPTH_TEST);
 	}
+	use super::*;
 }
 
 pub mod Skybox {
-	use super::*;
 	struct Model {
 		vao: Vao<u8>,
 		_idx: IdxArr<u8>,
 		_xyz: AttrArr<i8>,
 	}
 	pub fn Draw() {
-		LocalStatic!(Model, {
+		LeakyStatic!(Model, {
 			#[rustfmt::skip]
 			let _idx = IdxArr::new(&[ 0, 1, 3,  3, 1, 2,
 									  4, 5, 7,  7, 5, 6,
@@ -51,6 +50,7 @@ pub mod Skybox {
 		.Bind()
 		.Draw(36);
 	}
+	use super::*;
 }
 
 mod camera;

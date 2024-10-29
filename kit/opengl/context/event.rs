@@ -15,13 +15,13 @@ pub enum Event {
 pub enum EventReply {
 	Accept,
 	Reject,
-	Decline,
+	Pass,
 	DropFocus,
 }
 
 bitflags! {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Mod: u32 {
+pub struct Mod: u16 {
 	const PRESS = 0x1;
 	const REPEAT = 0x2;
 	const RELEASE = 0x4;
@@ -32,8 +32,7 @@ pub struct Mod: u32 {
 	const LEFT = 0x100;
 	const MID = 0x200;
 	const RIGHT = 0x400;
-}
-}
+}}
 impl Mod {
 	pub fn pressed(&self) -> bool {
 		self.intersects(Mod::PRESS | Mod::REPEAT)

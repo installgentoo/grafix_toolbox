@@ -8,7 +8,7 @@ pub struct Label {
 	text: Str,
 }
 impl Label {
-	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, (pos, size): Geom, text: &str) {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, Surface { pos, size }: Surface, text: &str) {
 		let s = self;
 
 		if *s.text != *text || s.size != size {
@@ -29,8 +29,8 @@ impl Label {
 }
 
 impl<'s: 'l, 'l> Lock::Label<'s, 'l, '_> {
-	pub fn draw(self, g: Geom, te: &str) {
+	pub fn draw(self, g: impl Into<Surface>, te: impl AsRef<str>) {
 		let Self { s, r, t } = self;
-		s.draw(r, t, g, te)
+		s.draw(r, t, g.into(), te.as_ref())
 	}
 }

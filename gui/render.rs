@@ -128,7 +128,7 @@ impl Renderer {
 							*focus = 0;
 							return false;
 						}
-						Decline => (),
+						Pass => FAIL!("Passthrough elements must not grab focus"),
 					}
 				} else {
 					*focus = 0;
@@ -167,7 +167,7 @@ impl Renderer {
 							*focus = 0;
 							return false;
 						}
-						Decline => (),
+						Pass => (),
 					}
 				}
 			}
@@ -232,18 +232,20 @@ struct Storage<T: spec::Buffer, D> {
 }
 impl<T: spec::Buffer, D: Copy> Storage<T, D> {
 	fn flush(&mut self, from: Option<usize>, mut rebind: impl FnMut(&spec::ArrObject<T, D>)) {
-		if let Some(from) = from {
-			let Self { obj, ref buff, size } = self;
-			let new_size = buff.len();
-			if new_size <= *size && new_size * 2 > *size {
-				obj.MapMut((from..new_size, gl::MAP_INVALIDATE_RANGE_BIT)).mem().copy_from_slice(&buff[from..]);
-				return;
-			}
+		let Some(from) = from else {
+			return;
+		};
 
-			*size = new_size;
-			*obj = spec::ArrObject::new((buff, gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT));
-			rebind(obj);
+		let Self { obj, ref buff, size } = self;
+		let new_size = buff.len();
+		if new_size <= *size && new_size * 2 > *size {
+			obj.MapMut((from..new_size, gl::MAP_INVALIDATE_RANGE_BIT)).mem().copy_from_slice(&buff[from..]);
+			return;
 		}
+
+		*size = new_size;
+		*obj = spec::ArrObject::new((buff, gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT));
+		rebind(obj);
 	}
 }
 type IdxArrStorage = Storage<spec::Index, u16>;

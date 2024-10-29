@@ -16,21 +16,12 @@ macro_rules! ASSERT {
 #[cfg(debug_assertions)]
 #[macro_export]
 macro_rules! ASSERT {
-	(false, $w: literal) => { ASSERT_IMPL!($w) };
-	(false, $w: expr) => { ASSERT_IMPL!("{}", $w) };
-	(false, $($t: tt)+) => { ASSERT_IMPL!($($t)+) };
-	($e: expr, $w: literal) => { if $e {} else { ASSERT_IMPL!($w) } };
-	($e: expr, $w: expr) => { if $e {} else { ASSERT_IMPL!("{}", $w) } };
-	($e: expr, $($t: tt)+) => { if $e {} else { ASSERT_IMPL!($($t)+) } };
-}
-#[macro_export]
-macro_rules! ASSERT_IMPL {
-	($($t: tt)+) => {{
-		use $crate::logging::*;
-		Logger::log(format!("A| {} |{}:{}|{}\n", format!($($t)+), file!(), line!(), std::thread::current().name().unwrap_or("???")).red().to_string());
-		std::panic::set_hook(std::boxed::Box::new(|_| {}));
-		panic!();
-	}};
+	(false, $w: literal) => { ERROR_IMPL!($w) };
+	(false, $w: expr) => { ERROR_IMPL!("{}", $w) };
+	(false, $($t: tt)+) => { ERROR_IMPL!($($t)+) };
+	($e: expr, $w: literal) => { if $e {} else { ERROR_IMPL!($w) } };
+	($e: expr, $w: expr) => { if $e {} else { ERROR_IMPL!("{}", $w) } };
+	($e: expr, $($t: tt)+) => { if $e {} else { ERROR_IMPL!($($t)+) } };
 }
 
 #[macro_export]

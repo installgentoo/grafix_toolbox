@@ -105,13 +105,12 @@ impl WindowSpec for GlfwWindow {
 						let ctx = unsafe { &mut *(ctx as *mut Window) };
 						ctx.make_current();
 						ctx.glfw.window_hint(Visible(false));
-						if let Some((w, _)) = ctx.create_shared(1, 1, "offhand_dummy", WindowMode::Windowed) {
-							w
-						} else {
+						let Some((w, _)) = ctx.create_shared(1, 1, "offhand_dummy", WindowMode::Windowed) else {
 							l.wait();
-							FAIL!("Cannot create offhand context");
-							return;
-						}
+							return FAIL!("Cannot create offhand context");
+						};
+
+						w
 					};
 					ctx.make_current();
 					l.wait();

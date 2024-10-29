@@ -10,22 +10,19 @@ pub struct Selector {
 	pub choice: usize,
 }
 impl Selector {
-	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, layout @ (pos, size): Geom, options: &'s mut [String]) -> usize {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, layout @ Surface { pos, size }: Surface, options: &'s mut [String]) -> usize {
 		let Selector { button, line_edit, choices, open, editing, choice } = self;
 		let text = options.at(*choice);
 
 		if !*open {
-			choices.clear();
-			let mut pressed = typed_ptr!(&mut button.pressed);
-			if button.lock(r).draw(layout, text) {
-				*pressed.get_mut() = false;
+			if button.draw(r, t, layout, text) {
 				*open = true;
 				line_edit.text = text.into();
 			}
 		} else {
 			choices.resize_with(options.len(), Def);
 			for (n, c) in choices.iter_mut().enumerate() {
-				if c.lock(r).draw((pos.sum(size.mul((0, n + 1))), size), &options[n]) {
+				if c.draw(r, t, layout.y(size.y() * f32(n + 1)), &options[n]) {
 					*open = false;
 					*editing = false;
 					*choice = n;
@@ -34,9 +31,10 @@ impl Selector {
 			}
 
 			let text = options.at_mut(*choice);
+			let line_id = ref_UUID(line_edit);
 
 			if *editing {
-				if !r.focused(LUID(line_edit)) {
+				if !r.focused(line_id) {
 					*text = line_edit.text.to_string();
 					*open = false;
 					*editing = false;
@@ -45,16 +43,16 @@ impl Selector {
 				*open &= r.hovers_in((pos, size.mul((1, options.len() + 1))))
 			}
 
-			*editing |= r.focused(LUID(line_edit));
-			line_edit.lock(r).draw(layout);
+			*editing |= r.focused(line_id);
+			line_edit.draw(r, t, layout, None);
 		}
 		*choice
 	}
 }
 
 impl<'s: 'l, 'l> Lock::Selector<'s, 'l, '_> {
-	pub fn draw(self, g: Geom, o: &'s mut [String]) -> usize {
-		let Self { s, r, .. } = self;
-		s.draw(r, g, o)
+	pub fn draw(self, g: impl Into<Surface>, o: &'s mut [String]) -> usize {
+		let Self { s, r, t } = self;
+		s.draw(r, t, g.into(), o)
 	}
 }

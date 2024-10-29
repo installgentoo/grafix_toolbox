@@ -65,12 +65,12 @@ impl Logger {
 				let writer = task::Runtime().spawn(async move {
 					let mut out = out().await;
 					while let Some(msg) = rx.recv().await {
-						if let Message::M(msg) = msg {
-							unwrap(out.write_all(msg.as_bytes()).await, "failed write");
-						} else {
+						let Message::M(msg) = msg else {
 							unwrap(out.flush().await, "failed flush");
-							break;
-						}
+							return;
+						};
+
+						unwrap(out.write_all(msg.as_bytes()).await, "failed write");
 					}
 				});
 				LoggerState { writer, sender }

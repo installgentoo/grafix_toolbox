@@ -40,7 +40,7 @@ impl Primitive for Frame9Impl {
 		write_sprite9((aspect, pos, size, (c, c), crop, (0., 0., 1., 1.), color), range);
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__frame]) });
+		let s = LeakyStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__frame]) });
 
 		let tex = unsafe { &*self.tex };
 		let t = tex.atlas.Bind(sampler());

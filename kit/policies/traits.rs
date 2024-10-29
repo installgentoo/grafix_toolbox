@@ -9,11 +9,11 @@ macro_rules! impl_trait_for {
 
 // TODO replace with trait aliases
 macro_rules! trait_alias {
-	($p: vis $t: ident, $($b: tt)+ ) => {
+	($p: vis $t: ident, $($b: tt)+) => {
 		$p trait $t: $($b)+ {}
 		impl<T: $($b)+> $t for T {}
 	};
-	($t: ident, $($b: tt)+ ) => {
+	($t: ident, $($b: tt)+) => {
 		trait_alias!(pub(self) $t, $($b)+);
 	};
 }

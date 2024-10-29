@@ -18,7 +18,7 @@ pub struct Font {
 }
 impl Font {
 	pub fn tex(&self) -> &Tex2d<RED, u8> {
-		self.tex.as_ref().unwrap_or_else(|| LocalStatic!(Tex2d<RED, u8>))
+		self.tex.as_ref().unwrap_or_else(|| LeakyStatic!(Tex2d<RED, u8>))
 	}
 	pub fn glyph(&self, c: char) -> Option<&Glyph> {
 		self.glyphs.get(&c)

@@ -33,7 +33,7 @@ pub struct BatchedObj<'a> {
 	pub uv: &'a mut [f16],
 }
 bitflags! {#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
-pub struct State: u32 {
+pub struct State: u8 {
 	const BATCH_RESIZED = 0x2;
 	const XYZW = 0x10;
 	const RGBA = 0x20;

@@ -154,13 +154,13 @@ impl ShaderManager {
 		Self::get_or_init(None)
 	}
 	fn get_or_init(w: Option<&mut Window>) -> &'static mut Self {
-		LocalStatic!(ShaderManager, {
-			if let Some(w) = w {
-				let (sn, rx) = Offhand::from_fn(w, 64, compiler);
-				Self { sn, rx, mailbox: Def() }
-			} else {
+		LeakyStatic!(ShaderManager, {
+			let Some(w) = w else {
 				ERROR!("Must Initialize ShaderManager before first use");
-			}
+			};
+
+			let (sn, rx) = Offhand::from_fn(w, 64, compiler);
+			Self { sn, rx, mailbox: Def() }
 		})
 	}
 }

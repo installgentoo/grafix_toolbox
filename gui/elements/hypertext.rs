@@ -47,14 +47,13 @@ impl HyperDB {
 	fn get<'a>(&self, keys: impl iter::Iterator<Item = &'a str>) -> Option<(usize, Vec2, &str)> {
 		let mut trie = &self.keys.trie;
 		for (n, k) in keys.enumerate() {
-			if let Some(k) = trie.get(&*k.to_lowercase()) {
-				if let Some(Popup { size, text }) = k.val.as_ref() {
-					return Some((n, *size, text));
-				}
-				trie = &k.trie;
-			} else {
-				return None;
+			let k = trie.get(&*k.to_lowercase())?;
+
+			if let Some(Popup { size, text }) = k.val.as_ref() {
+				return Some((n, *size, text));
 			}
+
+			trie = &k.trie;
 		}
 		None
 	}
@@ -71,8 +70,9 @@ pub struct HyperText {
 	pub text: CachedStr,
 }
 impl HyperText {
-	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, layout @ (pos, size): Geom, scale: f32, db: &HyperDB) {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, Surface { pos, size }: Surface, scale: f32, db: &HyperDB) {
 		let SCR_PAD = 0.01;
+		let id = ref_UUID(self);
 		let s = self;
 
 		let font = &t.font;
@@ -82,7 +82,6 @@ impl HyperText {
 			s.scale = scale;
 			s.lines = lines;
 		}
-		let id = LUID(s);
 		let HyperText { lines, hovered, scrollbar, popup, .. } = s;
 
 		let whole_text_h = scale * f32(lines.len());
@@ -99,7 +98,7 @@ impl HyperText {
 		};
 		let (start, len) = ulVec2(vis_range);
 
-		let _c = r.clip(layout);
+		let _c = r.clip((pos, size));
 
 		r.draw(Rect { pos, size, color: t.bg });
 		*hovered = r.hovered();
@@ -198,7 +197,11 @@ impl HyperText {
 				id,
 			);
 			let visible_h = size.y() / whole_text_h;
-			scrollbar.lock(r).draw((pos.sum((size.x() - SCR_PAD, 0.)), (SCR_PAD, size.y())), visible_h);
+			let s = Surface {
+				pos: pos.sum((size.x() - SCR_PAD, 0)),
+				size: (SCR_PAD, size.y()),
+			};
+			scrollbar.draw(r, t, s, visible_h);
 		}
 
 		if !hover && !child_hovered(popup) && timeout(true) {
@@ -207,16 +210,16 @@ impl HyperText {
 		}
 
 		if let Some((_, pos, p)) = popup {
-			let layout = (*pos, p.size);
-			p.lock(r).draw(layout, scale, db);
+			let s = Surface { pos: *pos, size: p.size };
+			p.draw(r, t, s, scale, db);
 		}
 	}
 }
 
 impl<'s: 'l, 'l> Lock::HyperText<'s, 'l, '_> {
-	pub fn draw(self, g: Geom, sc: f32, d: &HyperDB) {
+	pub fn draw(self, g: impl Into<Surface>, sc: f32, d: &HyperDB) {
 		let Self { s, r, t } = self;
-		s.draw(r, t, g, sc, d)
+		s.draw(r, t, g.into(), sc, d)
 	}
 }
 

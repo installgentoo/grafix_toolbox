@@ -48,7 +48,7 @@ impl Primitive for RectImpl {
 		}
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col, ps_gui__col]) });
+		let s = LeakyStatic!(Shader, { Shader::pure([vs_gui__pos_col, ps_gui__col]) });
 
 		let _ = s.Bind();
 		b.Draw((num, offset, gl::TRIANGLES));

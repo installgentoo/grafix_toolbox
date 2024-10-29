@@ -15,9 +15,10 @@ pub struct TextEdit {
 	pub text: CachedStr,
 }
 impl TextEdit {
-	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, layout @ (pos, size): Geom, scale: f32, readonly: bool) {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, Surface { pos, size }: Surface, scale: f32, readonly: bool) {
 		let SCR_PAD = 0.02;
 		let CUR_PAD = 0.01;
+		let id = ref_UUID(self);
 		let s = self;
 
 		let font = &t.font;
@@ -34,7 +35,6 @@ impl TextEdit {
 			s.lines = lines;
 			s.wraps = wraps;
 		}
-		let id = LUID(s);
 		let TextEdit {
 			ref offset,
 			ref lines,
@@ -63,7 +63,7 @@ impl TextEdit {
 		};
 		let (start, len) = ulVec2(vis_range);
 
-		let _c = r.clip(layout);
+		let _c = r.clip((pos, size));
 
 		r.draw(Rect {
 			pos: offset.sum(pos),
@@ -339,15 +339,19 @@ impl TextEdit {
 
 		if whole_text_h > size.y() {
 			let visible_h = size.y() / whole_text_h;
-			scrollbar.lock(r).draw((pos.sum((size.x() - SCR_PAD, 0.)), (SCR_PAD, size.y())), visible_h);
+			let s = Surface {
+				pos: pos.sum((size.x() - SCR_PAD, 0)),
+				size: (SCR_PAD, size.y()),
+			};
+			scrollbar.draw(r, t, s, visible_h);
 		}
 	}
 }
 
 impl<'s: 'l, 'l> Lock::TextEdit<'s, 'l, '_> {
-	pub fn draw(self, g: Geom, sc: f32, re: bool) {
+	pub fn draw(self, g: impl Into<Surface>, sc: f32) {
 		let Self { s, r, t } = self;
-		s.draw(r, t, g, sc, re)
+		s.draw(r, t, g.into(), sc, false)
 	}
 }
 
@@ -385,7 +389,7 @@ impl History {
 	fn undo(&mut self) -> Option<Change> {
 		let Self { changes, at, .. } = self;
 		if *at == 0 {
-			return None;
+			None?
 		}
 		*at -= 1;
 		Some(changes[*at].clone().invert())
@@ -393,7 +397,7 @@ impl History {
 	fn redo(&mut self) -> Option<Change> {
 		let Self { changes, at, .. } = self;
 		if *at >= changes.len() {
-			return None;
+			None?
 		}
 		*at += 1;
 		Some(changes[*at - 1].clone())

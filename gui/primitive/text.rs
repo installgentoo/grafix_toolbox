@@ -131,24 +131,26 @@ impl Primitive for TextImpl {
 				x += font.kern(last_c, c);
 				last_c = c;
 
-				if let Some(&Glyph { coord: (x1, y1, x2, y2), uv: u, adv }) = font.glyph(c) {
-					let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <_>::to({
-						let xy1 = pos.sum((x + x1, y1).mul(scale));
-						let xy2 = pos.sum((x + x2, y2).mul(scale));
-						let uv = bound_uv((p1, p2), (xy1, xy2), u);
-						let xy1 = xy1.clmp(p1, p2).mul(to_clip);
-						let xy2 = xy2.clmp(p1, p2).mul(to_clip);
-						(xy1, xy2, uv)
-					});
-					let O = f16::ZERO;
+				let Some(&Glyph { coord: (x1, y1, x2, y2), uv: u, adv }) = font.glyph(c) else {
+					continue;
+				};
 
-					xyzw[..16].copy_from_slice(&[x1, y1, z, O, x2, y1, z, O, x2, y2, z, O, x1, y2, z, O]);
-					xyzw = &mut xyzw[16..];
-					uv[..8].copy_from_slice(&[u1, v1, u2, v1, u2, v2, u1, v2]);
-					uv = &mut uv[8..];
+				let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <_>::to({
+					let xy1 = pos.sum((x + x1, y1).mul(scale));
+					let xy2 = pos.sum((x + x2, y2).mul(scale));
+					let uv = bound_uv((p1, p2), (xy1, xy2), u);
+					let xy1 = xy1.clmp(p1, p2).mul(to_clip);
+					let xy2 = xy2.clmp(p1, p2).mul(to_clip);
+					(xy1, xy2, uv)
+				});
+				let O = f16::ZERO;
 
-					x += adv;
-				}
+				xyzw[..16].copy_from_slice(&[x1, y1, z, O, x2, y1, z, O, x2, y2, z, O, x1, y2, z, O]);
+				xyzw = &mut xyzw[16..];
+				uv[..8].copy_from_slice(&[u1, v1, u2, v1, u2, v2, u1, v2]);
+				uv = &mut uv[8..];
+
+				x += adv;
 			}
 		}
 
@@ -163,7 +165,7 @@ impl Primitive for TextImpl {
 		}
 	}
 	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LocalStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui_sdftext]) });
+		let s = LeakyStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui_sdftext]) });
 
 		let t = unsafe { &*self.font }.tex().Bind(sampler());
 		let _ = Uniforms!(s, ("tex", t));

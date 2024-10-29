@@ -1,5 +1,5 @@
 pub mod ext {
-	pub use super::{func::file as FS, func::rand, func::slicing, pre::logging, profiling, types::lazy, types::prefetch};
+	pub use super::{func::file as FS, func::rand, func::slicing, pre::chksum::ref_UUID, pre::logging, profiling, types::lazy, types::prefetch};
 }
 
 pub mod pre {

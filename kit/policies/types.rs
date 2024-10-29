@@ -57,12 +57,23 @@ macro_rules! LazyStatic {
 #[macro_export]
 macro_rules! LocalStatic {
 	($t: ty, $b: block) => {{
-		use std::{cell::OnceCell, cell::Cell, mem::ManuallyDrop};
-		thread_local!(static S: OnceCell<ManuallyDrop<Cell<$t>>> = Default::default());
-		let r = S.with(|f| f.get_or_init(|| ManuallyDrop::new(Cell::new($b))).as_ptr());
+		use std::{cell::OnceCell, cell::Cell};
+		thread_local!(static S: OnceCell<Cell<$t>> = Default::default());
+		let r = S.with(|f| f.get_or_init(|| Cell::new($b)).as_ptr());
 		unsafe { &mut *r }
 	}};
 	($t: ty) => {
 		LocalStatic!($t, { <$t>::default() })
+	};
+}
+
+#[macro_export]
+macro_rules! LeakyStatic {
+	($t: ty, $b: block) => {{
+		use std::mem::ManuallyDrop;
+		LocalStatic!(ManuallyDrop<$t>, { ManuallyDrop::new($b) }) as &mut $t
+	}};
+	($t: ty) => {
+		LeakyStatic!($t, { <$t>::default() })
 	};
 }
