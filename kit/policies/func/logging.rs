@@ -64,14 +64,10 @@ impl Logger {
 				let (sender, mut rx) = chan::unbounded::<Message>();
 				let writer = task::Runtime().spawn(async move {
 					let mut out = out().await;
-					while let Some(msg) = rx.recv().await {
-						let Message::M(msg) = msg else {
-							unwrap(out.flush().await, "failed flush");
-							return;
-						};
-
+					while let Some(Message::M(msg)) = rx.recv().await {
 						unwrap(out.write_all(msg.as_bytes()).await, "failed write");
 					}
+					unwrap(out.flush().await, "failed flush")
 				});
 				LoggerState { writer, sender }
 			});

@@ -96,10 +96,7 @@ impl<'l> ShaderBinding<'l> {
 				}
 				-2 - i32(addr)
 			}),
-			ArgsKind::Ssbo => {
-				DEBUG!("GL SSBO {name:?} bound, shader {:?}", shd_name.join(" "));
-				return;
-			}
+			ArgsKind::Ssbo => return DEBUG!("GL SSBO {name:?} bound, shader {:?}", shd_name.join(" ")),
 		};
 		if addr != -1 {
 			args.apply(addr, cached);

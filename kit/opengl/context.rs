@@ -15,12 +15,7 @@ impl Fence {
 		Self { obj }
 	}
 	pub fn Block(&self) {
-		loop {
-			let state = GL!(gl::ClientWaitSync(self.obj, 0, 16000000));
-			if state != gl::TIMEOUT_EXPIRED {
-				return;
-			}
-		}
+		while gl::TIMEOUT_EXPIRED == GL!(gl::ClientWaitSync(self.obj, 0, 16000000)) {}
 	}
 	pub fn BlockFor(&self, nanoseconds: u64) {
 		GL!(gl::ClientWaitSync(self.obj, 0, nanoseconds));

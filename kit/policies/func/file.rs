@@ -152,12 +152,23 @@ fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader: impl Fn
 	let p: Arc<Path> = PathBuf::from(&*p.into()).into();
 
 	stream::unfold(None, move |w| {
-		let (p, l, _sn, rx) = (p.clone(), loader.clone(), rx.clone(), rx.clone());
+		let (p, l, _sn, rx) = (p.clone(), loader.clone(), Some(rx.clone()), rx.clone());
 		async move {
-			let _first = w.is_none();
+			let first = w.is_none();
 			if let Some(_w) = w {
 				let _ = rx.notified().await;
+				DEBUG!("File {p:?} changed");
 			}
+
+			let t = fs::metadata(p.clone()).await.and_then(|m| m.modified());
+			let mut _sn = _sn.map(|s| (s, t));
+
+			while !first && !p.exists() {
+				task::sleep(time::Duration::from_millis(100)).await;
+			}
+
+			let file = l(p.clone()).await.map_err(|e| FAIL!(e));
+			DEBUG!("File {p:?} loaded");
 
 			let w = {
 				#[cfg(feature = "fsnotify")]
@@ -167,19 +178,22 @@ fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader: impl Fn
 					let mut w = {
 						let p = p.clone();
 						Res(recommended_watcher(move |r| match r {
-							Ok(_) => _sn.notify_waiters(),
+							Ok(_) => {
+								match (_sn.as_ref(), std::fs::metadata(p.clone()).and_then(|m| m.modified())) {
+									(Some((_, Ok(mtime))), Ok(t)) if &t == mtime => return (),
+									_ => (),
+								}
+								_sn.take().map(|(s, _)| s.notify_one()).sink()
+							}
 							Err(e) => FAIL!("File {p:?}: {e}"),
 						}))
 					}
 					.map_err(|e| FAIL!("Watch {p:?}: {e}"))
 					.ok();
 
-					if !_first {
-						while !p.exists() {
-							task::sleep(time::Duration::from_millis(100)).await;
-						}
+					while !first && !p.exists() {
+						task::sleep(time::Duration::from_millis(100)).await;
 					}
-
 					w.as_mut().map(|w| w.watch(&p, RecursiveMode::NonRecursive).unwrap_or_else(|_| FAIL!("Cannot watch {p:?}")));
 					Some(w)
 				}
@@ -190,7 +204,6 @@ fn watch_file<T, F: Future<Output = Res<T>>>(p: impl Into<Astr>, loader: impl Fn
 				}
 			};
 
-			let file = l(p).await.map_err(|e| FAIL!(e));
 			file.ok().map(|f| (f, w))
 		}
 	})

@@ -232,9 +232,7 @@ struct Storage<T: spec::Buffer, D> {
 }
 impl<T: spec::Buffer, D: Copy> Storage<T, D> {
 	fn flush(&mut self, from: Option<usize>, mut rebind: impl FnMut(&spec::ArrObject<T, D>)) {
-		let Some(from) = from else {
-			return;
-		};
+		let Some(from) = from else { return () };
 
 		let Self { obj, ref buff, size } = self;
 		let new_size = buff.len();

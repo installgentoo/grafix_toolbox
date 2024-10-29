@@ -8,36 +8,22 @@ pub enum DebugLevel {
 }
 
 pub fn EnableDebugContext(level: DebugLevel) {
-	static mut LEVEL: u32 = 0;
+	static mut FILTER: u32 = 0;
 	unsafe {
-		LEVEL = level as u32;
+		FILTER = level as u32;
 	}
 	GLEnable!(DEBUG_OUTPUT, DEBUG_OUTPUT_SYNCHRONOUS);
-	GL!(gl::DebugMessageCallback(Some(debug_gl_printer), LEVEL as *const GLvoid));
+	GL!(gl::DebugMessageCallback(Some(debug_gl_printer), &raw const FILTER as *const GLvoid));
 }
 
 extern "system" fn debug_gl_printer(src: GLenum, typ: GLenum, id: u32, lvl: GLenum, _: i32, msg: *const i8, filter: *mut GLvoid) {
 	let f = unsafe { *(filter as *mut u32) };
 	let lvl = match lvl {
 		gl::DEBUG_SEVERITY_HIGH => "HIG".into(),
-		gl::DEBUG_SEVERITY_MEDIUM => {
-			if f > 0 {
-				return;
-			}
-			"MED".into()
-		}
-		gl::DEBUG_SEVERITY_LOW => {
-			if f > 1 {
-				return;
-			}
-			"LOW".into()
-		}
-		gl::DEBUG_SEVERITY_NOTIFICATION => {
-			if f > 2 {
-				return;
-			}
-			"TIP".into()
-		}
+		gl::DEBUG_SEVERITY_MEDIUM if f > 0 => "MED".into(),
+		gl::DEBUG_SEVERITY_LOW if f > 1 => "LOW".into(),
+		gl::DEBUG_SEVERITY_NOTIFICATION if f > 2 => "TIP".into(),
+		gl::DEBUG_SEVERITY_MEDIUM | gl::DEBUG_SEVERITY_LOW | gl::DEBUG_SEVERITY_NOTIFICATION => return (),
 		_ => format!("SEVERITY_?_{lvl}"),
 	};
 
