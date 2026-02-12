@@ -1,4 +1,16 @@
-pub use {camera::*, mesh::*, model::*};
+pub use {camera::*, mesh::*, model::*, vao::*};
+
+pub type AnyMesh = Box<dyn AnyMeshT>;
+impl Default for AnyMesh {
+	fn default() -> Self {
+		Mesh::make_sphere(0.1, 6)
+	}
+}
+
+pub struct Mesh<I> {
+	pub geom: Geometry<I>,
+	pub draw: (I, GLenum),
+}
 
 pub mod Screen {
 	struct Model {
@@ -11,7 +23,7 @@ pub mod Screen {
 		LeakyStatic!(Model, {
 			#[rustfmt::skip]
 			let _xyuv = AttrArr::new(&[ -1, -1, 0, 0,  3, -1, 2, 0,  -1, 3, 0, 2 ][..]);
-			let mut vao = Vao::new();
+			let mut vao = Vao::default();
 			vao.AttribFmt(&_xyuv, (0, 4));
 			Model { vao, _xyuv }
 		})
@@ -24,41 +36,33 @@ pub mod Screen {
 }
 
 pub mod Skybox {
-	struct Model {
-		vao: Vao<u8>,
-		_idx: IdxArr<u8>,
-		_xyz: AttrArr<i8>,
-	}
 	pub fn Draw() {
-		LeakyStatic!(Model, {
+		LeakyStatic!(Geometry<u8>, {
 			#[rustfmt::skip]
-			let _idx = IdxArr::new(&[ 0, 1, 3,  3, 1, 2,
-									  4, 5, 7,  7, 5, 6,
-									  0, 1, 4,  4, 1, 5,
-									  3, 2, 7,  7, 2, 6,
-									  2, 1, 6,  6, 1, 5,
-									  3, 7, 0,  0, 7, 4, ][..]);
+			let idx = &[0, 1, 3,  3, 1, 2,
+						4, 5, 7,  7, 5, 6,
+						0, 1, 4,  4, 1, 5,
+						3, 2, 7,  7, 2, 6,
+						2, 1, 6,  6, 1, 5,
+						3, 7, 0,  0, 7, 4_u8][..];
 			#[rustfmt::skip]
-			let _xyz = AttrArr::new(&[ -1,  1, 1,   1,  1, 1,   1,  1, -1,  -1,  1, -1,
-									   -1, -1, 1,   1, -1, 1,   1, -1, -1,  -1, -1, -1 ][..]);
-			let mut vao = Vao::new();
-			vao.BindIdxs(&_idx);
-			vao.AttribFmt(&_xyz, (0, 3));
-			Model { vao, _idx, _xyz }
+			let xyz = &[-1,  1, 1,   1,  1, 1,   1,  1, -1,  -1,  1, -1,
+						-1, -1, 1,   1, -1, 1,   1, -1, -1,  -1, -1, -1_i8][..];
+			Geometry::new(idx, (3, xyz))
 		})
-		.vao
-		.Bind()
 		.Draw(36);
 	}
 	use super::*;
 }
 
+mod args;
 mod camera;
 mod mesh;
 mod model;
+mod vao;
 
-use crate::{lib::*, *};
-use GL::buffer::*;
+use crate::lib::*;
+use {GL::buffer::*, GL::spec::*, args::*};
 
 SHADER!(
 	vs_mesh__2d_screen,
@@ -75,7 +79,7 @@ SHADER!(
 	ps_mesh__2d_screen,
 	r"in vec2 glUV;
 	layout(location = 0) out vec4 glFragColor;
-	uniform sampler2D tex;
+	uniform sampler2D iTex;
 
-	void main() { glFragColor = texture(tex, glUV); }"
+	void main() { glFragColor = texture(iTex, glUV); }"
 );

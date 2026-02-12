@@ -1,428 +1,314 @@
-use super::*;
+use super::{lazy::*, *};
+use u::{Caret, DynamicStr, caret as ca, if_ctrl};
 
 #[derive(Default, Debug)]
 pub struct TextEdit {
-	offset: Vec2,
 	size: Vec2,
 	scale: f32,
-	lines: Box<[STR]>,
-	wraps: Box<[u32]>,
-	select: Caret,
-	caret: Caret,
-	changes: Option<(Vec<STR>, Vec<Str>)>,
-	history: History,
+	a: mAffected,
+	parser: LazyCell<ParseResult<mAffected>>,
 	scrollbar: Slider,
 	pub text: CachedStr,
 }
+#[derive(Default, Debug)]
+struct mAffected {
+	caret: Caret,
+	select: Caret,
+	history: History,
+}
 impl TextEdit {
-	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, Surface { pos, size }: Surface, scale: f32, readonly: bool) {
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, layout @ Surf { size, .. }: Surf, scale: f32, readonly: bool) {
 		let SCR_PAD = 0.02;
 		let CUR_PAD = 0.01;
-		let id = ref_UUID(self);
-		let s = self;
+		let (id, s, font) = (ref_UUID(self), self, &t.font);
 
-		let font = &t.font;
-		if s.text.changed() || scale != s.scale || size != s.size {
-			let linenum_bar_w = |l| (font.glyph('0').map(|g| g.adv).unwrap_or_default() * scale * (f32(l).max(1.).log10() + 1.)).min(size.x());
-			let offset = (linenum_bar_w(s.text.lines().count()), 0.);
-			let (lines, wraps) = util::parse_text_by(&s.text, font, scale, size.sub(offset).x() - SCR_PAD, char::is_whitespace);
-			s.select = util::move_caret(&lines, s.select, (0, 0), true);
-			s.caret = util::move_caret(&lines, s.caret, (0, 0), true);
-
-			s.offset = offset;
-			s.size = size;
-			s.scale = scale;
-			s.lines = lines;
-			s.wraps = wraps;
-		}
-		let TextEdit {
-			ref offset,
-			ref lines,
-			ref wraps,
-			select,
-			caret,
-			changes,
-			history,
-			scrollbar,
-			text,
-			..
-		} = s;
-		*changes = None;
-
-		let whole_text_h = scale * f32(lines.len());
-		let (p, vis_range) = {
-			let start_at = scrollbar.pip_pos;
-			let win_h = size.y();
-
-			let len = lines.len();
-			let start = (1. - start_at) * (whole_text_h - win_h);
-			let vis_range = (start, win_h).mul(len).div(whole_text_h).fmax(0).sum((0, 1)).fmin(len);
-			let line_pos = move |n| win_h + start - scale * f32(n + 1);
-			let p = move |x, n| pos.sum((x, line_pos(n)));
-			(p, vis_range)
+		let lazy_parse = async move |text: Astr, font: Arc<Font>| {
+			let lnum_w = {
+				let lnum = f32(1 + stream::iter(text.lines()).count().await);
+				let max_lnum = lnum.log10().max(1.).ceil();
+				let w = font.glyph('0').adv * scale * max_lnum;
+				w.or_def(w * 20. < size.x())
+			};
+			let (lsb, lines, lnums) = u::parse_text(&text, &font, scale, size.x() - lnum_w - SCR_PAD, char::is_whitespace).await;
+			let lines: Vec<_> = stream::iter(lines.into_iter().zip(lnums.into_iter()).map(DynamicStr::new)).collect().await;
+			((lsb, lnum_w), lines.into())
 		};
-		let (start, len) = ulVec2(vis_range);
 
-		let _c = r.clip((pos, size));
+		if s.text.changed() || scale != s.scale || size != s.size {
+			let (text, font) = (s.text.clone(), font.clone());
 
-		r.draw(Rect {
-			pos: offset.sum(pos),
-			size: size.sub((offset.x() + SCR_PAD, 0.)).fmax(0.),
-			color: t.bg,
-		});
-
-		if caret != select {
-			let (beg, end) = caret_range(lines, *caret, *select);
-
-			let x_beg = util::caret_x(util::line(lines, beg), t, scale, beg.x(), CUR_PAD);
-			let x_end = util::caret_x(util::line(lines, end), t, scale, end.x(), CUR_PAD);
-			for i in beg.y().max(start)..=end.y().min(start + len) {
-				let x = if i != beg.y() { 0. } else { x_beg };
-				let w = if i != end.y() { size.x() - offset.x() - SCR_PAD } else { x_end };
-				r.draw(Rect {
-					pos: p(offset.x() + x, i),
-					size: (w - x, scale),
-					color: t.highlight,
-				});
-			}
-		} else if r.focused(id) && caret.y() >= start && caret.y() <= start + len {
-			let x = util::caret_x(util::line(lines, *caret), t, scale, caret.x(), CUR_PAD);
-			r.draw(Rect {
-				pos: p(offset.x() + x, caret.y()),
-				size: (CUR_PAD, scale),
-				color: t.highlight,
-			});
+			(s.size, s.scale, (s.a.caret, s.a.select), s.parser) = (
+				size,
+				scale,
+				Def(),
+				LazyCell::with(((Def(), vec![P(text.clone())].into()), Def()), async move |_| (lazy_parse(text, font).await, Def())),
+			);
 		}
 
-		r.draw(Rect { pos, size: (offset.x(), size.y()), color: t.fg });
-		wraps.iter().skip(start).take(len).enumerate().filter(|(_, &w)| w == 0).for_each(|(n, _)| {
-			r.draw(Rect {
-				pos: p(size.x() - SCR_PAD - CUR_PAD * 1.5, n + start),
-				size: (CUR_PAD, CUR_PAD),
-				color: t.highlight,
-			});
-		});
-		lines.iter().skip(start).take(len).enumerate().for_each(|(n, text)| {
-			let p = p(0., n + start);
-			if !text.is_empty() {
-				r.draw(Text { pos: offset.sum(p), scale, color: t.text, text, font });
-			}
-			let w = wraps[n + start];
+		let Self { a, parser, scrollbar, .. } = s;
+		let mut parser = parser.lock();
+		let (((lsb, lnum_w), ref lines), ref reconcile) = *parser;
+		reconcile.apply(a);
+		let mAffected { caret, select, history } = a;
 
-			if w != 0 {
-				r.draw(Text {
-					pos: p,
-					scale,
-					color: t.highlight,
-					text: &w.to_string(),
-					font,
-				});
-			}
-		});
+		let (scrollable, p, (start, len)) = {
+			let (start, len) = (1. - scrollbar.pip_pos, lines.len());
+			let (_, l) = u::visible_range(layout, scale, 0., len);
+			let skip = f32(len - l) * start;
+			let p = move |lines, n| u::line_pos(lines, font, scale, layout, skip, n, lsb);
+			(len > l, p, u::visible_range(layout, scale, skip, len))
+		};
+		let ((beg_y, end_y, len_y), (pip_size, adv)) = (vec3((start, start + len, len)), u::visible_norm(layout, len, lines.len()));
 
-		let (mut pip_pos, mut changes) = (typed_ptr!(&mut scrollbar.pip_pos), typed_ptr!(changes));
-		r.logic(
-			(pos, pos.sum(size)),
-			move |e, focused, mouse_pos| {
-				let changes = changes.get_mut();
-				if changes.is_none() {
-					*changes = Some((lines.clone().into_vec(), vec![]));
+		let Surf { pos, size } = layout.w(lnum_w);
+		r.draw(Rect { pos, size, color: t.fg });
+
+		let _c = r.clip(layout);
+
+		let layout @ Surf { pos, size } = layout.x(lnum_w).w_sub(f32(scrollable) * SCR_PAD + lnum_w);
+		r.draw(Rect { pos, size, color: t.bg });
+
+		if !r.focused(id) {
+		} else if caret != select {
+			let (caret @ (_, b), select @ (_, e)) = ca::sort(*caret, *select);
+
+			for i in b.max(beg_y)..=e.min(end_y) {
+				let x = 0.0.or_val(i != b, || ca::adv(lines, font, scale, caret, 0.));
+				let w = size.x().or_val(i != e, || ca::adv(lines, font, scale, select, 0.));
+				let pos = pos.sum(p(lines, usize(i))).sum((x, 0));
+				r.draw(Rect { pos, size: (w - x, scale), color: t.highlight });
+			}
+		} else {
+			let x = ca::adv(lines, font, scale, *caret, CUR_PAD);
+			let Surf { pos, size } = layout.xy(p(lines, usize(caret.y()))).x(x).size((CUR_PAD, scale));
+			r.draw(Rect { pos, size, color: t.highlight });
+		}
+
+		let words = lines
+			.iter()
+			.enumerate()
+			.skip(start)
+			.take(len + 1)
+			.map(|(n, line)| {
+				let p = p(lines, n);
+				if let R(_) = line {
+					let Surf { pos, size } = layout.x_self(1).x(-CUR_PAD).size((CUR_PAD, CUR_PAD));
+					r.draw(Rect { pos: pos.sum(p), size, color: t.highlight });
 				}
-				let (lines, line_cache) = changes.as_mut().valid();
-				let mut _lines = typed_ptr!(lines);
-				let pip = pip_pos.get_mut();
-				let clampx = |c| util::clamp(lines, c);
-				let setx = |c, o| util::move_caret(lines, c, (o, 0), true);
-				let sety = |c, o| util::move_caret(lines, c, (0, o), false);
-				let click = |p| util::caret_to_cursor(lines, vis_range, t, scale, pos.sum((offset.x(), size.y())), p);
-				let move_pip = |v: f32| (*pip + v).clamp(0., 1.);
-				let set_screen = |c: &Caret, at: f32| 1. - (f32(c.y()) / f32(lines.len() - len) - at).or_def(whole_text_h > size.y()).clamp(0., 1.);
-				let center_pip = |c: &Caret| set_screen(c, f32(len) * scale / whole_text_h * 0.5);
-				let adj_edge = |c: &Caret| {
-					if c.y() <= start {
-						set_screen(c, 0.)
-					} else if c.y() + 1 >= start + len {
-						set_screen(c, f32(len) * scale / whole_text_h)
-					} else {
-						*pip
+
+				(p, line)
+			})
+			.collect_vec();
+
+		words.into_iter().for_each(|(p, line)| {
+			let (p, text) = (pos.sum(p), line.as_clipped_str(font, scale, size.x()));
+			if !text.is_empty() {
+				r.draw(Text { pos: p, scale, color: t.text, text, font });
+			}
+
+			if 0. < lnum_w
+				&& let Some(text) = line.lnum()
+			{
+				let (pos, text) = ((pos.x() - lnum_w, p.y()), &text);
+				r.draw(Text { pos, scale, color: t.highlight, text, font });
+			}
+		});
+
+		let (pos, sc) = (pos.sum(p(lines, start)), Cell::from_mut(scrollbar));
+		r.logic(
+			layout,
+			move |e, focused, mouse_pos| {
+				let parser = Cell::from_mut(&mut parser);
+				let (cs @ (c, s), rw, lines) = ((*caret, *select), !readonly, || (unsafe { &*parser.as_ptr() }).pipe(|((_, l), _)| l));
+
+				let click = |c: Vec2| ca::at_pos(lines(), font, scale, start, c.sub(pos));
+				let max_caret = || ca::set(lines(), vec2(isize::MAX), (0, 0));
+
+				let move_pip = |o: f32| sc.mutate(|s| s.pip_pos = (s.pip_pos + o * adv).clamp(0., 1.).or_val(scrollable, || 1.));
+
+				let center_pip = |sel @ (c, _): (Caret, _)| {
+					f32(beg_y + len_y / 2 - c.y()).pipe(move_pip);
+					sel
+				};
+
+				let clamp_pip = |sel @ (c, _): (Caret, _)| {
+					if c.y() >= end_y {
+						f32(beg_y + len_y - c.y()).pipe(move_pip)
+					} else if c.y() <= beg_y {
+						f32(beg_y + 1 - c.y()).pipe(move_pip)
 					}
+					sel
 				};
-				let range = |beg: Caret, end: Caret, text: &str| {
-					let lw = lines[..beg.y()].iter().zip(&wraps[..beg.y()]);
-					let start_l = util::line(lines, beg);
-					let start_c = start_l.len_at_char(beg.x() - 1);
-					let start = lw.fold(0, |s, (l, w)| s + l.len() + usize(*w != 0));
-					let lw = lines[beg.y()..end.y()].iter().zip(&wraps[beg.y()..end.y()]);
-					let end_l = util::line(lines, end);
-					let wrap = wraps[end.y().max(1) - 1] == 0 && end.x() == 1;
-					let end_c = end_l.len_at_char(end.x().max(1) - 1.or_def(!wrap));
-					let len = if end.y() > beg.y() {
-						lw.fold(0, |s, (l, w)| s + l.len() + usize(*w != 0)) + end_c
-					} else {
-						end_c
-					};
-					(start + start_c, start + len).fmin(text.len())
+
+				let move_caret = |c, o| ca::set(lines(), c, o);
+
+				let set_caret = |m: Mod, c| (c, s.or_val(m.shift(), || c));
+
+				let collect = |(c, s)| u::collect_range(lines().iter(), c, s).pipe(task::block_on);
+
+				let edit = |pre, post, ins: &str, copy_out: fn(&str)| {
+					let (c, s) = ca::sort(c, s);
+					let s = s.or_val(c != s, || move_caret(c, (pre, 0)));
+					let (c, s) = ca::sort(c, s);
+
+					if c == s && ins.is_empty() {
+						return (c, c);
+					}
+
+					if c != s {
+						let del = &collect(cs);
+						copy_out(del);
+					}
+
+					parser.mutate(|p| p.set(|((_, l), _)| u::replace_range(l, ins, c, s)));
+
+					let c = move_caret(c, (post, 0));
+
+					parser.mutate(|p| {
+						let (caret_was, font) = (c, font.clone());
+						p.update(async move |((_, lines), _)| {
+							let caret = ca::serialise(lines.iter(), caret_was).await;
+
+							let text = String::new()
+								.tap_async(async |t| stream::iter(lines.iter()).for_each(|l| l.write_self(t)).await)
+								.await;
+
+							let (lines, parsed) = lazy_parse(text.into(), font).await.pipe(|(h, l)| (l.clone(), (h, l))); // TODO use vervec and compact() for more efficient reparses
+
+							let caret = ca::set_async(&lines, (0, 0), (caret, 0)).await;
+
+							let effect = move |mAffected { caret: c, select: s, history }: &mut _| {
+								if *c == caret_was && c == s {
+									(*c, *s) = (caret, caret);
+								}
+								history.add((caret, lines))
+							};
+
+							(parsed, effect.into())
+						})
+					});
+
+					(c, c)
 				};
-				let lines = _lines.get_mut();
+
+				let caret = |cs| (*caret, *select) = cs;
 
 				match *e {
 					OfferFocus => return Accept,
-					MouseButton { state, .. } if state.pressed() => {
-						*caret = click(mouse_pos);
-						*select = select.or_val(state.shift(), *caret);
-					}
-					MouseMove { at, state, .. } if focused && state.lmb() => {
-						*caret = click(at);
-						*select = select.or_val(state.shift(), *caret);
-						*pip = adj_edge(caret);
-					}
-					Scroll { at, state } => {
-						let turbo = if state.ctrl() { 10. } else { 1. };
-						*pip = move_pip(at.y() * scale / whole_text_h * turbo);
-						return Accept;
-					}
-					Keyboard { key, state } if focused && state.pressed() => match key {
-						Key::Escape => return DropFocus,
-						Key::Right => {
-							*caret = setx(clampx(*caret), if state.ctrl() { 10 } else { 1 });
-							*select = select.or_val(state.shift(), *caret);
-							*pip = adj_edge(caret);
-						}
-						Key::Left => {
-							*caret = setx(clampx(*caret), -if state.ctrl() { 10 } else { 1 });
-							*select = select.or_val(state.shift(), *caret);
-							*pip = adj_edge(caret);
-						}
-						Key::Up => {
-							*caret = sety(*caret, -1);
-							*select = select.or_val(state.shift(), *caret);
-							*pip = adj_edge(caret);
-						}
-						Key::Down => {
-							*caret = sety(*caret, 1);
-							*select = select.or_val(state.shift(), *caret);
-							*pip = adj_edge(caret);
-						}
-						Key::PageUp => {
-							*caret = sety(*caret, -i32(len));
-							*select = select.or_val(state.shift(), *caret);
-							*pip = center_pip(caret);
-						}
-						Key::PageDown => {
-							*caret = sety(*caret, i32(len));
-							*select = select.or_val(state.shift(), *caret);
-							*pip = center_pip(caret);
-						}
-						Key::A if state.ctrl() => {
-							*select = (1, 0);
-							*caret = (util::line(lines, (0, lines.len())).utf8_len() + 1, lines.last_idx())
-						}
-						Key::C if state.ctrl() => {
-							if *caret != *select {
-								let (beg, end) = caret_range(lines, *caret, *select);
-								let (b, e) = range(beg, end, text);
-								RenderLock::set_clipboard(&text[b..e]);
-								*pip = adj_edge(caret);
-							}
-						}
-						Key::X if !readonly && state.ctrl() => {
-							if *caret != *select {
-								let (beg, end) = caret_range(lines, *caret, *select);
-								let (b, e) = range(beg, end, text);
-								let drained = text.str().drain(b..e);
-								let drained: String = drained.collect();
-								RenderLock::set_clipboard(&drained);
-								history.push(Delete(drained.into(), b, beg));
-								*caret = beg;
-								*select = *caret;
-								*pip = adj_edge(caret);
-							}
-						}
-						Key::V if !readonly && state.ctrl() => {
-							let (beg, end) = caret_range(lines, *caret, *select);
-							let (b, e) = range(beg, end, text);
-							let ins = RenderLock::clipboard();
-							if beg != end {
-								history.push(Delete(text[b..e].into(), b, beg));
-								text.str().replace_range(b..e, &ins);
-							} else {
-								text.str().insert_str(b, &ins);
-							}
-							history.push(Insert(ins.into(), b, beg));
-							*caret = beg;
-							*select = *caret;
-							*pip = adj_edge(caret);
-						}
-						Key::Delete if !readonly => {
-							let (beg, end) = caret_range(lines, *caret, *select);
-							let end = end.or_val(beg != end, setx(end, 1));
-							let (b, e) = range(beg, end, text);
-							let drained = text.str().drain(b..e);
-							history.push(Delete(drained.collect::<String>().into(), b, beg));
-							*caret = beg;
-							*select = *caret;
-							*pip = adj_edge(caret);
-						}
-						Key::Backspace if !readonly => {
-							let (beg, end) = caret_range(lines, *caret, *select);
-							let beg = beg.or_val(beg != end, setx(beg, -1));
-							let (b, e) = range(beg, end, text);
-							let drained = text.str().drain(b..e);
-							history.push(Delete(drained.collect::<String>().into(), b, end));
-							*caret = beg;
-							*select = *caret;
-							*pip = adj_edge(caret);
-						}
-						Key::Enter if !readonly => {
-							let (beg, end) = caret_range(lines, *caret, *select);
-							let (b, e) = range(beg, end, text);
+					Defocus => move_pip(0.),
+					Scroll { at, m } => return move_pip(at.y() * if_ctrl(m, 10., 1.)).pipe(|_| Accept),
+					MouseButton { m, .. } if m.pressed() => set_caret(m, click(mouse_pos)).pipe(caret),
+					MouseMove { at, m } if focused && m.lmb() => set_caret(m, click(at)).pipe(clamp_pip).pipe(caret),
+					Keyboard { key, m } if focused && m.pressed() => {
+						let x = |o| set_caret(m, move_caret(c, (o, 0)));
+						let y = |o| set_caret(m, move_caret(c, (0, o)));
 
-							lines.insert(beg.y(), "\n");
-							if beg != end {
-								history.push(Delete(text[b..e].into(), b, beg));
-								text.str().replace_range(b..e, "\n");
-							} else {
-								text.str().insert(b, '\n');
-							}
-							history.push(Insert("\n".into(), b, beg));
-							*caret = (1, beg.y() + 1);
-							*select = *caret;
-							*pip = adj_edge(caret);
-						}
-						Key::Z if !readonly && state.ctrl() => {
-							if let Some(change) = if !state.shift() { history.undo() } else { history.redo() } {
-								match change {
-									Insert(str, pos, at) => {
-										text.str().insert_str(pos, &str);
-										*caret = at;
-										*select = at;
+						match key {
+							Key::Escape => return DropFocus,
+							Key::Right => x(if_ctrl(m, 10, 1)).pipe(clamp_pip).pipe(caret),
+							Key::Left => x(-if_ctrl(m, 10, 1)).pipe(clamp_pip).pipe(caret),
+							Key::Up => y(-1).pipe(clamp_pip).pipe(caret),
+							Key::Down => y(1).pipe(clamp_pip).pipe(caret),
+							Key::PageUp => y(-len_y).pipe(center_pip).pipe(caret),
+							Key::PageDown => y(len_y).pipe(center_pip).pipe(caret),
+							Key::A if m.ctrl() => (max_caret(), (0, 0)).pipe(center_pip).pipe(caret),
+							Key::C if m.ctrl() && c != s => collect(cs).pipe(RenderLock::set_clipboard),
+							Key::X if rw && m.ctrl() => edit(0, 0, "", |s| RenderLock::set_clipboard(s)).pipe(clamp_pip).pipe(caret),
+							Key::V if rw && m.ctrl() => edit(0, 0, &RenderLock::clipboard(), noop).pipe(clamp_pip).pipe(caret),
+							Key::Delete if rw => edit(1, 0, "", noop).pipe(clamp_pip).pipe(caret),
+							Key::Backspace if rw => edit(-1, 0, "", noop).pipe(clamp_pip).pipe(caret),
+							Key::Return if rw => edit(0, 1, "\n", noop).pipe(clamp_pip).pipe(caret),
+							Key::Z if rw && m.ctrl() => {
+								let h = 's: {
+									if !m.shift()
+										&& let h @ Some(_) = history.undo()
+									{
+										break 's h;
 									}
-									Delete(str, pos, at) => {
-										text.str().drain(pos..pos + str.len());
-										*caret = at;
-										*select = at;
+									if m.shift()
+										&& let h @ Some(_) = history.redo()
+									{
+										break 's h;
 									}
+									None
+								};
+
+								if let Some((c, t)) = h {
+									parser.mutate(|p| p.set(move |((_, l), _)| *l = t));
+									(c, c).pipe(center_pip).pipe(caret)
 								}
-								*pip = adj_edge(caret);
 							}
+							_ => (),
 						}
-						_ => (),
-					},
-					Char { ch } if !readonly && focused => {
-						let (beg, end) = caret_range(lines, *caret, *select);
-						let (b, e) = range(beg, end, text);
-						let ins = ch.to_string();
-						if beg != end {
-							history.push(Delete(text[b..e].into(), b, beg));
-							text.str().replace_range(b..e, &ins);
-						} else {
-							text.str().insert(b, ch);
-						}
-						line_cache.push([lines[beg.y()], &ins].concat().into());
-						lines[beg.y()] = line_cache.last().valid();
-
-						history.push(Insert(ins.into(), b, beg));
-						*caret = beg.sum((1, 0));
-						*select = *caret;
-						*pip = adj_edge(caret);
 					}
+					Char { ch } if rw && focused => edit(0, 1, ch.as_str(), noop).pipe(clamp_pip).pipe(caret),
 					_ => (),
 				}
-				if focused {
-					Accept
-				} else {
-					Reject
-				}
+				Accept.or_def(focused)
 			},
 			id,
 		);
 
-		if whole_text_h > size.y() {
-			let visible_h = size.y() / whole_text_h;
-			let s = Surface {
-				pos: pos.sum((size.x() - SCR_PAD, 0)),
-				size: (SCR_PAD, size.y()),
-			};
-			scrollbar.draw(r, t, s, visible_h);
+		if scrollable {
+			sc.mutate(|s| s.draw(r, t, layout.x_self(1).w(SCR_PAD), pip_size));
 		}
 	}
 }
 
 impl<'s: 'l, 'l> Lock::TextEdit<'s, 'l, '_> {
-	pub fn draw(self, g: impl Into<Surface>, sc: f32) {
+	pub fn draw(self, g: impl Into<Surf>, sc: f32) {
 		let Self { s, r, t } = self;
 		s.draw(r, t, g.into(), sc, false)
 	}
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug)]
 struct History {
-	changes: Vec<Change>,
+	states: Vec<TextState>,
 	at: usize,
 }
-#[derive(Debug, Clone)]
-enum Change {
-	Insert(Str, usize, Caret),
-	Delete(Str, usize, Caret),
-}
-impl Change {
-	fn invert(self) -> Self {
-		match self {
-			Insert(string, usize, at) => Delete(string, usize, at),
-			Delete(string, usize, at) => Insert(string, usize, at),
-		}
-	}
-}
 impl History {
-	fn push(&mut self, c: impl HistoryPushArgs) {
-		let c = c.get();
-		let Self { changes, at, .. } = self;
-		if *at < changes.len() {
-			changes.drain(*at..);
+	fn add(&mut self, (c, v): TextState) {
+		let HIST_SIZE = 100;
+
+		let Self { states, at } = self;
+
+		if *at + 1 < states.len() {
+			states.truncate(*at + 1);
 		}
-		if changes.len() > Self::MAXLENGTH * 2 {
-			changes.drain(..changes.len() - Self::MAXLENGTH);
+		states.push((c, v));
+
+		let len = states.len();
+		if len < HIST_SIZE {
+			*at += 1.or_def(len > 1);
+		} else {
+			states.remove(0);
 		}
-		changes.extend_from_slice(&c);
-		*at = changes.len();
 	}
-	fn undo(&mut self) -> Option<Change> {
-		let Self { changes, at, .. } = self;
-		if *at == 0 {
+	fn undo(&mut self) -> Option<TextState> {
+		let Self { states, at } = self;
+
+		if *at < 1 {
 			None?
 		}
 		*at -= 1;
-		Some(changes[*at].clone().invert())
+
+		states.at(*at).clone().pipe(Some)
 	}
-	fn redo(&mut self) -> Option<Change> {
-		let Self { changes, at, .. } = self;
-		if *at >= changes.len() {
+	fn redo(&mut self) -> Option<TextState> {
+		let Self { states, at } = self;
+
+		if *at + 1 >= states.len() {
 			None?
 		}
 		*at += 1;
-		Some(changes[*at - 1].clone())
-	}
-	const MAXLENGTH: usize = 1000;
-}
-use Change::*;
 
-fn caret_range(lines: &[&str], caret: Caret, select: Caret) -> (Caret, Caret) {
-	let (caret, select) = (util::clamp(lines, caret), util::clamp(lines, select));
-	let seq = if caret.y() != select.y() { caret.y() > select.y() } else { caret.x() > select.x() };
-	let (beg, end) = if seq { (select, caret) } else { (caret, select) };
-	(beg, end)
+		states.at(*at).clone().pipe(Some)
+	}
 }
 
-trait HistoryPushArgs {
-	fn get(self) -> Box<[Change]>;
-}
-impl<const L: usize> HistoryPushArgs for [Change; L] {
-	fn get(self) -> Box<[Change]> {
-		self.to_vec().into()
-	}
-}
-impl HistoryPushArgs for Change {
-	fn get(self) -> Box<[Self]> {
-		[self].into()
-	}
-}
+fn noop(_: &str) {}
+type Lines = VerVec<DynamicStr>;
+type ParseResult<T> = ((Vec2, Lines), Effect<T>);
+type TextState = (Caret, VerVec<DynamicStr>);
+use DynamicStr::*;

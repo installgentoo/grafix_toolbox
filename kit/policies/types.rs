@@ -1,79 +1,61 @@
-pub mod cached;
-pub mod cached_str;
-pub mod lazy;
-pub mod memoized;
-pub mod prefetch;
+pub mod lazy {
+	pub use super::{arc_slice::*, cached::*, cached_str::*, feed::*, lazy_cell::*, memoized::MemRes, memoized::Memoized, prefetch::*, ver_vec::*};
+}
 
-pub mod ext {
-	#[derive(Debug)]
-	pub struct TPtr<T> {
-		ptr: usize,
-		t: Dummy<T>,
+pub type STR = &'static str;
+pub type Str = Box<str>;
+pub type Astr = Arc<str>;
+
+#[inline(always)]
+pub fn Arc<T>(v: T) -> Arc<T> {
+	Arc::new(v)
+}
+#[inline(always)]
+pub fn Box<T>(v: T) -> Box<T> {
+	Box::new(v)
+}
+#[inline(always)]
+pub fn Cell<T>(v: T) -> Cell<T> {
+	Cell::new(v)
+}
+#[inline(always)]
+pub fn Def<T: Default>() -> T {
+	<_>::default()
+}
+
+pub trait MutateCell<'i, T: 'i> {
+	fn mutate<R: Default>(&self, with: impl FnOnce(&'i mut T) -> R) -> R;
+}
+impl<'i, T: 'i> MutateCell<'i, T> for Cell<T> {
+	#[inline(always)]
+	fn mutate<R: Default>(&self, with: impl FnOnce(&'i mut T) -> R) -> R {
+		with(unsafe { &mut *self.as_ptr() })
 	}
-	impl<T: Send + Sync> TPtr<T> {
-		pub unsafe fn new(t: &mut T) -> Self {
-			let ptr = t as *mut T as usize;
-			Self { ptr, t: Dummy }
-		}
-		pub fn get(&self) -> &'static T {
-			unsafe { &*(self.ptr as *const T) }
-		}
-		pub fn get_mut(&mut self) -> &'static mut T {
-			unsafe { &mut *(self.ptr as *mut T) }
-		}
+}
+
+pub trait InspectCell<'s, T> {
+	fn bind(&'s self) -> &'s T;
+}
+impl<'s, T> InspectCell<'s, T> for &'s Cell<T> {
+	#[inline(always)]
+	fn bind(&'s self) -> &'s T {
+		unsafe { &*self.as_ptr() }
 	}
-	impl<T: Send + Sync> Copy for TPtr<T> {}
-	impl<T: Send + Sync> Clone for TPtr<T> {
-		fn clone(&self) -> Self {
-			*self
-		}
+}
+impl<'s, T> InspectCell<'s, T> for &'s mut Cell<T> {
+	#[inline(always)]
+	fn bind(&'s self) -> &'s T {
+		unsafe { &*self.as_ptr() }
 	}
-
-	use std::marker::PhantomData as Dummy;
 }
 
-#[macro_export]
-macro_rules! typed_ptr {
-	($n: expr) => {{
-			unsafe { TPtr::new($n) }
-	}};
-	($($n: expr),+) => {{
-			unsafe { ($(TPtr::new($n),)+) }
-	}};
-}
+mod arc_slice;
+mod cached;
+mod cached_str;
+mod feed;
+mod lazy_cell;
+mod memoized;
+mod prefetch;
+mod ver_vec;
 
-#[macro_export]
-macro_rules! LazyStatic {
-	($t: ty, $b: block) => {{
-		use std::sync::{Mutex, OnceLock};
-		static S: OnceLock<Mutex<$t>> = OnceLock::new();
-		S.get_or_init(|| Mutex::new($b)).lock().fail()
-	}};
-	($t: ty) => {
-		LazyStatic!($t, { <$t>::default() })
-	};
-}
-
-#[macro_export]
-macro_rules! LocalStatic {
-	($t: ty, $b: block) => {{
-		use std::{cell::OnceCell, cell::Cell};
-		thread_local!(static S: OnceCell<Cell<$t>> = Default::default());
-		let r = S.with(|f| f.get_or_init(|| Cell::new($b)).as_ptr());
-		unsafe { &mut *r }
-	}};
-	($t: ty) => {
-		LocalStatic!($t, { <$t>::default() })
-	};
-}
-
-#[macro_export]
-macro_rules! LeakyStatic {
-	($t: ty, $b: block) => {{
-		use std::mem::ManuallyDrop;
-		LocalStatic!(ManuallyDrop<$t>, { ManuallyDrop::new($b) }) as &mut $t
-	}};
-	($t: ty) => {
-		LeakyStatic!($t, { <$t>::default() })
-	};
-}
+use std::{cell::Cell, sync::Arc};

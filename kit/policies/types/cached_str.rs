@@ -1,48 +1,56 @@
-use crate::stdlib::*;
+use crate::lib::*;
 
-derive_common_OBJ! {
+#[derive_as_ser]
 pub struct CachedStr {
 	str: String,
-	old_str: Box<str>,
-	accessed: bool,
-}}
+	#[cfg_attr(feature = "adv_fs", serde(skip))]
+	old_str: Cell<Cache>,
+	same: Cell<bool>,
+}
+
 impl CachedStr {
+	#[allow(clippy::should_implement_trait)]
+	pub fn clone(&self) -> Astr {
+		let _ = self.changed();
+		(&self.old_str).bind().s.clone()
+	}
 	pub fn str(&mut self) -> &mut String {
-		let Self { str, accessed, .. } = self;
-		*accessed = true;
+		let Self { str, same, .. } = self;
+		same.set(false);
 		str
 	}
-	pub fn new(s: impl Into<String>) -> Self {
-		let (str, old_str) = (s.into(), "".into());
-		Self { str, old_str, accessed: true }
-	}
-	pub fn changed(&mut self) -> bool {
-		if !self.check() {
+	#[must_use]
+	pub fn changed(&self) -> bool {
+		if *(&self.same).bind() || self.str_check(true) {
 			return false;
 		}
-
-		let Self { ref str, old_str, accessed } = self;
-		*accessed = false;
-		*old_str = str.clone().into();
+		DEBUG!("CachedStr {:?} changed", self.str);
 		true
 	}
-	pub fn check(&mut self) -> bool {
-		let Self { ref str, old_str, accessed } = self;
-		if !*accessed || str[..] == old_str[..] {
-			*accessed = false;
+	pub fn accessed(&self) -> bool {
+		if *(&self.same).bind() || self.str_check(false) {
+			self.same.set(true);
 			return false;
 		}
 		true
+	}
+	fn str_check(&self, flush: bool) -> bool {
+		let Self { str, old_str, same } = self;
+		let ptr = str.as_ptr();
+		let eq = {
+			let &Cache { p, ref s } = old_str.bind();
+			ptr::eq(ptr, p) && str[..] == s[..]
+		};
+		if !eq && flush {
+			old_str.set(Cache { s: str.clone().into(), p: ptr });
+			same.set(true);
+		}
+		eq
 	}
 }
 impl AsRef<str> for CachedStr {
 	fn as_ref(&self) -> &str {
-		&self.str
-	}
-}
-impl Borrow<str> for CachedStr {
-	fn borrow(&self) -> &str {
-		&self.str
+		self
 	}
 }
 impl ops::Deref for CachedStr {
@@ -52,14 +60,30 @@ impl ops::Deref for CachedStr {
 		&self.str
 	}
 }
-impl fmt::Display for CachedStr {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Default for CachedStr {
+	fn default() -> Self {
+		let (str, old_str) = Def();
+		Self { str, old_str, same: true.into() }
+	}
+}
+impl Debug for CachedStr {
+	fn fmt(&self, f: &mut Formatter) -> fmtRes {
+		if *(&self.same).bind() {
+			write!(f, "{:?}", self.str)
+		} else {
+			write!(f, "{:?}|{:?}", self.str, (&self.old_str).bind())
+		}
+	}
+}
+impl Display for CachedStr {
+	fn fmt(&self, f: &mut Formatter) -> fmtRes {
 		write!(f, "{}", self.str)
 	}
 }
 impl<S: Into<String>> From<S> for CachedStr {
 	fn from(s: S) -> Self {
-		Self::new(s)
+		let (same, old_str) = Def();
+		Self { str: s.into(), same, old_str }
 	}
 }
 impl Eq for CachedStr {}
@@ -70,6 +94,18 @@ impl PartialEq for CachedStr {
 }
 impl PartialEq<String> for CachedStr {
 	fn eq(&self, r: &String) -> bool {
-		self.str == *r
+		&self.str == r
+	}
+}
+unsafe impl Send for CachedStr {}
+
+#[derive(Debug)]
+struct Cache {
+	s: Astr,
+	p: *const u8,
+}
+impl Default for Cache {
+	fn default() -> Self {
+		Self { s: Def(), p: ptr::null() }
 	}
 }

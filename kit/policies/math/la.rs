@@ -37,14 +37,12 @@ pub fn iL(pos: V3) -> M4 {
 	na::Translation3::new(-pos.x, -pos.y, -pos.z).to_homogeneous()
 }
 pub fn perspective(aspect: f32, fovy: f32, near: f32, far: f32) -> M4 {
-	assert!((far - near).abs() > 0.0001, "The near-plane and far-plane must not be superimposed");
-	let mut mat = M4::zeros();
-	let tan_half_fovy = (fovy / 2.).tan();
+	ASSERT!((far - near).abs() > 0.0001, "Near and far planes are the same");
+	let (tan_half_fovy, mut mat) = ((fovy / 2.).tan(), M4::zeros());
 	mat[(0, 0)] = 1. / (aspect * tan_half_fovy);
 	mat[(1, 1)] = 1. / tan_half_fovy;
 	mat[(2, 2)] = -(far + near) / (far - near);
 	mat[(2, 3)] = -(2. * far * near) / (far - near);
 	mat[(3, 2)] = -1.;
-
 	mat
 }

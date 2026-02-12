@@ -10,41 +10,14 @@ pub fn slice<'a>(args: impl SliceArgs<'a>) -> &'a str {
 
 type Args<'a> = (usize, &'a str, usize);
 pub trait SliceArgs<'a> {
-	fn get(self) -> Args<'a>;
+	fn get(self) -> Args<'a>; // TODO replace with Pattern
 }
 impl<'a> SliceArgs<'a> for Args<'a> {
 	fn get(self) -> Self {
 		self
 	}
 }
-impl<'a> SliceArgs<'a> for (usize, &'a str) {
-	fn get(self) -> Args<'a> {
-		(self.0, self.1, self.1.len())
-	}
-}
-impl<'a> SliceArgs<'a> for (&'a str, usize) {
-	fn get(self) -> Args<'a> {
-		(0, self.0, self.1)
-	}
-}
 
-impl<'a> SliceArgs<'a> for (usize, &'a String, usize) {
-	fn get(self) -> Args<'a> {
-		(self.0, self.1, self.2)
-	}
-}
-impl<'a> SliceArgs<'a> for (usize, &'a String) {
-	fn get(self) -> Args<'a> {
-		(self.0, self.1 as &'a str).get()
-	}
-}
-impl<'a> SliceArgs<'a> for (&'a String, usize) {
-	fn get(self) -> Args<'a> {
-		(self.0 as &'a str, self.1).get()
-	}
-}
-
-/// TODO replace with Pattern
 impl<'a, F: Fn(char) -> bool> SliceArgs<'a> for (F, &'a str) {
 	fn get(self) -> Args<'a> {
 		let (f, s) = self;

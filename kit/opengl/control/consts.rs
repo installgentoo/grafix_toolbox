@@ -8,11 +8,10 @@ macro_rules! CONST {
 			unsafe {
 				if DONE == true {
 				} else {
-					DONE = true;
-					RES = <$t>::get(gl::$n)
+					(RES, DONE) = (<$t>::get(gl::$n), true);
 				}
+				RES
 			}
-			unsafe { RES }
 		}
 	};
 }
@@ -24,9 +23,7 @@ macro_rules! impl_get {
 	($t: ty, $f: ident) => {
 		impl Get for $t {
 			fn get(p: GLenum) -> Self {
-				let mut r = Def();
-				GL!(gl::$f(p, &mut r));
-				r
+				Def::<$t>().tap(|s| GL!(gl::$f(p, s)))
 			}
 		}
 	};

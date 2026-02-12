@@ -1,32 +1,12 @@
-#![allow(dead_code)]
 use super::*;
 
-pub fn fit_text(text: &str, t: &Theme, size: Vec2) -> (Vec2, f32) {
-	let scale = t.font_size;
-	let text_size = Text::size(text, &t.font, scale);
-	if text_size.x() > 0. {
-		let r = size.div(text_size);
-		let r = r.x().min(r.y() * 2.).min(1.);
-		(size.sub(text_size.mul(r)).mul(0.5), scale * r)
-	} else {
-		((size.x(), size.y() - scale).mul(0.5), scale)
-	}
+pub fn if_ctrl<T>(m: Mod, t: T, f: T) -> T {
+	if m.ctrl() { t } else { f }
 }
 
-type LinesWraps = (Box<[STR]>, Box<[u32]>);
-
-pub fn parse_text(t: &str, f: &Font, s: f32, m: f32) -> LinesWraps {
-	parse_text_impl(t, f, s, m, false, |_| false)
-}
-pub fn parse_text_by(t: &str, f: &Font, s: f32, m: f32, linebreak: impl Fn(char) -> bool) -> LinesWraps {
-	parse_text_impl(t, f, s, m, true, linebreak)
-}
-fn parse_text_impl(text: &str, font: &Font, scale: f32, max_w: f32, split: bool, split_by: impl Fn(char) -> bool) -> LinesWraps {
-	if text.is_empty() {
-		return (Box([""]), Box([1]));
-	}
-
-	let (mut lnum, mut lines, mut wraps) = (1, vec![], vec![]);
+pub async fn parse_text<'s>(text: &'s str, f: &Font, scale: f32, max_w: f32, split_by: impl Fn(char) -> bool) -> (f32, Vec<&'s str>, Vec<u32>) {
+	let cap = text.len().or_map(|_| max_w / scale <= 1., |l| l / usize(max_w / scale));
+	let (mut lnum, mut lsb, mut lines, mut wraps) = (1, 0., Vec::with_capacity(cap), Vec::with_capacity(cap));
 
 	for mut l in text.lines() {
 		if l.is_empty() {
@@ -35,97 +15,300 @@ fn parse_text_impl(text: &str, font: &Font, scale: f32, max_w: f32, split: bool,
 			lnum += 1;
 		}
 		while !l.is_empty() {
+			task::yield_now().await;
 			let (head, tail) = {
-				let (_, (head, tail)) = Text::substr(l, font, scale, max_w);
+				let (_, (head, tail)) = Text::substr(l, f, scale, max_w);
 				match tail {
 					"" => (head, tail),
-					_ if l.len() == tail.len() => {
-						let second_char = l.char_indices().map(|(i, _)| i).nth(1).unwrap_or(l.len());
+					_ if head.is_empty() => {
+						let second_char = l.utf8_len_at(1);
 						l.split_at(second_char)
 					}
-					_ if !split || tail.starts_with(&split_by) => (head, tail),
+					_ if tail.starts_with(&split_by) => (head, tail),
 					_ => {
 						/* Traditional   ^head.ends  V.map(|h| l[h..].char_indices().map(|(i, _)| h + i).nth(1)).flatten() */
 						let h = head.rfind(&split_by).unwrap_or(head.len());
-						if h > 0 {
-							l.split_at(h)
-						} else {
-							(head, tail)
-						}
+						if h > 0 { l.split_at(h) } else { (head, tail) }
 					}
 				}
 			};
 			let e = tail.is_empty();
-			lines.push(unsafe { mem::transmute(head) });
+			lsb = Text::lsb(head, f, scale).max(lsb);
+			lines.push(head);
 			wraps.push(lnum.or_def(e));
 			lnum += u32(e);
 			l = tail;
 		}
 	}
-	(lines.into(), wraps.into())
+	(lsb, lines, wraps)
 }
 
-pub fn caret_x(text: &str, t: &Theme, scale: f32, at: usize, pad: f32) -> f32 {
-	let font = &t.font;
-	let past_end = at > text.utf8_len();
-	let last_ch = Text::char_at(text, font, scale, at);
-	let adv = Text::adv_at(text, font, scale, at);
-	let last_w = (last_ch.adv - pad).or_def(past_end);
-	let empty_x = pad.or_def(text.is_empty());
-	adv + last_ch.coord.x() + last_w + empty_x
+pub fn fit_line(line: &str, f: &Font, scale: f32, size: Vec2) -> (Vec2, f32) {
+	let line_size = Text::size(line, f, scale).sum((Text::lsb(line, f, scale), 0.));
+	ASSERT!(size.min_comp() >= 0., "Passed negative size {size:?} in gui");
+	let r = size.div(line_size);
+	let r = r.x().min(r.y() * 2.).min(1.);
+	(size.sub(line_size.mul(r)).mul(0.5), scale * r)
 }
 
-pub fn move_caret(lines: &[&str], (x, y): Caret, (ox, oy): iVec2, clamp_x: bool) -> Caret {
-	let (x, ox, y, oy) = ilVec4((x, ox, y, oy));
-	let last_idx = lines.last_idx();
-	let y = usize((y + oy).clamp(0, isize(last_idx)));
-	let text = lines[y];
-	let x = {
-		let x = x + ox;
-		if x + ox < 1 {
-			if y == 0 {
-				return (1, 0);
-			};
-			let skip = isize(lines[y - 1].utf8_len() + 1);
-			return move_caret(lines, (0, y - 1), iVec2((x + skip, 0)), true);
+pub fn visible_range(Surf { size: (_, h), .. }: Surf, scale: f32, skip: f32, len: usize) -> ulVec2 {
+	if len < 1 {
+		return (0, 0);
+	}
+
+	let start = usize(skip).min(len);
+	let len = usize(skip.rem_euclid(scale) + h / scale).min(len - start).max(1);
+	(start, len)
+}
+
+pub fn visible_norm(Surf { size: (_, h), .. }: Surf, vis_lines: usize, len: usize) -> Vec2 {
+	let (v, l) = Vec2((vis_lines, len.max(1)));
+	(h * v / l, 1. / (l - v).max(1.))
+}
+
+pub fn line_pos(lines: &impl TextLineAt, f: &Font, scale: f32, Surf { size: (_, h), .. }: Surf, skip: f32, lnum: usize, lsb: f32) -> Vec2 {
+	let (line, _) = lines.get(isize(lnum));
+	let l = Text::lsb(line, f, scale);
+	let lnum = f32(isize(lnum) - isize(skip)) + 1. - skip.fract();
+	(lsb - l, h - lnum * scale)
+}
+
+pub type Caret = ilVec2;
+pub mod caret {
+	pub async fn serialise(lines: impl Iterator<Item = &DynamicStr>, c: Caret) -> isize {
+		let range = u::collect_range(lines, (0, 0), c).await;
+		let x = range.chars().count();
+		isize(x)
+	}
+
+	pub fn set(l: &impl TextLineAt, c: Caret, o: Caret) -> Caret {
+		set_async(l, c, o).pipe(task::block_on)
+	}
+	pub async fn set_async(lines: &impl TextLineAt, (x, y): Caret, (ox, oy): Caret) -> Caret {
+		let last_pos = |y| {
+			let (line, nl) = lines.get(y);
+			(chars(line) - isize(!nl)).max(0)
+		};
+
+		let max_y = lines.max_y();
+		let mut y = (oy + y).clamp(0, max_y);
+		let mut x = ox + x.clamp(0, last_pos(y));
+		loop {
+			task::yield_now().await;
+			if x < 0 {
+				y -= 1;
+				if y < 0 {
+					return (0, 0);
+				}
+
+				x = last_pos(y) + x + 1;
+				continue;
+			}
+
+			let max_x = last_pos(y);
+			if x <= max_x {
+				return (x, y);
+			}
+
+			y += 1;
+			if y > max_y {
+				return (max_x, max_y);
+			}
+
+			x = x - max_x - 1;
 		}
-		if clamp_x && x > isize(text.utf8_len() + 1) {
-			if y == last_idx {
-				return (lines[last_idx].utf8_len() + 1, last_idx);
-			};
-			return move_caret(lines, Caret::to((x - isize(text.utf8_len() + 1), y + 1)), (0, 0), true);
+	}
+
+	pub fn idx(lines: &impl TextLineAt, at: Caret, o: Caret) -> usize {
+		let (x, y) = set(lines, at, o);
+		let (line, _) = lines.get(y);
+		line.utf8_len_at(x)
+	}
+
+	pub fn at_pos(lines: &impl TextLineAt, f: &Font, scale: f32, start: usize, p: Vec2) -> Caret {
+		let (x, y) = p.mul((1, -1));
+		let y = isize(start) + isize(y / scale + 1.);
+		let (line, _) = lines.get(y);
+		let x = Text::substr(line, f, scale, x).pipe(|(_, (line, _))| chars(line));
+		set(lines, (x, y), (0, 0))
+	}
+
+	pub fn adv(lines: &impl TextLineAt, f: &Font, scale: f32, (x, y): Caret, pad: f32) -> f32 {
+		let (line, nl) = lines.get(y);
+		let past_end = x >= chars(line) && nl;
+		let x = usize(if past_end { x + 1 } else { x });
+		let adv = Text::adv_at(line, f, scale, x);
+		adv - pad.or_def(past_end && !line.is_empty())
+	}
+
+	pub fn sort(caret: Caret, select: Caret) -> (Caret, Caret) {
+		let ord = (caret.y() > select.y()).or_val(caret.y() != select.y(), || caret.x() > select.x());
+		let (beg, end) = (select, caret).or_val(ord, || (caret, select));
+		(beg, end)
+	}
+
+	use super::*;
+}
+
+pub trait TextLineAt {
+	fn get(&self, y: isize) -> (&str, bool);
+	fn max_y(&self) -> isize {
+		0
+	}
+}
+impl TextLineAt for CachedStr {
+	fn get(&self, _: isize) -> (&str, bool) {
+		(self, true)
+	}
+}
+impl TextLineAt for Box<[&str]> {
+	fn get(&self, y: isize) -> (&str, bool) {
+		if self.is_empty() {
+			return Def();
 		}
-		x
-	};
-	Caret::to((x, y))
-}
 
-pub fn caret_to_cursor(lines: &[&str], (start, len): Vec2, t: &Theme, scale: f32, pos: Vec2, (x, y): Vec2) -> Caret {
-	let (b, e) = ilVec2((start, start + len));
-	let y = isize(start + (pos.y() - y) / scale).clamp(b - 1, e);
-	let text = line(lines, (0, y));
-	let ((caret_x, _), (str, _)) = Text::substr(text, &t.font, scale, x - pos.x());
-	let past_end = x > pos.x() + caret_x;
-	let c = (str.utf8_len(), usize(y.max(0)));
-	let o = (1.or_def(past_end), 0);
-	move_caret(lines, c, o, true)
+		let y = y.clamp(0, self.max_y());
+		(self.at(y), false)
+	}
+	fn max_y(&self) -> isize {
+		isize(self.last_idx())
+	}
 }
+impl TextLineAt for Vec<DynamicStr> {
+	fn get(&self, y: isize) -> (&str, bool) {
+		if self.is_empty() {
+			return Def();
+		}
 
-pub fn clamp(lines: &[&str], c: Caret) -> Caret {
-	c.clmp((1, 0), (line(lines, c).utf8_len() + 1, lines.last_idx()))
+		let y = y.clamp(0, self.max_y());
+		let l = self.at(y);
+		match l {
+			R(l) => (l, false),
+			RN(l, _) => (l, true),
+			P(l) => (l, true),
+		}
+	}
+	fn max_y(&self) -> isize {
+		isize(self.last_idx())
+	}
 }
+impl TextLineAt for VerVec<DynamicStr> {
+	fn get(&self, y: isize) -> (&str, bool) {
+		if self.is_empty() {
+			return Def();
+		}
 
-pub fn line<'a, X, Y>(lines: &'a [&str], caret: (X, Y)) -> &'a str
-where
-	vec2<isize>: Cast<(X, Y)>,
-{
-	let (_, y) = ilVec2(caret);
-	let y = y.clamp(0, isize(lines.last_idx()));
-	if !lines.is_empty() {
-		lines.at(y)
-	} else {
-		""
+		let y = y.clamp(0, self.max_y());
+		let l = self.at(y);
+		match l {
+			R(l) => (l, false),
+			RN(l, _) => (l, true),
+			P(l) => (l, true),
+		}
+	}
+	fn max_y(&self) -> isize {
+		isize(self.last_idx())
 	}
 }
 
-pub type Caret = ulVec2;
+pub async fn collect_range(lines: impl Iterator<Item = &DynamicStr>, c1: Caret, c2: Caret) -> String {
+	let mut lines = lines.peekable();
+	if lines.peek().is_none() || c1 == c2 {
+		return Def();
+	}
+
+	let ((b_x, b_y), (e_x, e_y)) = mat2(caret::sort(c1, c2));
+	let (dist, mut text) = (e_y - b_y, String::new());
+
+	let partial = |text: &mut String, l: &DynamicStr, b, e| {
+		let mut line: String = Def();
+		l.write_self(&mut line);
+		text.push_str(line.utf8_slice(b..e));
+	};
+
+	let mut lines = lines.skip(b_y);
+
+	if dist == 0 {
+		partial(&mut text, lines.next().fail(), b_x, e_x);
+		return text;
+	}
+
+	partial(&mut text, lines.next().fail(), b_x, usize::MAX);
+
+	for _ in 0..dist - 1 {
+		async {
+			lines.next().fail().write_self(&mut text);
+		}
+		.await
+	}
+
+	partial(&mut text, lines.next().fail(), 0, e_x);
+
+	text
+}
+
+pub fn replace_range(lines: &mut VerVec<DynamicStr>, new: &str, c1: Caret, c2: Caret) {
+	if lines.is_empty() {
+		return *lines = vec![P(new.into())].into();
+	}
+
+	let ((b_x, b_y), (e_x, e_y)) = caret::sort(c1, c2);
+
+	let (mut beg, mut end) = Def();
+	lines.at(b_y).write_self(&mut beg);
+	lines.at(e_y).write_self(&mut end);
+	let new = [beg.utf8_slice(..b_x), new, end.utf8_slice(e_x..)].concat();
+	*lines = lines.replace(b_y, [P(new.into())]);
+	if usize(b_y) == lines.last_idx() {
+		return;
+	}
+
+	let (b_y, e_y) = (b_y, e_y).sum(1).fmin((lines.last_idx(), lines.len()));
+	*lines = lines.remove(b_y..e_y);
+}
+
+#[derive(Debug)]
+pub enum DynamicStr {
+	R(Astr),
+	RN(Astr, u32),
+	P(Astr),
+}
+impl DynamicStr {
+	pub fn new((l, n): (&str, u32)) -> Self {
+		let l = l.into();
+		if n == 0 { R(l) } else { RN(l, n) }
+	}
+	pub fn as_clipped_str(&self, f: &Font, scale: f32, max_w: f32) -> &str {
+		match &self {
+			R(l) | RN(l, _) => l,
+			P(l) => Text::substr(l, f, scale, max_w + scale).pipe(|(_, (head, _))| head),
+		}
+	}
+	pub fn write_self(&self, to: &mut String) {
+		match self {
+			R(l) => to.push_str(l),
+			RN(l, _) => {
+				to.push_str(l);
+				to.push('\n');
+			}
+			P(l) => to.push_str(l),
+		}
+	}
+	pub fn lnum(&self) -> Option<String> {
+		match self {
+			R(_) => None,
+			RN(_, n) => n.to_string().pipe(Some),
+			P(_) => {
+				const S: [&str; 4] = ["|", "/", "-", "\\"];
+				let s = LocalStatic!(usize);
+				*s = (*s + 1) % 40;
+				S[*s / 10].to_string().pipe(Some)
+			}
+		}
+	}
+}
+
+fn chars(l: &str) -> isize {
+	isize(l.utf8_count())
+}
+use DynamicStr::*;

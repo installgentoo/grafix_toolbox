@@ -3,27 +3,28 @@ pub use context::window;
 
 pub mod pre {
 	pub use gl;
-	pub type Query = spec::Object<spec::Query>; // TODO negative traits stabilization - remove send/sync from Query, Framebuffer and Vao //impl !Send for //impl !Sync for
+	pub type Query = spec::Obj<spec::QueryT>; // TODO negative traits stabilization - remove send/sync from Query, Framebuffer and Vao impl !Send for impl !Sync for
 	pub use super::utility::{DebugLevel, EnableDebugContext};
 	pub use super::{context::Fence, geom::FocusCam};
 	pub use bind::*;
 	pub use buffer::*;
 	pub use fbo::*;
+	pub use mesh::*;
 	pub use shader::*;
 	pub use states::*;
 	pub use tex::*;
 	pub use types::*;
 	pub mod macro_uses {
-		pub use super::super::{control::gl_was_initialized, shader::uniform::uniforms_use, shader::InlineShader, texture::sampler_use};
+		pub use super::super::{control::gl_was_initialized, shader::InlineShader, shader::uniform::uniforms_use, texture::sampler_use};
 	}
 	pub mod bind {
 		use super::super::*;
-		pub use buffer::{Mapping, MappingMut, ShdArrBinding, VaoBinding};
-		pub use shader::ShaderBinding;
-		pub use texture::{TexBuffBinding, TextureBinding};
+		pub use buffer::{Mapping, MappingMut, ShdArrBind};
+		pub use texture::{TexBuffBind, TextureBind};
+		pub use {geom::VaoBind, shader::ShaderBind};
 	}
 	pub mod buffer {
-		pub use super::super::buffer::{AttrArr, IdxArr, ShdStorageArr, UniformArr, Vao};
+		pub use super::super::buffer::{AttrArr, IdxArr, ShdStorageArr, UniformArr};
 	}
 	pub mod fbo {
 		pub use super::super::frame::{Fbo, Frame, FrameInfo, Framebuffer, RenderTgt, Renderbuffer, Slab};
@@ -36,8 +37,8 @@ pub mod pre {
 	}
 	pub mod tex {
 		use super::super::*;
-		pub use texture::{chans::*, spec::*, Sampler, Tex, TexBuffer, TexParam};
-		pub use utility::{fImage, uImage, Image};
+		pub use texture::{Sampler, Tex, TexBuffer, TexParam, chans::*, spec::*};
+		pub use utility::{Image, fImage, uImage};
 	}
 	pub mod types {
 		pub use gl::types::{GLbitfield, GLboolean as GLbool, GLenum, GLvoid};
@@ -46,10 +47,10 @@ pub mod pre {
 	pub mod spec {
 		use super::super::*;
 		pub use buffer::{AttrType, IdxType};
-		pub use control::{object::*, policy::*};
+		pub use control::{obj::*, policy::*};
 	}
 	pub mod atlas {
-		pub use super::super::utility::{pack_into_atlas, Animation, TexAtlas, Tile, VTex2d, VTex2dEntry};
+		pub use super::super::utility::{Animation, TexAtlas, Tile, VTex2d, VTex2dEntry, pack_into_atlas};
 	}
 	pub mod font {
 		pub use super::super::utility::{Font, Glyph};
@@ -67,7 +68,7 @@ pub mod pre {
 		pub use super::super::utility::{EnvTex, Environment};
 	}
 	pub mod mesh {
-		pub use super::super::geom::{ps_mesh__2d_screen, vs_mesh__2d_screen, AnyMesh, Mesh, Model, Screen, Skybox};
+		pub use super::super::geom::{AnyMesh, Geometry, Mesh, Model, Screen, Skybox, Vao, ps_mesh__2d_screen, vs_mesh__2d_screen};
 	}
 	pub mod unigl {
 		pub use super::super::control::universion::*;
@@ -75,7 +76,7 @@ pub mod pre {
 }
 
 mod internal {
-	pub use super::control::{object::*, policy::*, state::*, tex_state::*, uniform_state::*, universion::*};
+	pub use super::control::{obj::*, policy::*, state::*, tex_state::*, uniform_state::*, universion::*};
 }
 
 #[macro_use]

@@ -23,7 +23,7 @@ extern "system" fn debug_gl_printer(src: GLenum, typ: GLenum, id: u32, lvl: GLen
 		gl::DEBUG_SEVERITY_MEDIUM if f > 0 => "MED".into(),
 		gl::DEBUG_SEVERITY_LOW if f > 1 => "LOW".into(),
 		gl::DEBUG_SEVERITY_NOTIFICATION if f > 2 => "TIP".into(),
-		gl::DEBUG_SEVERITY_MEDIUM | gl::DEBUG_SEVERITY_LOW | gl::DEBUG_SEVERITY_NOTIFICATION => return (),
+		gl::DEBUG_SEVERITY_MEDIUM | gl::DEBUG_SEVERITY_LOW | gl::DEBUG_SEVERITY_NOTIFICATION => return,
 		_ => format!("SEVERITY_?_{lvl}"),
 	};
 

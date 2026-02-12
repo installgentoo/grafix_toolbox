@@ -1,60 +1,76 @@
 use super::*;
-use GL::spec::*;
 
-pub trait AnyMesh {
-	fn Draw(&self);
-	fn to_trait(self) -> Box<dyn AnyMesh>;
+type BuffMem = Box<dyn ArrObjLease>;
+pub trait BuffArg {
+	fn set<I: IdxType>(self, _: u32, _: &mut Vao<I>) -> BuffMem;
 }
-impl<I: IdxType, C: AttrType, T: AttrType, N: AttrType> AnyMesh for Mesh<I, C, T, N> {
-	fn Draw(&self) {
-		self.vao.Bind().Draw(self.draw);
+impl<A: AttrType> BuffArg for (u32, &[A]) {
+	fn set<I: IdxType>(self, at: u32, v: &mut Vao<I>) -> BuffMem {
+		let (dim, arr) = self;
+		let arr = AttrArr::new((arr, 0));
+		v.AttribFmt(&arr, (at, dim));
+		Box(arr)
 	}
-	fn to_trait(self) -> Box<dyn AnyMesh> {
-		Box(self)
+}
+impl BuffArg for () {
+	fn set<I: IdxType>(self, _: u32, _: &mut Vao<I>) -> BuffMem {
+		Box(())
 	}
 }
-pub struct Mesh<I, C, T, N> {
-	pub vao: Vao<I>,
-	pub buff: (IdxArr<I>, AttrArr<C>, Option<AttrArr<T>>, AttrArr<N>),
-	pub draw: (u32, GLenum),
-}
-impl<I: IdxType, C: AttrType, T: AttrType, N: AttrType> Mesh<I, C, T, N> {
-	pub fn new(args: impl MeshArgs<I, C, T, N>) -> Self {
-		let (idx, xyz, uv, norm, mode) = args.get();
 
-		let draw = (u32(idx.len()), mode);
+type VaoMem = Vec<BuffMem>;
+pub trait VaoArgs {
+	fn seta<I: IdxType>(self, _: &mut Vao<I>) -> VaoMem;
+}
+impl<A: BuffArg> VaoArgs for A {
+	fn seta<I: IdxType>(self, v: &mut Vao<I>) -> VaoMem {
+		let a = self.set(0, v);
+		vec![a]
+	}
+}
+impl<A1: BuffArg, A2: BuffArg> VaoArgs for (A1, A2) {
+	fn seta<I: IdxType>(self, v: &mut Vao<I>) -> VaoMem {
+		let (a1, a2) = self;
+		let (a1, a2) = (a1.set(0, v), a2.set(1, v));
+		vec![a1, a2]
+	}
+}
+impl<A1: BuffArg, A2: BuffArg, A3: BuffArg> VaoArgs for (A1, A2, A3) {
+	fn seta<I: IdxType>(self, v: &mut Vao<I>) -> VaoMem {
+		let (a1, a2, a3) = self;
+		let (a1, a2, a3) = (a1.set(0, v), a2.set(1, v), a3.set(2, v));
+		vec![a1, a2, a3]
+	}
+}
+
+pub struct Geometry<I> {
+	vao: Vao<I>,
+	_m: Box<[BuffMem]>,
+}
+impl<I: IdxType> Geometry<I> {
+	pub fn new(idx: &[I], args: impl VaoArgs) -> Self {
+		let mut vao = Vao::default();
+		let mut m = args.seta(&mut vao);
 
 		let idx = IdxArr::new(idx);
-		let xyz = AttrArr::new(xyz);
-		let norm = AttrArr::new(norm);
-
-		let mut vao = Vao::new();
 		vao.BindIdxs(&idx);
+		m.push(Box(idx));
 
-		let uv = uv.map(|uv| {
-			let uv = AttrArr::new(uv);
-			vao.AttribFmt(&uv, (1, 2));
-			uv
-		});
-		vao.AttribFmt(&xyz, (0, 3));
-		vao.AttribFmt(&norm, (2, 3));
-		let buff = (idx, xyz, uv, norm);
-
-		Self { vao, buff, draw }
+		Self { vao, _m: m.into() }
+	}
+	pub fn Draw(&self, draw: impl DrawArgs) {
+		self.vao.Bind().Draw(draw);
 	}
 }
 
-type MArgs<'s, I, C, T, N> = (&'s [I], &'s [C], Option<&'s [T]>, &'s [N], GLenum);
-pub trait MeshArgs<I, C, T, N> {
-	fn get(&self) -> MArgs<'_, I, C, T, N>;
+pub trait AnyMeshT {
+	fn Draw(&self);
 }
-impl<I: IdxType, C: AttrType, T: AttrType, N: AttrType, SI: AsRef<[I]>, SC: AsRef<[C]>, ST: AsRef<[T]>, SN: AsRef<[N]>> MeshArgs<I, C, T, N> for (SI, SC, ST, SN, GLenum) {
-	fn get(&self) -> MArgs<'_, I, C, T, N> {
-		(self.0.as_ref(), self.1.as_ref(), Some(self.2.as_ref()), self.3.as_ref(), self.4)
-	}
-}
-impl<I: IdxType, C: AttrType, N: AttrType, SI: AsRef<[I]>, SC: AsRef<[C]>, SN: AsRef<[N]>> MeshArgs<I, C, f16, N> for (SI, SC, SN, GLenum) {
-	fn get(&self) -> MArgs<'_, I, C, f16, N> {
-		(self.0.as_ref(), self.1.as_ref(), None, self.2.as_ref(), self.3)
+impl<I: IdxType> AnyMeshT for Mesh<I>
+where
+	(I, GLenum): DrawArgs,
+{
+	fn Draw(&self) {
+		self.geom.Draw(self.draw);
 	}
 }

@@ -6,8 +6,8 @@ pub trait Frame {
 		let (w, h, min) = Vec3((w, h, w.min(h)));
 		(min, min).div((w, h))
 	}
-	fn to_clip(&self) -> Vec2 {
-		(1., 1.).div(self.aspect())
+	fn clip_aspect(&self) -> Vec2 {
+		Vec2(1).div(self.aspect())
 	}
 	fn pixel(&self) -> f32 {
 		let (w, h) = self.size();
@@ -23,13 +23,13 @@ pub trait Frame {
 		self.ClearDepth(d);
 	}
 	fn ClearColor(&self, _: impl ClearArgs);
-	fn ClearDepth<T>(&self, _: T)
+	fn ClearDepth<A>(&self, _: A)
 	where
-		f32: Cast<T>,
+		f32: Cast<A>,
 	{
 	}
 	fn size(&self) -> uVec2;
-	fn bind(&self) -> Binding<Framebuff>;
+	fn bind(&self) -> Bind<FramebuffT>;
 }
 
 mod args;
@@ -37,5 +37,5 @@ mod fbo;
 mod framebuff;
 mod screen;
 
-use crate::{lib::*, math::*, GL::tex::*};
+use crate::{GL::tex::*, lib::*, math::*};
 use {super::internal::*, args::*};

@@ -9,53 +9,55 @@ pub struct Button {
 	easing: f32,
 	last_pressed: bool,
 	pub pressed: bool,
-	pub hovered: bool,
 }
 impl Button {
-	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, Surface { pos, size }: Surface, text: &str) -> bool {
-		let s = self;
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, layout @ Surf { pos, size }: Surf, text: &str) -> bool {
+		let (s, font, hovered) = (self, &t.font, r.hovers_in(layout));
 
-		if *s.text != *text || s.size != size {
-			let (offset, scale) = util::fit_text(text, t, size);
-
-			*s = Button { offset, size, scale, text: text.into(), ..*s };
+		if &*s.text != text || s.size != size {
+			((s.offset, s.scale), s.size, s.text) = (u::fit_line(text, font, t.font_size, size), size, text.into());
 		}
-		let Button { easing, last_pressed, pressed, hovered, .. } = s;
+		let Self {
+			offset,
+			scale,
+			ref mut easing,
+			ref mut last_pressed,
+			ref mut pressed,
+			..
+		} = *s;
 
-		let delta = 1. / (t.easing * (*easing - 2.).abs());
-		*easing = (*easing + if *hovered { delta } else { -delta }).clamp(0., 1.);
-		let color = t.fg.mix(*easing, t.fg_focus).mix(*pressed, t.highlight);
+		t.ease(easing, hovered);
 
-		*pressed &= *hovered;
-		let p = *pressed && !*last_pressed;
+		let clicked = *pressed && !*last_pressed;
 		*last_pressed = *pressed;
+		*pressed &= hovered;
 		r.draw_with_logic(
-			Rect { pos, size, color },
+			Rect { pos, size, color: t.fg(easing, *pressed) },
 			move |e, _, _| {
-				let mut pass = |s: Mod| *pressed = s.pressed();
+				let mut press = |m: Mod| (*pressed, *last_pressed) = (m.pressed(), m.released());
 				match *e {
-					MouseButton { state, .. } => pass(state),
-					Keyboard { key, state } if key == Key::Space => pass(state),
-					_ => (),
+					MouseButton { m, .. } => press(m),
+					Keyboard { key: Key::Space, m } => press(m),
+					_ => return Pass,
 				}
-				Reject
+				Accept
 			},
 			0,
 		);
-		*hovered = r.hovered();
+
 		r.draw(Text {
-			pos: pos.sum(s.offset),
-			color: t.text.mix(*hovered, t.text_focus).mix(p, t.text_highlight),
-			scale: s.scale,
+			pos: pos.sum(offset),
+			color: t.text(hovered, clicked),
+			scale,
 			text,
-			font: &t.font,
+			font,
 		});
-		p
+		clicked
 	}
 }
 
 impl<'s: 'l, 'l> Lock::Button<'s, 'l, '_> {
-	pub fn draw(self, g: impl Into<Surface>, te: impl AsRef<str>) -> bool {
+	pub fn draw(self, g: impl Into<Surf>, te: impl AsRef<str>) -> bool {
 		let Self { s, r, t } = self;
 		s.draw(r, t, g.into(), te.as_ref())
 	}

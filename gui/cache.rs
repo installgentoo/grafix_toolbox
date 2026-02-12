@@ -6,16 +6,16 @@ pub trait DrawablePrimitive<'r> {
 macro_rules! DRAWABLE {
 	($t: ty, $draw_spec: ident) => {
 		impl<'r> DrawablePrimitive<'r> for $t {
-			fn draw(self, obj_n: u32, clip: &Geom, r: &mut Renderer) {
+			fn draw(self, obj_n: u32, crop: &Geom, r: &mut Renderer) {
 				use PrimImpl::$draw_spec as object;
 				if obj_n < u32(r.cache.objs.len()) {
-					let PrimCache { state, o, .. } = r.cache.get_mut(obj_n);
+					let PrimCache { state, o } = r.cache.objs.at_mut(obj_n);
 					if let object(l) = o {
-						*state = self.compare(clip, l) | r.status;
+						*state = self.compare(crop, l) | r.status;
 						if !state.contains(State::MISMATCH) {
 							if !state.is_empty() {
 								r.flush |= *state;
-								*o = object(self.obj(*clip));
+								*o = self.obj(*crop).pipe(object);
 							}
 							return;
 						}
@@ -25,7 +25,7 @@ macro_rules! DRAWABLE {
 				}
 
 				r.flush |= State::FULL;
-				let p = PrimCache { state: State::MISMATCH, o: object(self.obj(*clip)) };
+				let p = PrimCache { state: State::MISMATCH, o: object(self.obj(*crop)) };
 				r.cache.objs.push(p);
 			}
 		}
@@ -39,11 +39,8 @@ pub struct RenderCache {
 	pub first_transparent: usize,
 }
 impl RenderCache {
-	pub fn get(&self, at: u32) -> &PrimCache {
-		self.objs.at(at)
-	}
-	pub fn get_mut(&mut self, at: u32) -> &mut PrimCache {
-		self.objs.at_mut(at)
+	pub fn b_box(&self, at: u32) -> Geom {
+		self.objs.at(at).o.obj().base().bound_box()
 	}
 	pub fn shrink(&mut self, to: u32) {
 		let Self { batches, objs, .. } = self;
@@ -51,53 +48,57 @@ impl RenderCache {
 
 		objs.truncate(usize(to));
 	}
-	pub fn batch(&mut self) {
+	fn batch(&mut self) {
 		let Self { batches, objs, first_transparent } = self;
 
 		let overlaps = |o, z| {
-			batches.iter().position(|b| b.contains(objs, (o, z))).map_or(false, |b| {
+			batches.iter().position(|b| b.contains(objs, (o, z))).is_some_and(|b| {
 				let covered = || batches[..b].iter().any(|b| b.covered(objs, (o, z)));
 				let covers = || batches[b + 1..].iter().any(|b| b.covers(objs, (o, z)));
 				covered() || covers()
 			})
 		};
 
-		if let Some(first_invalid) = objs
+		let Some(first_invalid) = objs
 			.iter()
 			.enumerate()
-			.find(|(n, PrimCache { state, o, .. })| {
-				let overlapping = || state.contains(State::XYZW) && o.obj().ordered() && overlaps(o, u32(*n));
+			.find(|(n, PrimCache { state, o })| {
+				let overlapping = || state.contains(State::XYZW) && o.obj().ordered() && overlaps(o, u32(n));
 				state.contains(State::MISMATCH) || overlapping()
 			})
 			.map(|(n, _)| n)
-		{
-			batches.retain_mut(|b| !b.shrink_and_empty(objs, u32(first_invalid)));
+		else {
+			return;
+		};
 
-			objs.iter().enumerate().skip(first_invalid).for_each(|(z, o)| {
-				let (z, o) = (u32(z), &o.o);
-				for b in batches.iter_mut().rev() {
-					if b.try_add(objs, (o, z)) {
-						return;
-					}
+		batches.retain_mut(|b| !b.shrink_and_empty(objs, u32(first_invalid)));
 
-					if b.interferes(objs, o) {
-						break;
-					}
+		objs.iter().enumerate().skip(first_invalid).for_each(|(z, o)| {
+			let (z, o) = (u32(z), &o.o);
+			for b in batches.iter_mut().rev() {
+				if b.try_add(objs, (o, z)) {
+					return;
 				}
 
-				if o.obj().ordered() {
-					batches.push(Batch::new(z));
-				} else {
-					batches.insert(0, Batch::new(z));
+				if b.interferes(objs, o) {
+					break;
 				}
-			});
+			}
 
-			*first_transparent = batches.iter().position(|b| b.typ(objs).obj().ordered()).unwrap_or(batches.len());
-		}
+			if o.obj().ordered() {
+				batches.push(Batch::new(z));
+			} else {
+				batches.insert(0, Batch::new(z));
+			}
+		});
+
+		*first_transparent = batches.iter().position(|b| b.typ(objs).obj().ordered()).unwrap_or(batches.len());
 	}
 	pub fn flush(
 		&mut self, aspect: Vec2, idxs: &mut Vec<u16>, xyzw: &mut Vec<f16>, rgba: &mut Vec<u8>, uv: &mut Vec<f16>,
 	) -> (Option<usize>, Option<usize>, Option<usize>, Option<usize>) {
+		self.batch();
+
 		let Self { batches, objs, .. } = self;
 		let MAXIDX = const { u16::MAX as usize };
 
@@ -110,14 +111,14 @@ impl RenderCache {
 
 				if state.contains(State::BATCH_RESIZED) {
 					flush.0.get_or_insert(idx_start);
-					let mut indices = b.typ(objs).obj().gen_idxs(usVec2((batch_start, batch_size)));
+					let mut indices = b.typ(objs).obj().gen_idxs(vec2((batch_start, batch_size)));
 					if idx_start + indices.len() > MAXIDX {
 						WARN!("GUI batch too saturated with polygons, dropping some");
 						let mut i = indices.into_vec();
 						i.truncate(MAXIDX - idx_start);
 						indices = i.into();
 					}
-					b.idx_range = usVec2((idx_start, indices.len()));
+					b.idx_range = vec2((idx_start, indices.len()));
 					idxs.truncate(usize(idx_start));
 					idxs.extend_from_slice(&indices);
 				}
@@ -141,13 +142,13 @@ impl RenderCache {
 
 				(flush, state, ulVec2(b.idx_range).fold(|l, r| l + r).min(MAXIDX), batch_start + usize(batch_size))
 			})
-			.0
+			.pipe(|(flush, ..)| flush)
 	}
-	pub fn draw_opaque_batches(&self, v: &VaoBinding<u16>) {
+	pub fn draw_opaque_batches(&self, v: &VaoBind<u16>) {
 		let Self { batches, objs, first_transparent } = self;
 		batches.iter().take(*first_transparent).for_each(|b| b.typ(objs).obj().batch_draw(v, b.idx_range));
 	}
-	pub fn draw_translucent_batches(&self, v: &VaoBinding<u16>) {
+	pub fn draw_translucent_batches(&self, v: &VaoBind<u16>) {
 		let Self { batches, objs, first_transparent } = self;
 		batches.iter().skip(*first_transparent).for_each(|b| b.typ(objs).obj().batch_draw(v, b.idx_range));
 	}

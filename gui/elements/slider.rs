@@ -10,44 +10,32 @@ impl Default for Slider {
 	}
 }
 impl Slider {
-	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, Surface { pos, size }: Surface, pip_size: f32) -> f32 {
-		let id = ref_UUID(self);
-
-		let vert = size.y() > size.x();
-		let o = move |v: Vec2| if vert { v.y() } else { v.x() };
-		let set_pip = move |v: f32| ((v - o(pos)) / o(size)).clamp(0., 1.);
-
-		let Slider { pip_pos } = self;
-
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, Surf { pos, size }: Surf, pip_size: f32) -> f32 {
+		let (id, Self { pip_pos }) = (ref_UUID(self), self);
 		*pip_pos = pip_pos.clamp(0., 1.);
 
-		let p = *pip_pos;
+		let (vert, p) = (size.y() >= size.x(), *pip_pos);
 		r.draw_with_logic(
 			Rect { pos, size, color: t.fg },
 			move |e, focused, mouse_pos| {
+				let orient = |v: Vec2| v.y().or_val(vert, || v.x()).clamp(0., 1.);
+				let mut set_pip = |p: Vec2| *pip_pos = p.sub(pos).sub(pip_size * 0.5).div(size.sub(pip_size)).pipe(orient);
 				match *e {
-					OfferFocus => return Accept,
-					MouseButton { state, .. } if focused && state.released() => return DropFocus,
-					MouseButton { state, .. } if state.pressed() => *pip_pos = set_pip(o(mouse_pos)),
-					MouseMove { at, .. } if focused => *pip_pos = set_pip(o(at)),
-					Scroll { at, .. } => {
-						*pip_pos += o(at.mul((-1, 1))) * pip_size;
-						return Accept;
-					}
-					_ => (),
+					OfferFocus => (),
+					MouseButton { m, .. } if m.released() => return DropFocus,
+					MouseButton { m, .. } if m.pressed() => set_pip(mouse_pos),
+					MouseMove { at, .. } if focused => set_pip(at),
+					Scroll { at, .. } => *pip_pos = at.mul((-1, 1)).mul(pip_size).sum(*pip_pos).pipe(orient),
+					_ => return Pass,
 				}
-				if focused {
-					Accept
-				} else {
-					Reject
-				}
+				Accept
 			},
 			id,
 		);
 
 		r.draw(Rect {
-			pos: pos.sum(Vec2((!vert, vert)).mul(size).mul(p * (1. - pip_size))),
-			size: size.mul((if !vert { pip_size } else { 1. }, if vert { pip_size } else { 1. })),
+			pos: pos.sum(size.sub(pip_size).mul((!vert, vert)).mul(p)),
+			size: (size.x(), pip_size).or_val(vert, || (pip_size, size.y())),
 			color: t.highlight,
 		});
 		p
@@ -55,8 +43,8 @@ impl Slider {
 }
 
 impl<'s: 'l, 'l> Lock::Slider<'s, 'l, '_> {
-	pub fn draw(self, g: impl Into<Surface>) -> f32 {
+	pub fn draw(self, g: impl Into<Surf>) -> f32 {
 		let (Self { s, r, t }, g) = (self, g.into());
-		s.draw(r, t, g, g.size.y().min(g.size.x()))
+		s.draw(r, t, g, g.size.min_comp())
 	}
 }

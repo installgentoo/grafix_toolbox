@@ -1,16 +1,16 @@
 use super::*;
 
-type Init<'s> = (&'s mut Window, Load);
-pub trait InitArgs<'s> {
-	fn get(self) -> Init<'s>;
+type Init<'s, W> = (&'s mut W, Load);
+pub trait InitArgs<'s, W> {
+	fn get(self) -> Init<'s, W>;
 }
-impl<'s> InitArgs<'s> for &'s mut Window {
-	fn get(self) -> Init<'s> {
+impl<'s, W: Window> InitArgs<'s, W> for &'s mut W {
+	fn get(self) -> Init<'s, W> {
 		(self, vec![])
 	}
 }
-impl<'s, I: LoadArgs> InitArgs<'s> for (&'s mut Window, I) {
-	fn get(self) -> Init<'s> {
+impl<'s, I: LoadArgs, W: Window> InitArgs<'s, W> for (&'s mut W, I) {
+	fn get(self) -> Init<'s, W> {
 		let (w, i) = self;
 		(w, i.get())
 	}

@@ -8,28 +8,23 @@ pub struct Label {
 	text: Str,
 }
 impl Label {
-	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, Surface { pos, size }: Surface, text: &str) {
-		let s = self;
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, Surf { pos, size }: Surf, text: &str) {
+		let (s, font) = (self, &t.font);
 
 		if *s.text != *text || s.size != size {
-			let (offset, scale) = util::fit_text(text, t, size);
-
-			*s = Label { offset, size, scale, text: text.into() };
+			let (offset, scale) = u::fit_line(text, font, t.font_size, size);
+			*s = Self { offset, size, scale, text: text.into() };
 		}
+		let Self { offset, scale, .. } = *s;
 
 		r.draw(Rect { pos, size, color: t.fg });
-		r.draw(Text {
-			pos: pos.sum(s.offset),
-			color: t.text,
-			scale: s.scale,
-			text,
-			font: &t.font,
-		});
+
+		r.draw(Text { pos: pos.sum(offset), color: t.text, scale, text, font });
 	}
 }
 
 impl<'s: 'l, 'l> Lock::Label<'s, 'l, '_> {
-	pub fn draw(self, g: impl Into<Surface>, te: impl AsRef<str>) {
+	pub fn draw(self, g: impl Into<Surf>, te: impl AsRef<str>) {
 		let Self { s, r, t } = self;
 		s.draw(r, t, g.into(), te.as_ref())
 	}

@@ -1,7 +1,7 @@
 use super::{super::texture::*, *};
 
-pub type Framebuffer = Object<Framebuff>;
-pub type Renderbuffer = Object<Renderbuff>;
+pub type Framebuffer = Obj<FramebuffT>;
+pub type Renderbuffer = Obj<RenderbuffT>;
 
 pub trait FramebuffArg {
 	fn apply(self, _: u32);
@@ -22,10 +22,10 @@ impl Framebuffer {
 		args.apply(self.obj);
 		self
 	}
-	pub fn Bind<S, F>(&self, tex: &Tex<S, F, impl TexType>) -> Binding<Framebuff> {
-		let TexParam { w, h, .. } = tex.param;
+	pub fn Bind<S, F>(&self, tex: &Tex<S, F, impl TexType>) -> Bind<FramebuffT> {
+		let (w, h) = tex.whdl().xy();
 		GL::Viewport::Set((0, 0, w, h));
-		Binding::new(self)
+		Bind::new(self)
 	}
 	pub fn Clear(&self, typ: GLenum, args: impl ClearArgs) {
 		let (attach, c) = args.get();
@@ -39,9 +39,8 @@ pub struct RenderTgt<S, F> {
 }
 impl<S: TexSize, F: TexFmt> RenderTgt<S, F> {
 	pub fn new(args: impl FboArgs) -> Self {
-		let mut fbo = Fbo::new(args);
-		let TexParam { w, h, .. } = fbo.tex.param;
-		let depth = Renderbuffer::new();
+		let (mut fbo, depth) = (Fbo::new(args), Renderbuffer::new());
+		let (w, h) = fbo.tex.whdl().xy();
 		GL!(glRenderbuffStorage(depth.obj, 1, gl::DEPTH_COMPONENT, w, h));
 		fbo.fb = fbo.fb.attach((&depth, gl::DEPTH_ATTACHMENT));
 		Self { fbo, depth }
@@ -51,16 +50,16 @@ impl<S: TexSize, F: TexFmt> Frame for RenderTgt<S, F> {
 	fn ClearColor(&self, args: impl ClearArgs) {
 		self.fbo.ClearColor(args);
 	}
-	fn ClearDepth<T>(&self, d: T)
+	fn ClearDepth<A>(&self, d: A)
 	where
-		f32: Cast<T>,
+		f32: Cast<A>,
 	{
 		GL!(glClearFramebuff(self.fbo.fb.obj, gl::DEPTH, 0, &f32(d) as *const f32));
 	}
 	fn size(&self) -> uVec2 {
 		self.fbo.size()
 	}
-	fn bind(&self) -> Binding<Framebuff> {
+	fn bind(&self) -> Bind<FramebuffT> {
 		self.fbo.bind()
 	}
 }

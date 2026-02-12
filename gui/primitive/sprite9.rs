@@ -9,7 +9,7 @@ pub struct Sprite9<'r, S> {
 }
 impl<S: TexSize> Sprite9<'_, S> {
 	pub fn compare(&self, crop: &Geom, r: &Sprite9Impl<S>) -> State {
-		let &Self { pos, size, corner, color, tex: tex_new } = self;
+		let Self { pos, size, corner, color, tex: tex_new } = *self;
 		let xyzw = (State::XYZW | State::UV).or_def(geom_cmp(pos, size, crop, &r.base) || corner != r.corner);
 		let rgba = State::RGBA.or_def(color != r.base.color);
 		let ord = State::MISMATCH.or_def(!ptr::eq(r.tex, tex_new) || (!rgba.is_empty() && ordering_cmp::<S, _>(color, r)));
@@ -34,13 +34,13 @@ impl<S: TexSize> Primitive for Sprite9Impl<S> {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, to_clip: Vec2, range: BatchedObj) {
+	fn write_mesh(&self, aspect: Vec2, range: BatchedObj) {
 		let (crop, &Base { pos, size, color, .. }, (u1, v1, u2, v2)) = (self.base.bound_box(), self.base(), unsafe { &*self.tex }.region);
-		let c = size.x().min(size.y()) * self.corner.min(0.5).max(0.);
-		write_sprite9((to_clip, pos, size, (c, c), crop, (u1, v2, u2, v1), color), range);
+		let c = size.min_comp() * self.corner.clamp(0., 0.5);
+		write_sprite9((aspect, pos, size, (c, c), crop, (u1, v2, u2, v1), color), range);
 	}
-	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LeakyStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__col_tex]) });
+	fn batch_draw(&self, b: &VaoBind<u16>, (offset, num): (u16, u16)) {
+		let s = LeakyStatic!(Shader, { [vs_gui__pos_col_tex, ps_gui__col_tex].pipe(Shader::pure) });
 
 		let t = unsafe { &*self.tex }.atlas.Bind(sampler());
 		let _ = Uniforms!(s, ("src", t));
@@ -59,7 +59,7 @@ impl<S: TexSize> Primitive for Sprite9Impl<S> {
 }
 
 type Sprite9Desc = (Vec2, Vec2, Vec2, Vec2, Geom, TexCoord, Color);
-pub fn write_sprite9((to_clip, pos, size, corner, _crop @ (p1, p2), (u1, v1, u2, v2), color): Sprite9Desc, BatchedObj { z, state, xyzw, rgba, uv }: BatchedObj) {
+pub fn write_sprite9((aspect, pos, size, corner, _crop @ (p1, p2), (u1, v1, u2, v2), color): Sprite9Desc, BatchedObj { z, state, xyzw, rgba, uv }: BatchedObj) {
 	if state.contains(State::XYZW) {
 		let (((x1, y1), (x2, y2), (m1x, m1y), (m2x, m2y)), (u1, v1, u2, v2), (m1u, m1v, m2u, m2v)) = <_>::to({
 			let (xy1, xy2) = (pos, pos.sum(size));
@@ -72,7 +72,7 @@ pub fn write_sprite9((to_clip, pos, size, corner, _crop @ (p1, p2), (u1, v1, u2,
 				let (u2, v2) = (u2, v2).sub(wh.mul(xy2.sub(p2)));
 				((u1, v2, u2, v1), (u1m, v2m, u2m, v1m))
 			};
-			((p1.mul(to_clip), p2.mul(to_clip), m1.clmp(p1, p2).mul(to_clip), m2.clmp(p1, p2).mul(to_clip)), uv, muv)
+			((p1.mul(aspect), p2.mul(aspect), m1.clmp(p1, p2).mul(aspect), m2.clmp(p1, p2).mul(aspect)), uv, muv)
 		});
 		let O = f16::ZERO;
 
@@ -94,7 +94,7 @@ pub fn write_sprite9((to_clip, pos, size, corner, _crop @ (p1, p2), (u1, v1, u2,
 	}
 
 	if state.contains(State::RGBA) {
-		let (r, g, b, a) = vec4::to(color.mul(255).clmp(0, 255).round());
+		let (r, g, b, a) = vec4(color.mul(255).clmp(0, 255).round());
 		#[rustfmt::skip]
 		rgba[..64].copy_from_slice(&[r, g, b, a,  r, g, b, a,  r, g, b, a,  r, g, b, a,
 									 r, g, b, a,  r, g, b, a,  r, g, b, a,  r, g, b, a,

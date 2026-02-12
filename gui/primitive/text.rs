@@ -9,76 +9,62 @@ pub struct Text<'r, 'a> {
 	pub font: &'r Font,
 }
 impl<'a> Text<'_, 'a> {
-	pub fn size(text: &'a str, font: &Font, scale: f32) -> Vec2 {
-		Self::size_and_len(text, font, scale).0
+	pub fn size(line: &str, f: &Font, scale: f32) -> Vec2 {
+		Self::size_and_len(line, f, scale).0
 	}
-	pub fn substr(text: &'a str, font: &Font, scale: f32, max_width: f32) -> (Vec2, (&'a str, &'a str)) {
-		let (size, i) = text
+	pub fn lsb(l: &str, f: &Font, scale: f32) -> f32 {
+		l.chars().next().map_or(0., |c| f.glyph(c).lsb) * scale
+	}
+	pub fn substr(line: &'a str, f: &Font, scale: f32, max_width: f32) -> (Vec2, (&'a str, &'a str)) {
+		let (x, i) = line
 			.char_indices()
-			.scan((-0.5 * first_glyph(font, text).x(), 0 as char), |(x, last_c), (i, c)| {
-				*x += font.kern(*last_c, c);
-				*last_c = c;
-				let g = font.glyph(c)?;
-				Some((*x, g)).filter(|(x, g)| (x + g.coord.z()) * scale <= max_width).map(|r| {
-					*x += g.adv;
+			.scan((0., None), |(x, last_c), (i, c)| {
+				let (adv, (_, _, x2, _)) = f.adv_coord(last_c, c);
+				*last_c = Some(c);
+				Some(*x + x2).filter(|x| x * scale <= max_width).map(|r| {
+					*x += adv;
 					(r, i)
 				})
 			})
 			.fuse()
 			.last()
-			.map_or(((0., 0.), 0), |((x, g), i)| ((x + g.coord.z(), 1.).mul(scale), i));
-		let i = text[i..].char_indices().nth(1).map_or(text.len(), |(l, _)| i + l);
-		(size, (&text[..i], &text[i..]))
+			.map(|(x, i)| (x, i + line[i..].utf8_slice(..1).len()))
+			.unwrap_or_default();
+
+		((x * scale, scale), line.split_at(i))
 	}
-	pub fn adv_at(text: &str, font: &Font, scale: f32, at_glyph: usize) -> f32 {
-		text.chars()
+	pub fn adv_at(line: &str, f: &Font, scale: f32, at_glyph: usize) -> f32 {
+		line.chars()
 			.take(at_glyph)
-			.scan((0., 0 as char), |(x, last_c), c| {
-				*x += font.kern(*last_c, c);
-				*last_c = c;
-				let g = font.glyph(c)?;
-				Some(*x).map(|r| {
-					*x += g.adv;
-					r
-				})
+			.scan((0., None), |(x, last_c), c| {
+				let (adv, _) = f.adv_coord(last_c, c);
+				(*x, *last_c) = (*x + adv, Some(c));
+				Some(*x)
 			})
 			.last()
 			.map_or(0., |x| x * scale)
 	}
-	pub fn char_at(text: &str, font: &Font, scale: f32, at_glyph: usize) -> Glyph {
-		text.chars()
-			.take(at_glyph + 1)
-			.last()
-			.and_then(|c| font.glyph(c))
-			.map(|&Glyph { adv, coord, uv }| {
-				let coord = coord.mul(scale);
-				Glyph { adv: adv * scale, coord, uv }
-			})
-			.unwrap_or_default()
-	}
-	fn size_and_len(text: &'a str, font: &Font, scale: f32) -> (Vec2, u32) {
-		let (len, size) = text
+	fn size_and_len(line: &str, f: &Font, scale: f32) -> (Vec2, u32) {
+		let (len, size) = line
 			.chars()
-			.scan((-0.5 * first_glyph(font, text).x(), 0 as char), |(x, last_c), c| {
-				*x += font.kern(*last_c, c);
-				*last_c = c;
-				let g = font.glyph(c)?;
-				let p = (*x, g);
-				*x += g.adv;
-				Some(p)
+			.scan((0., None), |(x, last_c), c| {
+				let (adv, (_, _, x2, _)) = f.adv_coord(last_c, c);
+				let x2 = *x + x2;
+				(*x, *last_c) = (*x + adv, Some(c));
+				Some(x2)
 			})
 			.enumerate()
 			.last()
-			.map(|(n, (x, g))| (n + 1, (x + g.coord.z(), 1.).mul(scale)))
-			.unwrap_or_default();
+			.map(|(n, x2)| (n + 1, (x2, 1.).mul(scale)))
+			.unwrap_or((0, (0., scale)));
 		(size, u32(len))
 	}
 	pub fn compare(&self, crop: &Geom, r: &TextImpl) -> State {
-		let &Self { pos, scale, color, text, font } = self;
-		let text = *text != *r.text;
-		let xyzw = (State::XYZW | State::UV).or_def(pos != r.base.pos || scale != r.scale || *crop != r.base.crop || text);
+		let Self { pos, scale, color, text, font } = *self;
+		let line = *text != *r.line;
+		let xyzw = (State::XYZW | State::UV).or_def(pos != r.base.pos || scale != r.scale || *crop != r.base.crop || line);
 		let rgba = State::RGBA.or_def(color != r.base.color);
-		let ord = State::MISMATCH.or_def(text && !ptr::eq(font, r.font));
+		let ord = State::MISMATCH.or_def(line || !ptr::eq(font, r.font));
 		ord | xyzw | rgba
 	}
 	pub fn obj(self, crop: Geom) -> TextImpl {
@@ -88,7 +74,7 @@ impl<'a> Text<'_, 'a> {
 			base: Base { pos, size, crop, color },
 			scale,
 			len,
-			text: text.into(),
+			line: text.into(),
 			font,
 		}
 	}
@@ -98,7 +84,7 @@ pub struct TextImpl {
 	base: Base,
 	scale: f32,
 	len: u32,
-	text: Str,
+	line: Str,
 	font: *const Font,
 }
 impl TextImpl {
@@ -110,38 +96,35 @@ impl Primitive for TextImpl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, to_clip: Vec2, BatchedObj { z, state, mut xyzw, mut rgba, mut uv }: BatchedObj) {
-		if self.text.is_empty() {
+	fn write_mesh(&self, aspect: Vec2, BatchedObj { z, state, mut xyzw, mut rgba, mut uv }: BatchedObj) {
+		if self.line.is_empty() {
 			return;
 		}
 
-		let &Self {
+		let Self {
 			base: Base { pos, color, crop: (p1, p2), .. },
 			scale,
 			len,
-			ref text,
+			ref line,
 			font,
-		} = self;
+		} = *self;
 
 		if state.contains(State::XYZW) {
 			let font = unsafe { &*font };
 
-			let (mut x, mut last_c) = (-0.5 * first_glyph(font, text).x(), 0 as char);
-			for c in text.chars() {
-				x += font.kern(last_c, c);
-				last_c = c;
-
-				let Some(&Glyph { coord: (x1, y1, x2, y2), uv: u, adv }) = font.glyph(c) else {
-					continue;
-				};
+			let (mut x, mut last_c) = (0., None);
+			for c in line.chars() {
+				let (adv, (x1, y1, x2, y2), u) = font.adv_coord_uv(&last_c, c);
+				let is_empty = y1 == y2;
+				last_c = Some(c);
 
 				let ((x1, y1), (x2, y2), (u1, v1, u2, v2)) = <_>::to({
 					let xy1 = pos.sum((x + x1, y1).mul(scale));
 					let xy2 = pos.sum((x + x2, y2).mul(scale));
 					let uv = bound_uv((p1, p2), (xy1, xy2), u);
-					let xy1 = xy1.clmp(p1, p2).mul(to_clip);
-					let xy2 = xy2.clmp(p1, p2).mul(to_clip);
-					(xy1, xy2, uv)
+					let xy1 = xy1.clmp(p1, p2).mul(aspect);
+					let xy2 = xy2.clmp(p1, p2).mul(aspect);
+					(xy1, xy2, uv).or_def(!is_empty)
 				});
 				let O = f16::ZERO;
 
@@ -155,7 +138,7 @@ impl Primitive for TextImpl {
 		}
 
 		if state.contains(State::RGBA) {
-			let (r, g, b, a) = vec4::to(color.mul(255).clmp(0, 255).round());
+			let (r, g, b, a) = vec4(color.mul(255).clmp(0, 255).round());
 			let col = &[r, g, b, a];
 
 			for _ in 0..4 * len {
@@ -164,11 +147,11 @@ impl Primitive for TextImpl {
 			}
 		}
 	}
-	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
+	fn batch_draw(&self, b: &VaoBind<u16>, (offset, num): (u16, u16)) {
 		let s = LeakyStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui_sdftext]) });
 
 		let t = unsafe { &*self.font }.tex().Bind(sampler());
-		let _ = Uniforms!(s, ("tex", t));
+		let _ = Uniforms!(s, ("iTex", t));
 		b.Draw((num, offset, gl::TRIANGLES));
 	}
 
@@ -177,36 +160,25 @@ impl Primitive for TextImpl {
 	}
 }
 
-fn first_glyph<'a>(f: &'a Font, text: &str) -> Vec4 {
-	f.glyph(text.chars().next().unwrap_or(' ')).map(|g| g.coord).unwrap_or_default()
-}
-
 SHADER!(
 	ps_gui_sdftext,
 	r"in vec4 glColor;
 	in vec2 glUV;
 	layout(location = 0) out vec4 glFragColor;
-	uniform sampler2D tex;
+	uniform sampler2D iTex;
 
 	void main() {
-		vec2 sz = vec2(textureSize(tex, 0));
+		vec2 dx = vec2(.33333333 * dFdxFine(glUV.x), 0);
+		float sz = textureSize(iTex, 0).x;
+		float dsdf = sz * dx.x * .2;
 
-		float dx = dFdx(glUV.x) * sz.x;
-		float dy = dFdy(glUV.y) * sz.y;
+		float l = texture(iTex, glUV - dx).r;
+		float c = texture(iTex, glUV).r;
+		float r = texture(iTex, glUV + dx).r;
 
-		float toPixels = 10. * inversesqrt(dx * dx + dy * dy);
+		vec3 p = smoothstep(vec3(.5 - dsdf), vec3(.5 + dsdf), vec3(l, c, r)) * 2;
 
-		vec2 step = vec2(dFdx(glUV.x) * .5, 0);
-
-		float l = texture(tex, glUV - step).r;
-		float c = texture(tex, glUV).r;
-		float r = texture(tex, glUV + step).r;
-		float n = texture(tex, glUV + step * 2).r;
-
-		vec4 p = clamp((vec4(l, c, r, n) - .5) * toPixels + 1, vec4(0), vec4(1));
-
-		vec4 correction = vec4(p.x, p.z, p.a, (p.x + p.y + p.z) / 3);
-
+		vec4 correction = vec4(p.rgbg);
 		glFragColor = glColor * correction;
 	}"
 );

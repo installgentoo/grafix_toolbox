@@ -1,5 +1,4 @@
-use super::{state::*, tex_state::*, universion::*};
-use crate::lib::*;
+use super::{state::*, tex_state::*, universion::*, *};
 
 macro_rules! m_STATE {
 	() => {
@@ -16,7 +15,8 @@ pub trait Buffer: TrivialBound + State {
 	const TYPE: GLenum;
 }
 
-derive_common_VAL! { pub struct Attribute; }
+#[derive_as_trivial]
+pub struct Attribute;
 impl State for Attribute {
 	m_STATE!();
 }
@@ -24,7 +24,8 @@ impl Buffer for Attribute {
 	const TYPE: GLenum = gl::ARRAY_BUFFER;
 }
 
-derive_common_VAL! { pub struct Index; }
+#[derive_as_trivial]
+pub struct Index;
 impl State for Index {
 	m_STATE!();
 }
@@ -37,7 +38,8 @@ pub trait ShdBuffType: Buffer {
 	fn max_size() -> usize;
 }
 
-derive_common_VAL! { pub struct Uniform; }
+#[derive_as_trivial]
+pub struct Uniform;
 impl State for Uniform {
 	m_STATE!();
 }
@@ -45,7 +47,8 @@ impl Buffer for Uniform {
 	const TYPE: GLenum = gl::UNIFORM_BUFFER;
 }
 
-derive_common_VAL! { pub struct ShdStorage; }
+#[derive_as_trivial]
+pub struct ShdStorage;
 impl State for ShdStorage {
 	m_STATE!();
 }
@@ -55,118 +58,118 @@ impl Buffer for ShdStorage {
 
 macro_rules! impl_shd {
 	($n: ident, $t: ident) => {
-		#[derive(Default, Debug)]
+		#[derive(Debug)]
 		pub struct $n;
 		impl State for $n {
 			m_STATE!();
-			unsafe fn gen(obj: &mut u32) {
-				*obj = gl::CreateShader(gl::$t);
+			fn new(obj: &mut u32) {
+				*obj = unsafe { gl::CreateShader(gl::$t) }
 			}
-			unsafe fn del(obj: &mut u32) {
-				gl::DeleteShader(*obj);
+			fn del(obj: u32) {
+				drop_in_gl(move || unsafe { gl::DeleteShader(obj) });
 			}
 		}
 	};
 }
-impl_shd!(ShaderVert, VERTEX_SHADER);
-impl_shd!(ShaderPix, FRAGMENT_SHADER);
-impl_shd!(ShaderGeom, GEOMETRY_SHADER);
-impl_shd!(ShaderComp, COMPUTE_SHADER);
-impl_shd!(ShaderTCtrl, TESS_CONTROL_SHADER);
-impl_shd!(ShaderTEval, TESS_EVALUATION_SHADER);
+impl_shd!(ShdVertT, VERTEX_SHADER);
+impl_shd!(ShdPixT, FRAGMENT_SHADER);
+impl_shd!(ShdGeomT, GEOMETRY_SHADER);
+impl_shd!(ShdCompT, COMPUTE_SHADER);
+impl_shd!(ShdCtrlT, TESS_CONTROL_SHADER);
+impl_shd!(ShdEvalT, TESS_EVALUATION_SHADER);
 
-#[derive(Default, Debug)]
-pub struct ShaderProg;
-impl State for ShaderProg {
+#[derive(Debug)]
+pub struct ShaderT;
+impl State for ShaderT {
 	m_STATE!();
-	unsafe fn bind(obj: u32) {
-		gl::UseProgram(obj);
+	fn bind(obj: u32) {
+		unsafe { gl::UseProgram(obj) }
 	}
-	unsafe fn gen(obj: &mut u32) {
-		*obj = gl::CreateProgram();
+	fn new(obj: &mut u32) {
+		*obj = unsafe { gl::CreateProgram() }
 	}
-	unsafe fn del(obj: &mut u32) {
-		gl::DeleteProgram(*obj);
+	fn del(obj: u32) {
+		drop_in_gl(move || unsafe { gl::DeleteProgram(obj) });
 	}
 }
 
-#[derive(Default, Debug)]
-pub struct VertArrObj;
-impl State for VertArrObj {
+#[derive(Debug)]
+pub struct VertArrT(Dummy<*const ()>);
+impl State for VertArrT {
 	m_STATE!();
-	unsafe fn bind(obj: u32) {
-		gl::BindVertexArray(obj);
+	fn bind(obj: u32) {
+		unsafe { gl::BindVertexArray(obj) }
 	}
-	unsafe fn gen(obj: &mut u32) {
+	fn new(obj: &mut u32) {
 		glCreateVao(obj);
 	}
-	unsafe fn del(obj: &mut u32) {
-		gl::DeleteVertexArrays(1, obj);
+	fn del(obj: u32) {
+		GL!(gl::DeleteVertexArrays(1, &obj));
 	}
 }
 
-#[derive(Default, Debug)]
-pub struct Query;
-impl State for Query {
+#[derive(Debug)]
+pub struct QueryT(Dummy<*const ()>);
+impl State for QueryT {
 	m_STATE!();
-	unsafe fn gen(obj: &mut u32) {
-		gl::GenQueries(1, obj);
+	fn new(obj: &mut u32) {
+		unsafe { gl::GenQueries(1, obj) }
 	}
-	unsafe fn del(obj: &mut u32) {
-		gl::DeleteQueries(1, obj);
+	fn del(obj: u32) {
+		GL!(gl::DeleteQueries(1, &obj));
 	}
 }
 
-#[derive(Default, Debug)]
-pub struct Framebuff;
-impl State for Framebuff {
+#[derive(Debug)]
+pub struct FramebuffT(Dummy<*const ()>);
+impl State for FramebuffT {
 	m_STATE!();
-	unsafe fn bind(obj: u32) {
-		gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, obj);
+	fn bind(obj: u32) {
+		unsafe { gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, obj) }
 	}
-	unsafe fn gen(obj: &mut u32) {
+	fn new(obj: &mut u32) {
 		glCreateFramebuff(obj);
 	}
-	unsafe fn del(obj: &mut u32) {
-		gl::DeleteFramebuffers(1, obj);
+	fn del(obj: u32) {
+		GL!(gl::DeleteFramebuffers(1, &obj));
 	}
 }
 
-#[derive(Default, Debug)]
-pub struct Renderbuff;
-impl State for Renderbuff {
+#[derive(Debug)]
+pub struct RenderbuffT;
+impl State for RenderbuffT {
 	m_STATE!();
-	unsafe fn gen(obj: &mut u32) {
+	fn new(obj: &mut u32) {
 		glCreateRenderbuff(obj);
 	}
-	unsafe fn del(obj: &mut u32) {
-		gl::DeleteRenderbuffers(1, obj);
+	fn del(obj: u32) {
+		drop_in_gl(move || unsafe { gl::DeleteRenderbuffers(1, &obj) });
 	}
 }
 
-#[derive(Default, Debug)]
-pub struct SamplObj;
-impl State for SamplObj {
+#[derive(Debug)]
+pub struct SamplerT;
+impl State for SamplerT {
 	m_STATE!();
-	unsafe fn gen(obj: &mut u32) {
-		gl::GenSamplers(1, obj);
+	fn new(obj: &mut u32) {
+		unsafe { gl::GenSamplers(1, obj) }
 	}
-	unsafe fn del(obj: &mut u32) {
-		TexState::drop_samp(*obj);
-		gl::DeleteSamplers(1, obj);
+	fn del(obj: u32) {
+		TexState::drop_samp(obj);
+		drop_in_gl(move || unsafe { gl::DeleteSamplers(1, &obj) });
 	}
 }
 
-#[derive(Default, Debug)]
-pub struct Texture<T>(Dummy<T>);
-impl<T: TexType> State for Texture<T> {
+#[derive(Debug)]
+pub struct TextureT<T>(Dummy<T>);
+impl<T: TexType> State for TextureT<T> {
 	m_STATE!();
-	unsafe fn gen(obj: &mut u32) {
+	fn new(obj: &mut u32) {
 		glCreateTexture(T::TYPE, obj);
 	}
-	unsafe fn del(obj: &mut u32) {
-		TexState::drop_tex(*obj);
-		glDeleteTexture(obj);
+	fn del(obj: u32) {
+		TexState::drop_tex(obj);
+		drop_in_gl(move || glDeleteTexture(&obj));
 	}
 }
 pub trait TexType: TrivialBound {

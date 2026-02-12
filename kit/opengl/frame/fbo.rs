@@ -6,8 +6,7 @@ pub struct Fbo<S, F> {
 }
 impl<S: TexSize, F: TexFmt> Fbo<S, F> {
 	pub fn new(args: impl FboArgs) -> Self {
-		let (w, h) = args.get();
-		let tex = Tex2d::<S, F>::new_empty((w, h), 1);
+		let tex = Tex2d::<S, F>::new_empty(args.get(), 1);
 		let fb = Framebuffer::new().attach((&tex, gl::COLOR_ATTACHMENT0));
 		Self { fb, tex }
 	}
@@ -17,10 +16,9 @@ impl<S: TexSize, F: TexFmt> Frame for Fbo<S, F> {
 		self.fb.Clear(gl::COLOR, args);
 	}
 	fn size(&self) -> uVec2 {
-		let TexParam { w, h, .. } = self.tex.param;
-		uVec2((w, h))
+		vec2(self.tex.whdl().xy())
 	}
-	fn bind(&self) -> Binding<Framebuff> {
+	fn bind(&self) -> Bind<FramebuffT> {
 		self.fb.Bind(&self.tex)
 	}
 }
@@ -46,6 +44,6 @@ where
 	i32: Cast<W> + Cast<H>,
 {
 	fn get(self) -> iVec2 {
-		iVec2(self)
+		vec2(self)
 	}
 }

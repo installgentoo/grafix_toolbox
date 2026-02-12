@@ -57,8 +57,8 @@ impl<T: Rangeable> IterArgs2d<T> for R<T> {
 		(self.clone(), self)
 	}
 }
-impl<T: Rangeable> IterArgs2d<T> for T {
-	fn get(self) -> Args2d<T> {
+impl<S: Rangeable> IterArgs2d<S> for S {
+	fn get(self) -> Args2d<S> {
 		(Def()..self, Def()..self)
 	}
 }
@@ -82,8 +82,8 @@ impl<T: Rangeable> IterArgs3d<T> for R<T> {
 		(self.clone(), self.clone(), self)
 	}
 }
-impl<T: Rangeable> IterArgs3d<T> for T {
-	fn get(self) -> Args3d<T> {
+impl<S: Rangeable> IterArgs3d<S> for S {
+	fn get(self) -> Args3d<S> {
 		(Def()..self, Def()..self, Def()..self)
 	}
 }

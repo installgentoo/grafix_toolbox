@@ -1,3 +1,18 @@
+#[macro_export]
+macro_rules! ID {
+	($n: expr) => {{
+		const ID: u32 = chksum::const_fnv1($n.as_bytes());
+		ASSERT!(LazyStatic!(std::collections::HashMap<u32, String>).entry(ID).or_insert($n.into()) == $n, "ID collision {:?}", $n);
+		ID
+	}};
+}
+
+pub fn ref_UUID<T>(s: &T) -> usize {
+	let t = (const_fnv1(std::any::type_name::<T>().as_bytes()) as usize) << 32;
+	let p = &raw const *s as usize;
+	p ^ t
+}
+
 pub const fn const_crc32(s: &[u8]) -> u32 {
 	let (mut i, mut crc) = (0, 0xffffffff);
 	while i < s.len() {
@@ -32,21 +47,6 @@ pub const fn const_fnv1_u32(s: &[u32]) -> u32 {
 		i += 1;
 	}
 	fnv
-}
-
-pub fn ref_UUID<T>(s: &T) -> usize {
-	let t = (const_fnv1(std::any::type_name::<T>().as_bytes()) as usize) << 32;
-	let p = &raw const *s as usize;
-	p ^ t
-}
-
-#[macro_export]
-macro_rules! ID {
-	($n: expr) => {{
-		const ID: u32 = chksum::const_fnv1($n.as_bytes());
-		ASSERT!(LazyStatic!(std::collections::HashMap<u32, String>).entry(ID).or_insert($n.into()) == $n, "Collision at {}", $n);
-		ID
-	}};
 }
 
 const CRC32_TABLE: [u32; 256] = [

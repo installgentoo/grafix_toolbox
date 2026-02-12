@@ -1,31 +1,45 @@
-use crate::stdlib::*;
+use crate::lib::*;
 
+#[derive_as_ser]
 pub struct Cached<T> {
 	val: T,
-	changed: bool,
+	#[cfg_attr(feature = "adv_fs", serde(skip))]
+	old: Cell<Option<T>>,
+	same: Cell<bool>,
 }
-impl<T> Cached<T> {
-	pub fn get(&self) -> &T {
-		&self.val
+impl<T: Clone + PartialEq> Cached<T> {
+	#[allow(clippy::should_implement_trait)]
+	pub fn clone(&self) -> T {
+		let _ = self.changed();
+		(&self.old).bind().as_valid().clone()
 	}
-	pub fn new(v: impl Into<T>) -> Self {
-		Self { val: v.into(), changed: true }
+	#[must_use]
+	pub fn changed(&self) -> bool {
+		if *(&self.same).bind() || self.check(true) {
+			return false;
+		}
+		true
 	}
-	pub fn replace(self, v: impl Into<T>) -> Self {
-		Self { val: v.into(), changed: true }
+	pub fn accessed(&self) -> bool {
+		if *(&self.same).bind() || self.check(false) {
+			self.same.set(true);
+			return false;
+		}
+		true
 	}
-	pub fn changed(&mut self) -> bool {
-		mem::replace(&mut self.changed, false)
+	fn check(&self, flush: bool) -> bool {
+		let Self { val, old, same } = self;
+		let eq = old.bind().as_ref().map(|o| o == val).unwrap_or(false);
+		if !eq && flush {
+			old.set(val.clone().into());
+			same.set(true);
+		}
+		eq
 	}
 }
 impl<T> AsRef<T> for Cached<T> {
 	fn as_ref(&self) -> &T {
-		&self.val
-	}
-}
-impl<T> Borrow<T> for Cached<T> {
-	fn borrow(&self) -> &T {
-		&self.val
+		self
 	}
 }
 impl<T> ops::Deref for Cached<T> {
@@ -35,24 +49,37 @@ impl<T> ops::Deref for Cached<T> {
 		&self.val
 	}
 }
+impl<T> ops::DerefMut for Cached<T> {
+	fn deref_mut(&mut self) -> &mut T {
+		let Self { val, same, .. } = self;
+		same.set(false);
+		val
+	}
+}
 impl<T: Default> Default for Cached<T> {
 	fn default() -> Self {
-		Self { val: T::default(), changed: true }
+		let (val, old) = Def();
+		Self { val, old: Some(old).into(), same: true.into() }
 	}
 }
-impl<T: Clone> Clone for Cached<T> {
-	fn clone(&self) -> Self {
-		Self { val: self.val.clone(), changed: true }
+impl<T: Debug> Debug for Cached<T> {
+	fn fmt(&self, f: &mut Formatter) -> fmtRes {
+		if *(&self.same).bind() {
+			self.val.fmt(f)
+		} else {
+			write!(f, "{:?}|{:?}", self.val, (&self.old).bind())
+		}
 	}
 }
-impl<T: fmt::Debug> fmt::Debug for Cached<T> {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "{:?}", self.val)
+impl<T: Display> Display for Cached<T> {
+	fn fmt(&self, f: &mut Formatter) -> fmtRes {
+		self.val.fmt(f)
 	}
 }
-impl<T: fmt::Display> fmt::Display for Cached<T> {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "{}", self.val)
+impl<T> From<T> for Cached<T> {
+	fn from(val: T) -> Self {
+		let (same, old) = Def();
+		Self { val, same, old }
 	}
 }
 impl<T: Eq> Eq for Cached<T> {}
@@ -61,20 +88,9 @@ impl<T: PartialEq> PartialEq for Cached<T> {
 		self.val == r.val
 	}
 }
-
-#[cfg(feature = "adv_fs")]
-mod serde {
-	use {super::*, crate::ser::*};
-
-	impl<T: Serialize> Serialize for Cached<T> {
-		fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-			self.val.serialize(s)
-		}
-	}
-	impl<'de, T: Deserialize<'de>> Deserialize<'de> for Cached<T> {
-		fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-			let val = T::deserialize(d)?;
-			Ok(Self { val, changed: true })
-		}
+impl<T: PartialEq> PartialEq<T> for Cached<T> {
+	fn eq(&self, r: &T) -> bool {
+		&self.val == r
 	}
 }
+unsafe impl<T: Send> Send for Cached<T> {}

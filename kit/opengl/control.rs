@@ -13,7 +13,7 @@ macro_rules! GL {
 #[macro_export]
 macro_rules! GL {
 	($fun: expr) => {{
-		ASSERT!($crate::GL::macro_uses::gl_was_initialized(false), "Opengl wasn't initialized on this thread");
+		ASSERT!(*$crate::GL::macro_uses::gl_was_initialized(), "Opengl wasn't initialized on this thread");
 
 		fn code_to_error(code: gl::types::GLenum) -> String {
 			match code {
@@ -45,12 +45,28 @@ pub mod consts;
 #[macro_use]
 pub mod funcs;
 
-pub mod object;
+pub mod obj;
 pub mod policy;
 pub mod state;
 pub mod tex_state;
 pub mod uniform_state;
 
-pub fn gl_was_initialized(set: bool) -> bool {
-	*LocalStatic!(bool, { set })
+pub fn gl_was_initialized() -> &'static mut bool {
+	LocalStatic!(bool, { false })
 }
+
+fn drop_in_gl(f: impl FnOnce() + SendS) {
+	if *gl_was_initialized() {
+		return GL!(f());
+	}
+
+	task::GLRuntime()
+		.spawn(async || {
+			task::sleep_ms(16).await;
+			task::yield_now().await;
+			GL!(f())
+		})
+		.detach();
+}
+
+use crate::lib::*;

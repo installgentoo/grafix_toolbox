@@ -1,14 +1,26 @@
+macro_rules! impl_func_gen_cast {
+	($($t: ident),+) => {
+		$(#[inline(always)]
+		pub fn $t<T, A>(v: A) -> $t<T>
+		where
+			$t<T>: Cast<A>,
+		{
+			$t::<T>::to(v)
+		})+
+	}
+}
 macro_rules! impl_func_cast {
 	($($t: ident),+) => {
-		$(pub fn $t<T>(v: T) -> $t
+		$(#[inline(always)]
+		pub fn $t<A>(v: A) -> $t
 		where
-			$t: Cast<T>,
+			$t: Cast<A>,
 		{
 			$t::to(v)
 		})+
-	};
+	}
 }
-macro_rules! def_vec {
+macro_rules! impl_vec {
 	($n2: ident, $n3: ident, $n4: ident, $t: ty) => {
 		pub type $n2 = vec2<$t>;
 		pub type $n3 = vec3<$t>;
@@ -18,20 +30,26 @@ macro_rules! def_vec {
 }
 
 pub mod pre {
-	pub use super::cast::{f16, Cast};
-	impl_func_cast!(u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, f16, f32, f64, usize, isize);
+	pub fn intersects<T: PartialOrd>((p1, p2): vec2<vec2<T>>, (rp1, rp2): vec2<vec2<T>>) -> bool {
+		!(p2.0 <= rp1.0 || p2.1 <= rp1.1 || p1.0 >= rp2.0 || p1.1 >= rp2.1)
+	}
+	pub fn contains<T: PartialOrd>((p1, p2): vec2<vec2<T>>, (rp1, rp2): vec2<vec2<T>>) -> bool {
+		!(rp1.0 < p1.0 || rp1.1 < p1.1 || rp2.0 > p2.0 || rp2.1 > p2.1)
+	}
 
-	def_vec!(hVec2, hVec3, hVec4, f16);
-	def_vec!(Vec2, Vec3, Vec4, f32);
-	def_vec!(dVec2, dVec3, dVec4, f64);
-	def_vec!(ibVec2, ibVec3, ibVec4, i8);
-	def_vec!(ubVec2, ubVec3, ubVec4, u8);
-	def_vec!(isVec2, isVec3, isVec4, i16);
-	def_vec!(usVec2, usVec3, usVec4, u16);
-	def_vec!(iVec2, iVec3, iVec4, i32);
-	def_vec!(uVec2, uVec3, uVec4, u32);
-	def_vec!(ilVec2, ilVec3, ilVec4, isize);
-	def_vec!(ulVec2, ulVec3, ulVec4, usize);
+	pub use super::cast::{Cast, f16};
+	impl_func_cast!(u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, f16, f32, f64, usize, isize);
+	impl_func_gen_cast!(vec2, vec3, vec4, mat2, mat3, mat4);
+
+	impl_vec!(hVec2, hVec3, hVec4, f16);
+	impl_vec!(Vec2, Vec3, Vec4, f32);
+	impl_vec!(dVec2, dVec3, dVec4, f64);
+	impl_vec!(isVec2, isVec3, isVec4, i16);
+	impl_vec!(usVec2, usVec3, usVec4, u16);
+	impl_vec!(iVec2, iVec3, iVec4, i32);
+	impl_vec!(uVec2, uVec3, uVec4, u32);
+	impl_vec!(ilVec2, ilVec3, ilVec4, isize);
+	impl_vec!(ulVec2, ulVec3, ulVec4, usize);
 
 	pub type Mat2 = mat2<f32>;
 	pub type Mat3 = mat3<f32>;

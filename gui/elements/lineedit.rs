@@ -1,100 +1,88 @@
-use super::*;
+use super::{util::caret as ca, *};
 
 #[derive(Default, Debug)]
 pub struct LineEdit {
 	offset: Vec2,
 	size: Vec2,
 	scale: f32,
-	caret: usize,
+	caret: isize,
+	pub editing: bool,
 	pub text: CachedStr,
 }
 impl LineEdit {
-	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, Surface { pos, size }: Surface, filter: Option<&'l HashSet<char>>) {
+	pub fn edited(&self, r: &RenderLock) -> vec2<bool> {
+		let editing = r.focused(ref_UUID(self));
+		let r @ (_edit_started, _edited) = (!self.editing && editing, !editing && self.editing);
+		r
+	}
+	pub fn draw<'s: 'l, 'l>(&'s mut self, r: &mut RenderLock<'l>, t: &'l Theme, layout @ Surf { pos, size }: Surf, filter: Option<&'l HashSet<char>>) -> Option<&'l str> {
 		let CUR_PAD = 0.01;
-		let id = ref_UUID(self);
-		let s = self;
+		let (id, s, font) = (ref_UUID(self), self, &t.font);
 
 		if s.text.changed() || s.size != size {
-			let (offset, scale) = util::fit_text(&s.text, t, size);
-
-			s.offset = offset;
-			s.size = size;
-			s.scale = scale;
+			((s.offset, s.scale), s.size) = (u::fit_line(&s.text, font, t.font_size, size), size);
 		}
+		let Self {
+			offset, scale, ref mut caret, ref mut editing, ref mut text, ..
+		} = *s;
 
 		r.draw(Rect { pos, size, color: t.bg });
 
-		let &mut LineEdit { offset, scale, ref mut caret, ref mut text, .. } = s;
-
-		if r.focused(id) {
-			let x = util::caret_x(text, t, scale, *caret, CUR_PAD);
-			r.draw(Rect {
-				pos: offset.sum(pos).sum((x, 0.)),
-				size: (CUR_PAD, scale),
-				color: t.highlight,
-			});
+		let (te @ Surf { pos, .. }, focused) = (layout.xy(offset), r.focused(id));
+		if focused {
+			let x = ca::adv(text, font, scale, (*caret, 0), CUR_PAD);
+			let Surf { pos, size } = te.x(x).size((CUR_PAD, scale));
+			r.draw(Rect { pos, size, color: t.highlight });
 		}
 
-		r.draw(Text {
-			pos: offset.sum(pos),
-			color: t.text,
-			scale,
-			text,
-			font: &t.font,
-		});
-		r.logic(
-			(pos, pos.sum(size)),
-			move |e, focused, mouse_pos| {
-				let mut t_text = typed_ptr!(text);
-				let clamp = |c, o| util::move_caret(&[(text as &str)], (c, 0), (o, 0), true).0;
-				let click = || util::caret_to_cursor(&[(text as &str)], (0., 0.), t, scale, (pos.x() + offset.x(), 0.), mouse_pos).0;
-				let idx = |o| {
-					let (pos, o) = ilVec2((*caret, o));
-					(text as &str).len_at_char(usize((pos + o).max(0)))
-				};
-				let text = t_text.get_mut();
+		r.draw(Text { pos, color: t.text, scale, text, font });
 
+		let (text, edited) = (Cell::from_mut(text), !focused && *editing);
+		*editing = focused;
+		r.logic(
+			layout,
+			move |e, focused, mouse_pos| {
+				let clamp = |o| ca::set(text.bind(), (*caret + o, 0), (0, 0)).0;
+				let click = |p: Vec2| ca::at_pos(text.bind(), font, scale, 0, p.sub(pos)).0;
+				let idx = |o| ca::idx(text.bind(), (*caret, 0), (o, 0));
 				match *e {
-					OfferFocus => return Accept,
-					MouseButton { state, .. } if state.pressed() => *caret = click(),
-					Keyboard { key, state } if focused && state.pressed() => match key {
-						Key::Enter | Key::Escape if focused => return DropFocus,
-						Key::Right => *caret = clamp(*caret, if state.ctrl() { 10 } else { 1 }),
-						Key::Left => *caret = clamp(*caret, -if state.ctrl() { 10 } else { 1 }),
-						Key::Delete if idx(-1) < text.len() => {
+					OfferFocus => (),
+					MouseButton { m, .. } if m.pressed() => *caret = click(mouse_pos),
+					Keyboard { key, m } if focused && m.pressed() => match key {
+						Key::Right => *caret = u::if_ctrl(m, 10, 1).pipe(clamp),
+						Key::Left => *caret = u::if_ctrl(m, -10, -1).pipe(clamp),
+						Key::Delete if idx(0) < text.bind().len() => {
+							let i = idx(0);
+							text.mutate(|t| t.str().remove(i));
+						}
+						Key::Backspace if idx(0) > 0 => {
 							let i = idx(-1);
-							text.str().remove(i);
+							*caret = clamp(-1);
+							text.mutate(|t| t.str().remove(i));
 						}
-						Key::Backspace if idx(-1) > 0 && idx(-2) < text.len() => {
-							let i = idx(-2);
-							*caret = clamp(*caret, -1);
-							text.str().remove(i);
-						}
-						_ => (),
+						Key::Return | Key::Escape => return DropFocus,
+						_ => return Pass,
 					},
 					Char { ch } if focused => {
 						let filter = filter.map(|f| f.get(&ch).is_some()).unwrap_or(true);
 						if filter {
-							let i = idx(-1);
-							text.str().insert(i, ch);
-							*caret = clamp(*caret, 1);
+							let i = idx(0);
+							text.mutate(|t| t.str().insert(i, ch));
+							*caret += 1;
 						}
 					}
-					_ => (),
+					_ => return Pass,
 				}
-				if focused {
-					Accept
-				} else {
-					Reject
-				}
+				Accept
 			},
 			id,
 		);
+		None.or_val(!edited, || Some(unsafe { &**text.as_ptr() }))
 	}
 }
 
 impl<'s: 'l, 'l> Lock::LineEdit<'s, 'l, '_> {
-	pub fn draw(self, g: impl Into<Surface>) {
+	pub fn draw(self, g: impl Into<Surf>) -> Option<&'l str> {
 		let Self { s, r, t } = self;
 		s.draw(r, t, g.into(), None)
 	}

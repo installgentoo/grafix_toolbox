@@ -71,16 +71,16 @@ impl Batch {
 	pub fn redraw(&mut self, aspect: Vec2, cache: &[PrimCache]) -> (u32, State) {
 		let Self { xyzw, rgba, uv, objs, .. } = self;
 
-		let (len, mut state) = objs.iter_mut().fold((0, State::empty()), |(start, flush), Obj { idx, size }| {
-			let &PrimCache { state, ref o } = cache.at(*idx);
-			let (obj, idx) = (o.obj(), *idx);
+		let (len, mut state) = objs.iter_mut().fold((0, State::empty()), |(start, flush), obj @ &mut Obj { idx, size }| {
+			let &PrimCache { state, ref o } = cache.at(idx);
+			let o = o.obj();
 
 			let (new_size, state) = (|| {
 				if (state ^ State::BATCH_RESIZED).is_empty() {
-					return (*size, state);
+					return (size, state);
 				}
 
-				let new_size = obj.vert_count();
+				let new_size = o.vert_count();
 
 				let state = (|| {
 					if state.contains(State::MISMATCH) {
@@ -91,17 +91,17 @@ impl Batch {
 						return State::MISMATCH;
 					}
 
-					if new_size > *size {
+					if new_size > size {
 						let O = f16::ZERO;
-						let (at, s) = ulVec2((start, new_size - *size));
+						let (at, s) = ulVec2((start, new_size - size));
 						xyzw.splice(at * 4..at * 4, vec![O; s * 4]);
 						rgba.splice(at * 4..at * 4, vec![0; s * 4]);
 						uv.splice(at * 2..at * 2, vec![O; s * 2]);
 						return State::FULL | State::BATCH_RESIZED;
 					}
 
-					if new_size < *size {
-						let (from, to) = ulVec2((start + new_size, start + *size));
+					if new_size < size {
+						let (from, to) = ulVec2((start + new_size, start + size));
 						xyzw.drain(from * 4..to * 4);
 						rgba.drain(from * 4..to * 4);
 						uv.drain(from * 2..to * 2);
@@ -112,7 +112,7 @@ impl Batch {
 				})();
 
 				let (z, s) = <(f32, usize)>::to((idx, start));
-				obj.write_mesh(
+				o.write_mesh(
 					aspect,
 					BatchedObj {
 						z: f16(1. - z / 1000.),
@@ -126,7 +126,7 @@ impl Batch {
 				(new_size, state)
 			})();
 
-			*size = new_size;
+			obj.size = new_size;
 
 			(start + new_size, flush | state)
 		});

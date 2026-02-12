@@ -1,18 +1,19 @@
-use crate::lib::*;
+use super::*;
 
 pub trait State {
 	fn bound_obj() -> &'static mut u32;
 	fn tracked_obj() -> &'static mut u32;
-	unsafe fn bind(_: u32) {}
-	unsafe fn gen(obj: &mut u32) {
+	fn bind(_: u32) {}
+	#[allow(clippy::new_ret_no_self)]
+	fn new(obj: &mut u32) {
 		GL::unigl::glCreateBuffer(obj);
 	}
-	unsafe fn del(obj: &mut u32) {
-		gl::DeleteBuffers(1, obj);
+	fn del(obj: u32) {
+		drop_in_gl(move || unsafe { gl::DeleteBuffers(1, &obj) });
 		debug_assert!({
 			Self::crossbindcheck_map().values_mut().for_each(|b| {
 				b.iter_mut().for_each(|o| {
-					if *o == *obj {
+					if *o == obj {
 						*o = 0;
 					}
 				})
@@ -25,13 +26,12 @@ pub trait State {
 	}
 	fn checkcrossbinds(obj: &u32) {
 		debug_assert!({
-			if let Ok(_pos) = Self::crossbindcheck_map()
+			Self::crossbindcheck_map()
 				.get(obj)
-				.unwrap_or_else(|| ASSERT!(false, "No {} buffer bound to GL object {obj}", type_name::<Self>()))
+				.unwrap_or_else(|| ERROR!("No {} buffer bound to GL object {obj}", type_name::<Self>()))
 				.binary_search(&0)
-			{
-				ASSERT!(false, "{} buffer bound to GL object {obj} at position {_pos} was invalidated", type_name::<Self>());
-			}
+				.map(|p| ERROR!("{} buffer bound to GL object {obj} at position {p} was invalidated", type_name::<Self>()))
+				.sink();
 			true
 		});
 	}
@@ -56,7 +56,7 @@ pub trait State {
 	}
 	fn New() -> u32 {
 		let mut obj = 0;
-		GL!(Self::gen(&mut obj));
+		GL!(Self::new(&mut obj));
 		ASSERT!(obj != 0, "GL {} not initilized", type_name::<Self>());
 		DEBUG!("Created GL {} obj {obj}", type_name::<Self>());
 		obj
@@ -70,12 +70,11 @@ pub trait State {
 		}
 	}
 	fn Drop(obj: u32) {
-		ASSERT!(obj != 0, "GL {} zero before drop", type_name::<Self>());
+		ASSERT!(obj != 0, "GL {} double drop", type_name::<Self>());
 		if *Self::bound_obj() == obj {
 			*Self::bound_obj() = 0;
 		}
-		let mut obj = obj;
 		DEBUG!("Deleting GL {} obj {obj}", type_name::<Self>());
-		GL!(Self::del(&mut obj));
+		Self::del(obj);
 	}
 }

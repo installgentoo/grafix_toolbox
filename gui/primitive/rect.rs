@@ -7,10 +7,10 @@ pub struct Rect {
 }
 impl Rect {
 	pub fn compare(&self, crop: &Geom, r: &RectImpl) -> State {
-		let &Self { pos, size, color } = self;
+		let Self { pos, size, color } = *self;
 		let xyzw = State::XYZW.or_def(geom_cmp(pos, size, crop, &r.base));
 		let rgba = State::RGBA.or_def(color != r.base.color);
-		let ord = State::MISMATCH.or_def(!rgba.is_empty() && (!opaque(color) != r.ordered()));
+		let ord = State::MISMATCH.or_def(!rgba.is_empty() && ordered(color) != r.ordered());
 		ord | xyzw | rgba
 	}
 	pub fn obj(self, crop: Geom) -> RectImpl {
@@ -30,11 +30,11 @@ impl Primitive for RectImpl {
 	fn base(&self) -> &Base {
 		&self.base
 	}
-	fn write_mesh(&self, to_clip: Vec2, BatchedObj { z, state, xyzw, rgba, .. }: BatchedObj) {
+	fn write_mesh(&self, aspect: Vec2, BatchedObj { z, state, xyzw, rgba, .. }: BatchedObj) {
 		if state.contains(State::XYZW) {
-			let ((x1, y1), (x2, y2)) = <_>::to({
-				let (to_clip, _crop @ (p1, p2)) = (to_clip, self.base.bound_box());
-				(p1.mul(to_clip), p2.mul(to_clip))
+			let ((x1, y1), (x2, y2)) = mat2({
+				let (p1, p2) = self.base.bound_box();
+				(p1.mul(aspect), p2.mul(aspect))
 			});
 			let O = f16::ZERO;
 
@@ -42,20 +42,20 @@ impl Primitive for RectImpl {
 		}
 
 		if state.contains(State::RGBA) {
-			let (r, g, b, a) = vec4::to(self.base.color.mul(255).clmp(0, 255).round());
+			let (r, g, b, a) = vec4(self.base.color.mul(255).clmp(0, 255).round());
 
 			rgba[..16].copy_from_slice(&[r, g, b, a, r, g, b, a, r, g, b, a, r, g, b, a]);
 		}
 	}
-	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LeakyStatic!(Shader, { Shader::pure([vs_gui__pos_col, ps_gui__col]) });
+	fn batch_draw(&self, b: &VaoBind<u16>, (offset, num): (u16, u16)) {
+		let s = LeakyStatic!(Shader, { [vs_gui__pos_col, ps_gui__col].pipe(Shader::pure) });
 
 		let _ = s.Bind();
 		b.Draw((num, offset, gl::TRIANGLES));
 	}
 
 	fn ordered(&self) -> bool {
-		!opaque(self.base().color)
+		ordered(self.base().color)
 	}
 }
 

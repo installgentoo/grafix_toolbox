@@ -15,7 +15,7 @@ where
 {
 	fn get1(&self) -> Args1 {
 		let slice = self.0.as_ref();
-		let (l, x) = iVec2((self.1, self.2));
+		let (l, x) = vec2((self.1, self.2));
 		(slice.as_ptr() as *const GLvoid, l, x, slice.len())
 	}
 }
@@ -48,7 +48,7 @@ where
 {
 	fn get2(&self) -> Args2 {
 		let slice = self.0.as_ref();
-		let (l, x, y) = iVec3((self.1, self.2, self.3));
+		let (l, x, y) = vec3((self.1, self.2, self.3));
 		(slice.as_ptr() as *const GLvoid, l, x, y, slice.len())
 	}
 }
@@ -89,7 +89,7 @@ where
 {
 	fn get3(&self) -> Args3 {
 		let slice = self.0.as_ref();
-		let (l, x, y, z) = iVec4((self.1, self.2, self.3, self.4));
+		let (l, x, y, z) = vec4((self.1, self.2, self.3, self.4));
 		(slice.as_ptr() as *const GLvoid, l, x, y, z, slice.len())
 	}
 }

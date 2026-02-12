@@ -8,48 +8,53 @@ DRAWABLE!(Sprite9<'r, RGBA>, Img9RGBA);
 DRAWABLE!(Frame9<'r>, Frame9);
 DRAWABLE!(Text<'r, '_>, Text);
 
-pub struct RenderLock<'s> {
+pub struct RenderLock<'l> {
 	pub(super) r: Renderer,
 	n: u32,
-	clip: Vec<Geom>,
-	logics: Vec<LogicStorage<'s>>,
+	crop: Rc<Cell<Geom>>,
+	logics: Vec<LogicStorage<'l>>,
 }
-impl<'s> RenderLock<'s> {
-	pub fn theme(&self) -> &'s Theme {
+impl<'l> RenderLock<'l> {
+	pub fn theme(&self) -> &'l Theme {
 		unsafe { mem::transmute(&self.r.theme) }
 	}
-	pub fn clip(&mut self, (pos, size): Geom) -> ClipLock<'s> {
-		let Self { clip, .. } = self;
-		let is_neg = size.ls((0, 0));
-		clip.push((pos.sum(size.mul(is_neg)), pos.sum(size.abs())));
-		ClipLock::new(self)
+	pub fn clip(&self, s: Surf) -> ClipLock {
+		let Self { crop, .. } = self;
+		let (lock, prev_crop @ (c1, c2)) = (crop.clone(), crop.get());
+		let (p1, p2) = s.b_box();
+		crop.set((p1.fmax(c1), p2.fmin(c2)));
+		ClipLock { lock, prev_crop }
 	}
-	pub fn draw<'r: 's>(&mut self, prim: impl DrawablePrimitive<'r>) {
-		let Self { r, n, ref clip, .. } = self;
-		prim.draw(*n, clip.last().valid(), r);
+	pub fn unclipped(&mut self, f: impl FnOnce(&mut Self)) {
+		let c = self.crop.replace(uncropped());
+		f(self);
+		self.crop.set(c)
+	}
+	pub fn draw<'r: 'l>(&mut self, prim: impl DrawablePrimitive<'r>) {
+		let Self { ref mut r, ref mut n, ref crop, .. } = *self;
+		prim.draw(*n, (&**crop).bind(), r);
 		*n += 1;
 	}
-	pub fn logic(&mut self, b_box: Geom, func: impl 's + EventReaction, id: LogicId) {
-		let (id, bound, func) = (id, LogicBound::Crop(b_box), Box(func));
-		self.logics.push(LogicStorage { id, bound, func });
-	}
-	pub fn draw_with_logic<'r: 's>(&mut self, prim: impl DrawablePrimitive<'r>, func: impl 's + EventReaction, id: LogicId) {
-		let Self { r, n, ref clip, logics, .. } = self;
-		prim.draw(*n, clip.last().valid(), r);
+	pub fn draw_with_logic<'r: 'l>(&mut self, prim: impl DrawablePrimitive<'r>, func: impl 'l + EventReaction, id: LogicId) {
+		let Self { ref mut r, ref mut n, ref crop, ref mut logics } = *self;
+		prim.draw(*n, (&**crop).bind(), r);
 		let (id, bound, func) = (id, LogicBound::Obj(*n), Box(func));
 		logics.push(LogicStorage { id, bound, func });
 		*n += 1;
 	}
-	pub fn hovers_in(&mut self, (pos, size): Geom) -> bool {
-		contains((pos, pos.sum(size)), self.r.mouse_pos)
+	pub fn logic(&mut self, s: Surf, func: impl 'l + EventReaction, id: LogicId) {
+		let (id, bound, func) = (id, LogicBound::Crop(s.b_box()), Box(func));
+		self.logics.push(LogicStorage { id, bound, func });
+	}
+	pub fn hovers_in(&self, s: Surf) -> bool {
+		inside(s.b_box(), self.r.mouse_pos)
 	}
 	pub fn hovered(&self) -> bool {
-		let &Self { ref r, n, .. } = self;
+		let Self { ref r, n, .. } = *self;
 		if n < 1 {
 			return false;
 		}
-		let b_box = r.cache.get(n - 1).o.obj().base().bound_box();
-		contains(b_box, self.r.mouse_pos)
+		inside(r.cache.b_box(n - 1), r.mouse_pos)
 	}
 	pub fn focused(&self, l: LogicId) -> bool {
 		l == self.r.focus
@@ -57,8 +62,8 @@ impl<'s> RenderLock<'s> {
 	pub fn mouse_pos(&self) -> Vec2 {
 		self.r.mouse_pos
 	}
-	pub fn to_clip(&self) -> Vec2 {
-		self.r.to_clip
+	pub fn aspect(&self) -> Vec2 {
+		self.r.aspect
 	}
 	pub fn unlock(self, w: &mut impl Frame, events: &mut Vec<Event>) -> Renderer {
 		let Self { mut r, logics, n, .. } = self;
@@ -91,101 +96,85 @@ pub struct Renderer {
 	cache: RenderCache,
 	flush: State,
 	status: State,
-	to_clip: Vec2,
+	aspect: Vec2,
 	focus: LogicId,
 	mouse_pos: Vec2,
 	theme: Theme,
 	pub(super) storage: Cell<ElementStorage>,
 }
 impl Renderer {
-	pub fn new(theme: Theme) -> Self {
-		Self { theme, ..Def() }
+	pub fn new(theme: Theme, f: &impl Frame) -> Self {
+		Self { theme, aspect: f.clip_aspect(), ..Def() }
 	}
-	pub fn lock<'l>(self) -> RenderLock<'l> {
-		let L = 10_000_000_000.;
+	pub fn lock<'a>(self) -> RenderLock<'a> {
 		RenderLock {
 			r: self,
-			clip: vec![((-L, -L), (L, L))],
+			crop: uncropped().pipe(Cell).pipe(Rc::new),
 			n: 0,
 			logics: vec![],
 		}
 	}
-	fn consume_events(&mut self, logics: Vec<LogicStorage>, events: &mut Vec<Event>) {
-		let Self { ref cache, focus, mouse_pos, .. } = self;
+	fn consume_events(&mut self, mut logics: Vec<LogicStorage>, events: &mut Vec<Event>) {
+		let Self { ref cache, ref mut focus, ref mut mouse_pos, .. } = *self;
+		let b_box = |l: &mut LogicStorage| {
+			use LogicBound::*;
+			match l.bound {
+				Crop(b_box) => b_box,
+				Obj(at) => cache.b_box(at).tap(|b| l.bound = Crop(*b)),
+			}
+		};
 
-		let logics = Cell(logics);
-		let logics = || unsafe { &mut *logics.as_ptr() }.iter_mut().rev();
 		events.retain(|e| {
 			map_variant!(&MouseMove { at, .. } = e => *mouse_pos = at);
-			let refocus = if let MouseButton { state, .. } = e { state.contains(Mod::PRESS) } else { false };
+			let (refocus, mouse) = (matches!(e, MouseButton { m, .. } if m.contains(Mod::PRESS)), *mouse_pos);
 
-			if !refocus && *focus != 0 {
-				if let Some(l) = logics().find(|l| *focus == l.id) {
-					match (l.func)(e, true, *mouse_pos) {
-						Accept => return false,
-						Reject => return true,
-						DropFocus => {
-							*focus = 0;
-							return false;
+			if *focus != 0 {
+				let focused = logics.iter_mut().rev().find(|l| *focus == l.id);
+				if let Some(l) = focused {
+					if !refocus || inside(b_box(l), mouse) {
+						match (l.func)(e, true, mouse) {
+							Reject => return true,
+							Accept => return false,
+							DropFocus => {
+								*focus = 0;
+								return false;
+							}
+							Pass => (),
 						}
-						Pass => FAIL!("Passthrough elements must not grab focus"),
+					} else {
+						(l.func)(&Defocus, true, mouse);
+						*focus = 0;
 					}
 				} else {
 					*focus = 0;
 				}
 			}
 
-			let id_match = |f: &LogicId, l: &LogicStorage| *f == l.id && l.id != 0;
-			let defocus = |f: &LogicId| logics().find(|l| id_match(f, l)).map(|l| (l.func)(&Defocus, false, *mouse_pos));
+			for (b, l) in logics.iter_mut().rev().map(|l| (b_box(l), l)) {
+				if !inside(b, mouse) {
+					continue;
+				}
 
-			let mut grabbed_focus = false;
-			for l in logics() {
-				use LogicBound::*;
-				let b_box = match l.bound {
-					Crop(b_box) => b_box,
-					Obj(at) => {
-						let b = cache.get(at).o.obj().base().bound_box();
-						l.bound = Crop(b);
-						b
-					}
-				};
-				if contains(b_box, *mouse_pos) {
-					let (this_id, focused) = (l.id, id_match(focus, l) || grabbed_focus);
-					grabbed_focus |= focused;
+				if refocus
+					&& *focus == 0 && let Accept = (l.func)(&OfferFocus, false, mouse)
+				{
+					*focus = l.id;
+				}
 
-					if refocus && !focused {
-						if let Accept = (l.func)(&OfferFocus, false, *mouse_pos) {
-							defocus(focus);
-							*focus = this_id;
-						}
-					}
-					let focused = id_match(focus, l);
-					match (l.func)(e, focused, *mouse_pos) {
-						Accept => return false,
-						Reject => return true,
-						DropFocus => {
-							*focus = 0;
-							return false;
-						}
-						Pass => (),
-					}
+				match (l.func)(e, *focus == l.id, mouse) {
+					Reject => return true,
+					Accept | DropFocus => return false,
+					Pass => (),
 				}
 			}
-
-			if refocus && *focus != 0 {
-				defocus(focus);
-				*focus = 0;
-			}
-
 			true
 		});
 	}
 	fn render(&mut self, frame: &mut impl Frame) {
-		let Self { vao, idxs, xyzw, uv, rgba, cache, flush, status, to_clip, .. } = self;
+		let Self { vao, idxs, xyzw, uv, rgba, cache, flush, status, aspect, .. } = self;
 
 		if !flush.is_empty() {
-			cache.batch();
-			let flush = cache.flush(frame.to_clip(), &mut idxs.buff, &mut xyzw.buff, &mut rgba.buff, &mut uv.buff);
+			let flush = cache.flush(frame.clip_aspect(), &mut idxs.buff, &mut xyzw.buff, &mut rgba.buff, &mut uv.buff);
 
 			idxs.flush(flush.0, |o| vao.BindIdxs(o));
 			xyzw.flush(flush.1, |o| vao.AttribFmt(o, (0, 4)));
@@ -218,52 +207,49 @@ impl Renderer {
 		GL::BlendFunc::Restore();
 		GL::DepthFunc::Restore();
 
-		*flush = State::empty();
-		*status = State::XYZW.or_def(frame.to_clip() != *to_clip);
-		*to_clip = frame.to_clip();
+		(*status, *flush, *aspect) = (State::XYZW.or_def(frame.clip_aspect() != *aspect), State::empty(), frame.clip_aspect());
 	}
 }
 
 #[derive(Default)]
 struct Storage<T: spec::Buffer, D> {
-	obj: spec::ArrObject<T, D>,
+	obj: spec::ArrObj<T, D>,
 	buff: Vec<D>,
 	size: usize,
 }
 impl<T: spec::Buffer, D: Copy> Storage<T, D> {
-	fn flush(&mut self, from: Option<usize>, mut rebind: impl FnMut(&spec::ArrObject<T, D>)) {
-		let Some(from) = from else { return () };
+	fn flush(&mut self, from: Option<usize>, mut rebind: impl FnMut(&spec::ArrObj<T, D>)) {
+		let Some(from) = from else { return };
 
-		let Self { obj, ref buff, size } = self;
+		let Self { ref mut obj, ref buff, ref mut size } = *self;
 		let new_size = buff.len();
 		if new_size <= *size && new_size * 2 > *size {
 			obj.MapMut((from..new_size, gl::MAP_INVALIDATE_RANGE_BIT)).mem().copy_from_slice(&buff[from..]);
 			return;
 		}
 
-		*size = new_size;
-		*obj = spec::ArrObject::new((buff, gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT));
+		(*obj, *size) = ((buff, gl::DYNAMIC_STORAGE_BIT | gl::MAP_WRITE_BIT).pipe(spec::ArrObj::new), new_size);
 		rebind(obj);
 	}
 }
 type IdxArrStorage = Storage<spec::Index, u16>;
 type ArrStorage<T> = Storage<spec::Attribute, T>;
 
-pub struct ClipLock<'s> {
-	r: Dummy<&'s u32>,
-	ptr: usize,
+pub struct ClipLock {
+	prev_crop: Geom,
+	lock: Rc<Cell<Geom>>,
 }
-impl<'l: 's, 's> ClipLock<'s> {
-	fn new(r: &RenderLock<'l>) -> Self {
-		let ptr = r as *const RenderLock as usize;
-		Self { r: Dummy, ptr }
-	}
-}
-impl Drop for ClipLock<'_> {
+impl Drop for ClipLock {
 	fn drop(&mut self) {
-		let clip = &mut unsafe { &mut *(self.ptr as *mut RenderLock) }.clip;
-		if clip.len() > 1 {
-			clip.pop();
-		}
+		self.lock.set(self.prev_crop);
 	}
+}
+
+fn inside(g: Geom, p: Vec2) -> bool {
+	contains(g, (p, p))
+}
+
+fn uncropped() -> Geom {
+	let L = f32::INFINITY;
+	((-L, -L), (L, L))
 }

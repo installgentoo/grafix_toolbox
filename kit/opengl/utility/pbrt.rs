@@ -1,5 +1,4 @@
-use crate::{lib::*, math::*, *};
-use GL::{mesh::*, *};
+use crate::{GL::*, lib::*, math::*};
 
 pub struct EnvTex {
 	pub mip_levels: f32,
@@ -8,52 +7,48 @@ pub struct EnvTex {
 }
 impl<T: Borrow<Environment>> From<T> for EnvTex {
 	fn from(e: T) -> Self {
-		let e = e.borrow();
-		let specular = CubeTex::from(&e.specular[..]);
-		let irradiance = (&e.diffuse).into();
-		let mip_levels = f32(specular.param.l);
+		let Environment { specular, diffuse } = e.borrow();
+		let (specular, irradiance) = (specular.pipe_as(CubeTex::from), diffuse.into());
+		let mip_levels = f32(specular.param().l);
 		Self { mip_levels, specular, irradiance }
 	}
 }
 
-derive_common_OBJ! {pub struct Environment {
+#[derive_as_obj]
+pub struct Environment {
 	specular: Box<[[fImage<RGB>; 6]]>,
 	diffuse: [fImage<RGB>; 6],
-}}
+}
 impl Environment {
 	#[cfg(all(feature = "adv_fs", feature = "hdr"))]
-	pub fn new_cached(name: &str) -> Res<Self> {
-		let cache = format!("{name}.hdr.z");
-		if let Ok(d) = FS::Load::Archive(&cache) {
-			if let Ok(env) = ser::SERDE::FromVec(&d) {
-				return Ok(env);
+	pub fn new_cached(name: &str) -> Res<EnvTex> {
+		(|| {
+			let cache = format!("{name}.hdr.z");
+			if let env @ Ok(_) = FS::Load::Archive(&cache).and_then(ser::from_vec) {
+				return env;
 			}
-		}
 
-		let env: Res<_> = (|| {
-			let file = FS::Load::File(format!("res/{name}.hdr"));
-			let equirect = Tex2d::from(Image::<RGB, f32>::load(file)?);
-			let env = Self::new(equirect);
-			let _ = ser::SERDE::ToVec(&env).map(|v| FS::Save::Archive((cache, v)));
-			Ok(env)
-		})();
-		env
+			FS::Load::File(format!("res/{name}.hdr"))
+				.pipe(Image::<RGB, f32>::load)?
+				.pipe(Tex2d::from)
+				.pipe(Self::new)
+				.tap(|env| ser::to_vec(env).map(|v| FS::Save::Archive((cache, v))).warn())
+				.pipe(Ok)
+		})()?
+		.pipe(EnvTex::from)
+		.pipe(Ok)
 	}
 	#[cfg(feature = "adv_fs")]
 	pub fn lut_cached() -> Tex2d<RG, f16> {
 		let cache = "brdf_lut.pbrt.z";
-		if let Ok(d) = FS::Load::Archive(cache) {
-			if let Ok(lut) = ser::SERDE::FromVec(&d) {
-				return fImage::into(lut);
-			}
+		if let Ok(lut) = FS::Load::Archive(cache).and_then(ser::from_vec) {
+			return fImage::into(lut);
 		}
 
-		let lut = Self::lut();
-		let _ = ser::SERDE::ToVec(&lut).map(|v| FS::Save::Archive((cache, v, 22)));
-		lut.into()
+		Self::lut().tap(|lut| ser::to_vec(lut).map(|v| FS::Save::Archive((cache, v, 10))).warn()).into()
 	}
 	pub fn lut() -> fImage<RG> {
-		let mut lut = Shader::pure([vs_mesh__2d_screen, ps_env__gen_lut]);
+		let mut lut = [vs_mesh__2d_screen, ps_env__gen_lut].pipe(Shader::pure);
 		let surf = Fbo::<RGBA, f32>::new((512, 512));
 		{
 			let _ = Uniforms!(lut, ("iSamples", 4096_u32));
@@ -79,19 +74,19 @@ impl Environment {
 		};
 
 		let sampl = &Sampler::linear();
-		let mut equirect_shd = Shader::pure([vs_env__gen, ps_env__unwrap_equirect]);
-		let mut irradiance_shd = Shader::pure([vs_env__gen, ps_env__gen_irradiance]);
-		let mut specular_shd = Shader::pure([vs_env__gen, ps_env__gen_spec]);
+		let mut equirect_shd = [vs_env__gen, ps_env__unwrap_equirect].pipe(Shader::pure);
+		let mut irradiance_shd = [vs_env__gen, ps_env__gen_irradiance].pipe(Shader::pure);
+		let mut specular_shd = [vs_env__gen, ps_env__gen_spec].pipe(Shader::pure);
 
 		let color = VP_mats
 			.iter()
 			.map(|&cam| {
 				let e = equirect.Bind(sampl);
-				let _ = Uniforms!(equirect_shd, ("equirect_tex", e), ("MVPMat", cam));
+				let _ = Uniforms!(equirect_shd, ("iEquirect", e), ("MVPMat", cam));
 				let surf = Fbo::<RGBA, f32>::new((512, 512));
 				surf.bind();
 				Skybox::Draw();
-				fImage::<RGB>::from(surf.tex)
+				surf.tex.into()
 			})
 			.collect_arr();
 		let cubemap = CubeTex::from(&color);
@@ -100,31 +95,31 @@ impl Environment {
 			.iter()
 			.map(|&cam| {
 				let e = cubemap.Bind(sampl);
-				let _ = Uniforms!(irradiance_shd, ("env_cubetex", e), ("MVPMat", cam), ("iDelta", 0.025));
+				let _ = Uniforms!(irradiance_shd, ("iEnv", e), ("MVPMat", cam), ("iDelta", 0.025));
 				let surf = Fbo::<RGBA, f32>::new((64, 64));
 				surf.bind();
 				Skybox::Draw();
-				fImage::<RGB>::from(surf.tex)
+				surf.tex.into()
 			})
 			.collect_arr();
 
-		let mips = cubemap.param.mips_max();
+		let mips = cubemap.param().mips_max();
 		let specular = vec![color]
 			.into_iter()
 			.chain(
 				(1..mips)
 					.map(|l| {
 						let r = f32(l) / f32(mips - 1);
-						let wh = cubemap.param.dim_unchecked(u32(l)).xy();
+						let wh = cubemap.param().dim_unchecked(u32(l)).xy();
 						let mip = VP_mats
 							.iter()
 							.map(|&cam| {
 								let e = cubemap.Bind(sampl);
-								let _ = Uniforms!(specular_shd, ("env_cubetex", e), ("MVPMat", cam), ("iSamples", 4096_u32), ("iRoughness", r));
+								let _ = Uniforms!(specular_shd, ("iEnv", e), ("MVPMat", cam), ("iSamples", 4096_u32), ("iRoughness", r));
 								let surf = Fbo::<RGBA, f32>::new(wh);
 								surf.bind();
 								Skybox::Draw();
-								fImage::<RGB>::from(surf.tex)
+								surf.tex.into()
 							})
 							.collect_arr();
 						mip
@@ -154,12 +149,12 @@ SHADER!(
 	ps_env__unwrap_equirect,
 	r"in vec3 glUV;
 	layout(location = 0) out vec4 glFragColor;
-	uniform sampler2D equirect_tex;
+	uniform sampler2D iEquirect;
 
 	void main() {
 		vec3 v = normalize(glUV);
 		vec2 uv = vec2(atan(v.z, v.x), asin(v.y)) * vec2(.1591, .3183) + .5;
-		vec3 c = texture(equirect_tex, uv).rgb;
+		vec3 c = texture(iEquirect, uv).rgb;
 		glFragColor = vec4(c, 1);
 	}"
 );
@@ -168,7 +163,7 @@ SHADER!(
 	ps_env__gen_irradiance,
 	r"in vec3 glUV;
 	layout(location = 0) out vec4 glFragColor;
-	uniform samplerCube env_cubetex;
+	uniform samplerCube iEnv;
 	uniform float iDelta;
 
 	const float PI = 3.1415927;
@@ -184,7 +179,7 @@ SHADER!(
 			for (float theta = 0; theta < .5 * PI; theta += iDelta) {
 				vec3 tangent_sample = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
 				vec3 sample_vec = tangent_sample.x * right + tangent_sample.y * up + tangent_sample.z * normal;
-				irradiance += texture(env_cubetex, sample_vec).rgb * cos(theta) * sin(theta);
+				irradiance += texture(iEnv, sample_vec).rgb * cos(theta) * sin(theta);
 				++n_samples;
 			}
 		}
@@ -230,7 +225,7 @@ SHADER!(
 	ps_env__gen_spec,
 	r"in vec3 glUV;
 	layout(location = 0) out vec4 glFragColor;
-	uniform samplerCube env_cubetex;
+	uniform samplerCube iEnv;
 	uniform float iRoughness;
 	",
 	TRANSFORM,
@@ -248,7 +243,7 @@ SHADER!(
 
 			float NdotL = max(dot(N, L), 0);
 			if (NdotL > 0) {
-				prefilteredColor += texture(env_cubetex, L).rgb * NdotL;
+				prefilteredColor += texture(iEnv, L).rgb * NdotL;
 				totalWeight += NdotL;
 			}
 		}

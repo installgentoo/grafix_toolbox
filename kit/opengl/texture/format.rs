@@ -2,14 +2,15 @@ use crate::lib::*;
 
 pub trait TexSize: TrivialBound {
 	const TYPE: GLenum;
-	const SIZE: i32;
+	const SIZE: usize;
 }
 macro_rules! impl_size {
 	($t: ident, $s: literal) => {
-		derive_common_VAL! { pub struct $t; }
+		#[derive_as_trivial]
+		pub struct $t;
 		impl TexSize for $t {
 			const TYPE: GLenum = gl::$t;
-			const SIZE: i32 = $s;
+			const SIZE: usize = $s;
 		}
 	};
 }
@@ -18,7 +19,7 @@ impl_size!(RG, 2);
 impl_size!(RGB, 3);
 impl_size!(RGBA, 4);
 
-pub trait TexFmt: TrivialBound {
+pub trait TexFmt: TrivialBound + Cast<u8> {
 	const TYPE: GLenum;
 }
 macro_rules! impl_fmt {

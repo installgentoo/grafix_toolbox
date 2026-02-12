@@ -19,11 +19,11 @@ FUNC!(ext, PixelStorePack, i32);
 FUNC!(ext, PixelStoreUnpack, i32);
 
 mod ext {
-	pub unsafe fn PixelStorePack(v: i32) {
-		gl::PixelStorei(gl::PACK_ALIGNMENT, v)
+	pub fn PixelStorePack(v: i32) {
+		unsafe { gl::PixelStorei(gl::PACK_ALIGNMENT, v) }
 	}
-	pub unsafe fn PixelStoreUnpack(v: i32) {
-		gl::PixelStorei(gl::UNPACK_ALIGNMENT, v)
+	pub fn PixelStoreUnpack(v: i32) {
+		unsafe { gl::PixelStorei(gl::UNPACK_ALIGNMENT, v) }
 	}
 }
 
@@ -44,40 +44,40 @@ SWITCH!(SAMPLE_SHADING);
 
 #[macro_export]
 macro_rules! GLEnable {
-($f: ty) => {{ use $crate::GL::states::*; <$f>::Enable(); }};
-($f: ty, $($n: ty),+) => {{
-	use $crate::GL::states::*;
-	<$f>::Enable();
-	GLEnable!($($n),+);
-}};
+	($f: ty) => {{ use $crate::GL::states::*; <$f>::Enable(); }};
+	($f: ty, $($n: ty),+) => {{
+		use $crate::GL::states::*;
+		<$f>::Enable();
+		GLEnable!($($n),+);
+	}};
 }
 
 #[macro_export]
 macro_rules! GLDisable {
-($f: ty) => {{ use $crate::GL::states::*; <$f>::Disable(); }};
-($f: ty, $($n: ty),+) => {{
-	use $crate::GL::states::*;
-	<$f>::Disable();
-	GLDisable!($($n),+);
-}};
+	($f: ty) => {{ use $crate::GL::states::*; <$f>::Disable(); }};
+	($f: ty, $($n: ty),+) => {{
+		use $crate::GL::states::*;
+		<$f>::Disable();
+		GLDisable!($($n),+);
+	}};
 }
 
 #[macro_export]
 macro_rules! GLSave {
-($f: ty) => {{ use $crate::GL::states::*; <$f>::Save(); }};
-($f: ty, $($n: ty),+) => {{
-	use $crate::GL::states::*;
-	<$f>::Save();
-	GLSave!($($n),+);
-}};
+	($f: ty) => {{ use $crate::GL::states::*; <$f>::Save(); }};
+	($f: ty, $($n: ty),+) => {{
+		use $crate::GL::states::*;
+		<$f>::Save();
+		GLSave!($($n),+);
+	}};
 }
 
 #[macro_export]
 macro_rules! GLRestore {
-($f: ty) => {{ use $crate::GL::states::*; <$f>::Restore(); }};
-($f: ty, $($n: ty),+) => {{
-	use $crate::GL::states::*;
-	<$f>::Restore();
-	GLRestore!($($n),+);
-}};
+	($f: ty) => {{ use $crate::GL::states::*; <$f>::Restore(); }};
+	($f: ty, $($n: ty),+) => {{
+		use $crate::GL::states::*;
+		<$f>::Restore();
+		GLRestore!($($n),+);
+	}};
 }

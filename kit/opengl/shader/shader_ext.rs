@@ -1,5 +1,4 @@
-use super::{args::*, compiler::*, parsing::*, uniform::*, *};
-use GL::offhand::*;
+use super::{uniform::*, *};
 
 pub struct Shader {
 	name: ShdName,
@@ -19,41 +18,37 @@ impl Shader {
 		let ShdResult { prog, name } = rx.recv().valid().wait();
 		let (uniforms, dynamic) = Def();
 
-		Ok(Self { name, prog: prog?, uniforms, dynamic })
+		Self { name, prog: prog?, uniforms, dynamic }.pipe(Ok)
 	}
 	pub fn watch(args: impl CompileArgs) -> Res<Self> {
 		let ShaderManager { sn, .. } = ShaderManager::get();
-		let mut s = Self::new(args)?;
-
-		sn.send(Watch(s.name.clone())).valid();
-		s.dynamic = true;
-
-		Ok(s)
+		Self::new(args)?
+			.tap(|Self { name, dynamic, .. }| {
+				*dynamic = true;
+				sn.send(Watch(name.clone())).fail();
+			})
+			.pipe(Ok)
 	}
-	pub fn Bind(&mut self) -> ShaderBinding {
-		let ShaderManager { sn, rx, mailbox, .. } = ShaderManager::get();
+	pub fn Bind(&mut self) -> ShaderBind {
+		let ShaderManager { sn, rx, mailbox } = ShaderManager::get();
 
 		if self.dynamic {
 			sn.send(Rebuild).valid();
 			while let Some(msg) = rx.try_recv() {
 				let ShdResult { name, prog } = msg.wait();
-				mailbox.insert(name, Some(prog));
+				mailbox.insert(name, prog);
 			}
+
 			let Self { name, prog, uniforms, .. } = self;
-			if let Some(p @ Some(_)) = mailbox.get_mut(name) {
-				let p = p.take().valid();
-				match p {
-					Err(e) => WARN!(e),
-					Ok(p) => {
-						*prog = p;
-						*uniforms = Def();
-						PRINT!(format!("Rebuilt shader {}", name.join(" ")).green().bold())
-					}
-				}
+			if let Some(p) = mailbox.remove(name)
+				&& let Ok(p) = p.map_err(|e| WARN!(e))
+			{
+				(*prog, *uniforms) = (p, Def());
+				PRINT!(format!("Rebuilt shader {}", name.join(" ")).green().bold())
 			}
 		}
 
-		ShaderBinding::new(self)
+		ShaderBind::new(self)
 	}
 }
 impl Drop for Shader {
@@ -66,13 +61,13 @@ impl Drop for Shader {
 	}
 }
 
-pub struct ShaderBinding<'l> {
+pub struct ShaderBind<'l> {
 	shd: &'l mut Shader,
 }
-impl<'l> ShaderBinding<'l> {
-	pub fn new(o: &'l mut Shader) -> Self {
-		ShaderProg::Lock(o.prog.obj);
-		ShaderProg::Bind(o.prog.obj);
+impl<'l> ShaderBind<'l> {
+	fn new(o: &'l mut Shader) -> Self {
+		ShaderT::Lock(o.prog.obj);
+		ShaderT::Bind(o.prog.obj);
 		Self { shd: o }
 	}
 	pub fn is_fresh(&self) -> bool {
@@ -84,82 +79,39 @@ impl<'l> ShaderBinding<'l> {
 			ArgsKind::Uniform => get_addr(uniforms, (id, name), |n| {
 				let addr = GL!(gl::GetUniformLocation(prog.obj, n.as_ptr()));
 				if addr == -1 {
-					INFO!("No uniform {name:?} in shader {:?}, or it was optimized out", shd_name.join(" "));
+					INFO!("No uniform {name:?} in {:?}", shd_name.join(" "));
 				}
 				addr
 			}),
 			ArgsKind::Ubo => get_addr(uniforms, (id, name), |n| {
 				let addr = GL!(gl::GetUniformBlockIndex(prog.obj, n.as_ptr()));
 				if addr == gl::INVALID_INDEX {
-					INFO!("No UBO {name:?} in shader {:?}, or it was optimized out", shd_name.join(" "));
+					INFO!("No UBO {name:?} in {:?}", shd_name.join(" "));
 					return -1;
 				}
 				-2 - i32(addr)
 			}),
-			ArgsKind::Ssbo => return DEBUG!("GL SSBO {name:?} bound, shader {:?}", shd_name.join(" ")),
+			ArgsKind::Ssbo => return DEBUG!("GL SSBO {name:?} bound in {:?}", shd_name.join(" ")),
 		};
 		if addr != -1 {
 			args.apply(addr, cached);
 		}
 	}
 }
-impl Drop for ShaderBinding<'_> {
+impl Drop for ShaderBind<'_> {
 	fn drop(&mut self) {
-		ShaderProg::Unlock();
+		ShaderT::Unlock();
 	}
 }
-fn get_addr<'l>(u: &'l mut Uniforms, (id, name): (u32, &str), addr: impl Fn(CString) -> i32) -> (i32, &'l mut Option<CachedUni>) {
+fn get_addr<'l>(u: &'l mut Uniforms, (id, name): (u32, &str), addr: impl FnOnce(CString) -> i32) -> (i32, &'l mut Option<CachedUni>) {
 	ASSERT!(uniforms_use::id(name).0 == id, "Use Uniforms!()/Unibuffers!() macro to set uniforms");
 	ASSERT!(
 		LocalStatic!(HashMap<u32, String>).entry(id).or_insert(name.into()) == name,
-		"Unifrom collision at entry {name}"
+		"Unifrom name collision {name:?}"
 	);
 
-	let (addr, val) = u.entry(id).or_insert_with(|| (addr(CString::new(name).valid()), None));
+	let (addr, val) = u.entry(id).or_insert_with(|| (name.pipe(CString::new).valid().pipe(addr), None));
 	(*addr, val)
-}
-
-pub struct ShaderManager {
-	sn: Sender<ShaderTask>,
-	rx: Offhand<ShdResult>,
-	mailbox: HashMap<ShdName, Option<Res<ShdProg>>>,
-}
-impl ShaderManager {
-	pub fn Initialize<'s>(args: impl InitArgs<'s>) {
-		let (window, i) = args.get();
-		Self::get_or_init(Some(window)).sn.send(Includes(i)).valid();
-	}
-	pub fn Load(filenames: impl LoadArgs) {
-		for n in filenames.get() {
-			let file = load(n.clone(), FS::Lazy::Text(n));
-			ShaderManager::get().sn.send(Load(file)).valid();
-		}
-	}
-	pub fn Watch(filenames: impl LoadArgs) {
-		for n in filenames.get() {
-			let file = load(n.clone(), FS::Watch::Text(n));
-			ShaderManager::get().sn.send(Load(file)).valid();
-		}
-	}
-	pub fn CleanCache() {
-		ShaderManager::get().sn.send(Clean).valid();
-	}
-	pub(super) fn inline_source(name: &str, source: &[&str]) {
-		ShaderManager::get().sn.send(Inline((name.into(), source.concat()))).valid();
-	}
-	fn get() -> &'static mut Self {
-		Self::get_or_init(None)
-	}
-	fn get_or_init(w: Option<&mut Window>) -> &'static mut Self {
-		LeakyStatic!(ShaderManager, {
-			let Some(w) = w else {
-				ERROR!("Must Initialize ShaderManager before first use");
-			};
-
-			let (sn, rx) = Offhand::from_fn(w, 64, compiler);
-			Self { sn, rx, mailbox: Def() }
-		})
-	}
 }
 
 type Uniforms = HashMap<u32, (i32, Option<CachedUni>)>;

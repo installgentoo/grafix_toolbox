@@ -1,4 +1,4 @@
-use super::{GL::Frame, *};
+use super::{GL::Frame, lazy::*, *};
 use crate::math::{la::*, *};
 
 #[derive(Debug, Clone)]
@@ -12,32 +12,27 @@ pub struct FocusCam {
 }
 impl FocusCam {
 	pub fn pos(&self) -> Vec3 {
-		Vec3(self.orient.get().1)
+		(*self.orient).pipe(|(_, p)| p).pipe(Vec3)
 	}
 	pub fn fov(&self) -> f32 {
-		self.proj.get_args().1 .0
+		self.proj.get_args().pipe(|&(_, (f, _))| f)
 	}
 	pub fn new(target: V3, polar_zoom: Vec3) -> Self {
-		let proj = Memoized::zero(proj_f);
-		let view = Memoized::zero(view_f);
-		let orient = Memoized::zero(orient_f);
-		let (view_proj, inv_view) = Def();
+		let (proj, view, orient, (view_proj, inv_view)) = (Memoized::zero(proj_f), Memoized::zero(view_f), Memoized::zero(orient_f), Def());
 
-		let mut c = FocusCam { target, proj, orient, view, view_proj, inv_view };
-		c.set_polar(polar_zoom);
-		c
+		FocusCam { target, proj, orient, view, view_proj, inv_view }.tap(|c| c.set_polar(polar_zoom))
 	}
 	pub fn track(&mut self, tgt: V3) {
 		let Self { target, orient, view_proj, .. } = self;
 		if &tgt != target {
 			*target = tgt;
 			orient.reset();
-			view_proj.replace(None);
+			view_proj.set(None);
 		}
 	}
 	pub fn set_proj(&mut self, f: &impl Frame, (fov, far): Vec2) {
 		if self.proj.apply((f.size(), (fov, far))).changed {
-			self.view_proj.replace(None);
+			self.view_proj.set(None);
 		}
 	}
 	pub fn set_polar(&mut self, polar_zoom: Vec3) {
@@ -45,8 +40,8 @@ impl FocusCam {
 
 		let MemRes { changed, val } = orient.apply((&polar_zoom, &*target));
 		if changed && view.apply(val).changed {
-			view_proj.replace(None);
-			inv_view.replace(None);
+			view_proj.set(None);
+			inv_view.set(None);
 		}
 	}
 	pub fn V(&self) -> &M4 {
@@ -54,19 +49,19 @@ impl FocusCam {
 	}
 	pub fn iV(&self) -> &M4 {
 		let Self { inv_view, .. } = self;
-		if inv_view.inspect(|s| s.is_none()) {
-			inv_view.replace(Some(inverse4(*self.view)));
+		if inv_view.bind().is_none() {
+			inv_view.set(inverse4(*self.view).pipe(Some));
 		}
 
-		unsafe { &*inv_view.as_ptr() }.as_ref().valid()
+		unsafe { &*inv_view.as_ptr() }.as_valid()
 	}
 	pub fn VP(&self) -> &M4 {
 		let Self { view_proj, .. } = self;
-		if view_proj.inspect(|s| s.is_none()) {
-			view_proj.replace(Some(self.P() * self.V()));
+		if view_proj.bind().is_none() {
+			view_proj.set((self.P() * self.V()).pipe(Some));
 		}
 
-		unsafe { &*view_proj.as_ptr() }.as_ref().valid()
+		unsafe { &*view_proj.as_ptr() }.as_valid()
 	}
 	pub fn P(&self) -> &M4 {
 		&self.proj
@@ -78,19 +73,19 @@ impl FocusCam {
 		self.VP() * model
 	}
 	pub fn iL(&self) -> Vec3 {
-		Vec3(-self.orient.1)
+		(*self.orient).pipe(|(_, p)| Vec3(-p))
 	}
 	pub fn N(&self, model: &M4) -> M3 {
-		inverse3(crop_3x3(model)).transpose()
+		crop_3x3(model).pipe(inverse3).transpose()
 	}
 	pub fn NV(&self, model: &M4) -> M3 {
 		let m = self.V() * model;
-		inverse3(crop_3x3(&m).transpose())
+		crop_3x3(&m).transpose().pipe(inverse3)
 	}
 }
 impl Default for FocusCam {
 	fn default() -> Self {
-		Self::new(V3::new(0., 0., 0.), Vec3((0, -90, 1)))
+		Self::new(Def(), Vec3((0, -90, 1)))
 	}
 }
 #[cfg(feature = "adv_fs")]
@@ -109,7 +104,7 @@ mod serde {
 			let proj = proj.finalize_deserialization(proj_f);
 			let view = view.finalize_deserialization(view_f);
 			let orient = orient.finalize_deserialization(orient_f);
-			Ok(Self { target, proj, view, orient, ..Def() })
+			Self { target, proj, view, orient, ..Def() }.pipe(Ok)
 		}
 	}
 }
@@ -118,7 +113,7 @@ fn proj_f(&(size, (fov, far)): &(uVec2, Vec2)) -> M4 {
 	let (w, h) = size;
 	let aspect = f32(w) / f32(h);
 	let fov = fov.to_radians();
-	let fov = if w < h { 2. * ((fov * 0.5).tan() / aspect).atan() } else { fov };
+	let fov = fov.or_val(w >= h, || 2. * ((fov * 0.5).tan() / aspect).atan());
 	perspective(aspect, fov, 0.01, far)
 }
 fn view_f((orient, pos): &(Q, V3)) -> M4 {

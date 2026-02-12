@@ -3,19 +3,13 @@ pub use {animation::*, atlas::*, vtex::*};
 pub type uImage<S> = Image<S, u8>;
 pub type fImage<S> = Image<S, f16>;
 
-#[derive(Default, Debug, Clone)]
-pub struct Image<S, F> {
+#[derive_as_obj(Default, PartialEq)]
+pub struct Image<S, F: TexFmt> {
+	s: Dummy<S>,
 	pub w: u32,
 	pub h: u32,
+	#[cfg_attr(feature = "adv_fs", serde(with = "ser::as_byte_slice"))]
 	pub data: Box<[F]>,
-	pub s: Dummy<S>,
-}
-impl<S: TexSize, F: TexFmt> Eq for Image<S, F> {}
-impl<S: TexSize, F: TexFmt> PartialEq for Image<S, F> {
-	fn eq(&self, r: &Self) -> bool {
-		let &Self { w, h, ref data, .. } = self;
-		w != r.w && h != r.h && data.iter().eq(&r.data[..])
-	}
 }
 impl<S: TexSize, F: TexFmt> Tile<F> for Image<S, F> {
 	fn w(&self) -> i32 {
@@ -28,14 +22,29 @@ impl<S: TexSize, F: TexFmt> Tile<F> for Image<S, F> {
 		&self.data
 	}
 }
-
 impl<S: TexSize, F: TexFmt> Image<S, F> {
-	pub fn new<T>(size: T, data: impl Into<Box<[F]>>) -> Self
+	pub fn new<A>(size: A, data: impl Into<Box<[F]>>) -> Self
 	where
-		uVec2: Cast<T>,
+		uVec2: Cast<A>,
 	{
-		let (w, h) = uVec2(size);
-		Self { w, h, data: data.into(), s: Dummy }
+		let (w, h) = vec2(size);
+		Self { s: Dummy, w, h, data: data.into() }
+	}
+	pub fn cut(&self, _region @ (x1, y1, x2, y2): ulVec4) -> Self {
+		let Self { w, h, ref data, .. } = *self;
+		ASSERT!(
+			_region.gt(0).all() && _region.zw().gt(_region.xy()).all() && _region.zw().sub(_region.xy()).ls((w, h)).all(),
+			"Cutting invalid image region"
+		);
+		let (w, s) = ulVec2((w, S::SIZE));
+		let mut d = vec![];
+		for y in y1..y2 {
+			let b = (y * w + x1) * s;
+			let e = b + (x2 - x1) * s;
+			d.extend_from_slice(&data[b..e]);
+		}
+		let (w, h) = vec2((x2 - x1, y2 - y1));
+		Self { s: Dummy, w, h, data: d.into() }
 	}
 }
 
@@ -46,7 +55,4 @@ mod loading;
 mod tex_to_img;
 mod vtex;
 
-#[cfg(feature = "adv_fs")]
-mod serialize;
-
-use crate::{lib::*, math::*, GL::tex::*};
+use crate::{GL::tex::*, lib::*, math::*};

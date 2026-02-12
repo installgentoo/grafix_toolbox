@@ -1,5 +1,3 @@
-use crate::lib::*;
-
 pub use fastrand::Rng;
 
 pub trait GenRange<T> {
@@ -10,39 +8,28 @@ impl<T> GenRange<T> for Rng {
 		range.random(self)
 	}
 }
-macro_rules! gen_range_f {
-	($t: ident) => {
-		impl RngExtensions<$t> for Range<$t> {
+
+macro_rules! impl_rand_f {
+	($($t: ty),+) => {
+		$(impl RngExtensions<$t> for ops::Range<$t> {
 			fn random(self, r: &mut Rng) -> $t {
 				(self.start, self.end).random(r)
 			}
-		}
+		})+
 	};
 }
-gen_range_f!(f16);
-gen_range_f!(f32);
-gen_range_f!(f64);
-macro_rules! gen_range_i {
-	($t: ident) => {
-		impl RngExtensions<$t> for Range<$t> {
+impl_rand_f!(f16, f32, f64);
+
+macro_rules! impl_rand_i {
+	($($t: ident),+) => {
+		$(impl RngExtensions<$t> for ops::Range<$t> {
 			fn random(self, r: &mut Rng) -> $t {
 				r.$t(self.start..self.end)
 			}
-		}
+		})+
 	};
 }
-gen_range_i!(i8);
-gen_range_i!(u8);
-gen_range_i!(i16);
-gen_range_i!(u16);
-gen_range_i!(i32);
-gen_range_i!(u32);
-gen_range_i!(i64);
-gen_range_i!(u64);
-gen_range_i!(i128);
-gen_range_i!(u128);
-gen_range_i!(isize);
-gen_range_i!(usize);
+impl_rand_i!(u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, usize, isize);
 
 pub trait RngExtensions<T> {
 	fn random(self, r: &mut Rng) -> T;
@@ -62,3 +49,5 @@ impl RngExtensions<f64> for dVec2 {
 		r.f64() * (self.1 - self.0) - self.0
 	}
 }
+
+use crate::lib::*;

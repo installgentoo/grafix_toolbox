@@ -35,10 +35,10 @@ pub fn glCreateVao(obj: &mut u32) {
 pub fn glCreateTexture(_typ: GLenum, obj: &mut u32) {
 	G!(gl::GenTextures(1, obj), gl::CreateTextures(_typ, 1, obj));
 }
-pub fn glDeleteTexture(obj: &mut u32) {
+pub fn glDeleteTexture(obj: &u32) {
 	G!(
 		{
-			if *obj == *bound_tex33() {
+			if obj == bound_tex33() {
 				*bound_tex33() = 0;
 			}
 			gl::DeleteTextures(1, obj);
@@ -291,12 +291,13 @@ pub fn glRenderbuffStorage(fb: u32, sampl: i32, fmt: GLenum, w: i32, h: i32) {
 }
 
 fn formatDepth45to33(fmt: GLenum) -> i32 {
-	i32(if fmt == gl::DEPTH_COMPONENT32F || fmt == gl::DEPTH_COMPONENT24 || fmt == gl::DEPTH_COMPONENT16 {
+	if fmt == gl::DEPTH_COMPONENT32F || fmt == gl::DEPTH_COMPONENT24 || fmt == gl::DEPTH_COMPONENT16 {
 		WARN!("Using unspecified GL_DEPTH_COMPONENT size");
 		gl::DEPTH_COMPONENT
 	} else {
 		fmt
-	})
+	}
+	.pipe(i32)
 }
 
 fn bound_tex33() -> &'static mut u32 {

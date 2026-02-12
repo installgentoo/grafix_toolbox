@@ -2,8 +2,7 @@
 
 
 layout(location = 0) in vec3 Position;
-uniform mat4 MVPMat;
-uniform mat4 ModelViewMat;
+uniform mat4 MVPMat, ModelViewMat;
 out vec3 glUV;
 
 void main() {
@@ -18,13 +17,13 @@ void main() {
 
 in vec3 glUV;
 layout(location = 0) out vec4 glFragColor;
-uniform samplerCube skybox_tex;
+uniform samplerCube iSkybox;
 uniform float iExposure;
 
 const float gamma = 2.2;
 
 void main() {
-	vec3 c = textureLod(skybox_tex, glUV, 0).rgb;
+	vec3 c = textureLod(iSkybox, glUV, 0).rgb;
 	c = 1 - exp(-c * iExposure);
 	c = pow(c, vec3(1. / gamma));
 	glFragColor = vec4(c, 1);
@@ -37,14 +36,10 @@ void main() {
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec2 TexCoord;
 layout(location = 2) in vec3 Normal;
-uniform mat4 MVPMat;
-uniform mat4 ModelViewMat;
-uniform mat3 NormalViewMat;
-uniform mat3 NormalMat;
-out vec3 glPos;
+uniform mat4 MVPMat, ModelViewMat;
+uniform mat3 NormalMat, NormalViewMat;
+out vec3 glPos, glNormal, glNormalWorld;
 out vec2 glUV;
-out vec3 glNormal;
-out vec3 glNormalWorld;
 
 void main() {
 	vec4 pos = vec4(Position, 1);
@@ -59,10 +54,8 @@ void main() {
 //--PIX ps_material_based_render
 
 
-in vec3 glPos;
+in vec3 glPos, glNormal, glNormalWorld;
 in vec2 glUV;
-in vec3 glNormal;
-in vec3 glNormalWorld;
 layout(location = 0) out vec4 glFragColor;
 
 struct Light {
@@ -74,22 +67,14 @@ layout(std140) uniform iLights {
 	Light iLight[ 20 ];
 };
 
-uniform samplerCube irradiance_cubetex;
-uniform samplerCube specular_cubetex;
-uniform sampler2D brdf_lut_tex;
+uniform samplerCube iIrradiance, iSpecular;
+uniform sampler2D iLut;
 uniform vec3 iCameraWorld;
 
 uniform vec3 iAlbedo;
-uniform float iMetallicity;
-uniform float iRoughness;
-uniform float iExposure;
-uniform float iMaxLod;
+uniform float iMetallicity, iRoughness, iExposure, iMaxLod;
 
-const float gamma = 2.2;
-const float ao = .1;
-const float refractive_index = .1;
-
-const float PI = 3.1415927;
+const float gamma = 2.2, ao = .1, refractive_index = .1, PI = 3.1415927;
 
 vec3 fresnelSchlick(float cos_theta, vec3 F0) { return F0 + (max(vec3(1. - iRoughness), F0) - F0) * pow(1. - cos_theta, 5); }
 
@@ -162,13 +147,13 @@ void main() {
 
 	vec3 normal_world = normalize(glNormalWorld);
 
-	vec3 irradiance = texture(irradiance_cubetex, normal_world).rgb;
+	vec3 irradiance = texture(iIrradiance, normal_world).rgb;
 	vec3 diffuse = irradiance * iAlbedo;
 
 	vec3 R = reflect(-iCameraWorld, normal_world);
-	vec3 prefiltered = textureLod(specular_cubetex, R, iRoughness * iMaxLod).rgb;
+	vec3 prefiltered = textureLod(iSpecular, R, iRoughness * iMaxLod).rgb;
 
-	vec2 brdf = texture(brdf_lut_tex, vec2(max(dot(normal, eye_vec), 0), iRoughness)).rg;
+	vec2 brdf = texture(iLut, vec2(max(dot(normal, eye_vec), 0), iRoughness)).rg;
 	vec3 specular = prefiltered * (kS * brdf.x + brdf.y);
 
 	vec3 ambient = (kD * diffuse + specular) * ao;

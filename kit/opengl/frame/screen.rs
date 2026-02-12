@@ -1,14 +1,14 @@
 use super::{GL::window::*, *};
 use crate::math::*;
 
-impl Frame for Window {
+impl<W: Window> Frame for W {
 	fn ClearColor(&self, args: impl ClearArgs) {
 		let (attach, c) = args.get();
 		GL!(glClearFramebuff(0, gl::COLOR, attach, c.as_ptr()));
 	}
-	fn ClearDepth<T>(&self, d: T)
+	fn ClearDepth<A>(&self, d: A)
 	where
-		f32: Cast<T>,
+		f32: Cast<A>,
 	{
 		GL!(glClearFramebuff(0, gl::DEPTH, 0, &f32(d) as *const f32));
 	}
@@ -21,19 +21,10 @@ impl Frame for Window {
 	fn pixel(&self) -> f32 {
 		self.info().pixel
 	}
-	fn bind(&self) -> Binding<Framebuff> {
-		let (w, h) = self.size();
-		self.Viewport((0, 0, w, h));
-		self.Bind()
-	}
-}
-impl Window {
-	pub fn Viewport(&self, args: impl WINSize) {
-		let (x, y, w, h) = args.get();
-		GL::Viewport::Set((x, y, i32(w), i32(h)));
-	}
-	pub fn Bind(&self) -> Binding<Framebuff> {
-		Binding::<Framebuff>::zero()
+	fn bind(&self) -> Bind<FramebuffT> {
+		let (w, h) = vec2(self.size());
+		GL::Viewport::Set((0, 0, w, h));
+		Bind::<FramebuffT>::zero()
 	}
 }
 
@@ -43,11 +34,10 @@ pub struct FrameInfo {
 	pub pixel: f32,
 }
 impl FrameInfo {
-	pub fn new((w, h): uVec2) -> Self {
-		let size = (w, h);
-		let (w, h, min) = Vec3((w, h, w.min(h)));
-		let aspect = (w, h).div(min);
-		let pixel = 2. / min;
+	pub fn new(size: uVec2) -> Self {
+		let s = Vec2(size);
+		let aspect = s.div(s.min_comp());
+		let pixel = 2. / s.min_comp();
 		Self { size, aspect, pixel }
 	}
 }

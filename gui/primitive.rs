@@ -13,7 +13,7 @@ mod text;
 pub trait Primitive {
 	fn base(&self) -> &Base;
 	fn write_mesh(&self, aspect: Vec2, _: BatchedObj);
-	fn batch_draw(&self, _: &VaoBinding<u16>, range: (u16, u16));
+	fn batch_draw(&self, _: &VaoBind<u16>, range: (u16, u16));
 
 	fn vert_count(&self) -> u32 {
 		4
@@ -32,7 +32,7 @@ pub struct BatchedObj<'a> {
 	pub rgba: &'a mut [u8],
 	pub uv: &'a mut [f16],
 }
-bitflags! {#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+bitflags! {#[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct State: u8 {
 	const BATCH_RESIZED = 0x2;
 	const XYZW = 0x10;
@@ -51,17 +51,16 @@ pub struct Base {
 }
 impl Base {
 	pub fn bound_box(&self) -> Geom {
-		let &Self { pos, size, crop: (p1, p2), .. } = self;
+		let Self { pos, size, crop: (p1, p2), .. } = *self;
 		(pos.clmp(p1, p2), pos.sum(size).clmp(p1, p2))
 	}
 	pub fn intersects(&self, r: &Self) -> bool {
-		let ((b1, b2), (rb1, rb2)) = (self.bound_box(), r.bound_box());
-		!(b2.x() <= rb1.x() || b1.x() >= rb2.x() || b2.y() <= rb1.y() || b1.y() >= rb2.y())
+		intersects(self.bound_box(), r.bound_box())
 	}
 }
 
-fn opaque(c: Color) -> bool {
-	c.3 >= 0.996
+fn ordered(c: Color) -> bool {
+	c.3 < 0.996
 }
 
 fn geom_cmp(pos: Vec2, size: Vec2, bb: &Geom, r: &Base) -> bool {
@@ -69,14 +68,22 @@ fn geom_cmp(pos: Vec2, size: Vec2, bb: &Geom, r: &Base) -> bool {
 }
 
 fn ordering_cmp<S: TexSize, T: Primitive>(c: Color, r: &T) -> bool {
-	(S::TYPE == gl::RGBA || !opaque(c)) != r.ordered()
+	(S::TYPE == gl::RGBA || ordered(c)) != r.ordered()
 }
 
 fn atlas_cmp<S, F>(l: *const VTex2d<S, F>, r: *const VTex2d<S, F>) -> bool {
-	unsafe { (&*l).eq_atlas(&*r) }
+	unsafe { (*l).eq_atlas(&*r) }
 }
 
-fn bound_uv(_crop @ (p1, p2): Geom, (xy1, xy2): Geom, (u1, v1, u2, v2): TexCoord) -> TexCoord {
+fn bound_uv(crop @ (p1, p2): Geom, base @ (xy1, xy2): Geom, uv @ (u1, v1, u2, v2): TexCoord) -> TexCoord {
+	if contains(crop, base) {
+		return uv;
+	}
+
+	if !intersects(crop, base) {
+		return Def();
+	}
+
 	let wh = (u2 - u1, v2 - v1).div(xy2.sub(xy1));
 	let (u1, v1) = (u1, v1).sum(wh.mul(p1.sub(xy1)).mul(p1.gt(xy1)));
 	let (u2, v2) = (u2, v2).sub(wh.mul(xy2.sub(p2)).mul(p2.ls(xy2)));

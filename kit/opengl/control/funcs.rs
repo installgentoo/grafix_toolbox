@@ -13,7 +13,7 @@ macro_rules! APPLICATOR {
 				GL!(func($(*$t),+));
 			}
 		}
-	};
+	}
 }
 
 APPLICATOR!(UnpackTuple0, t);
@@ -28,61 +28,59 @@ pub fn states_map() -> &'static mut HashMap<usize, (bool, bool)> {
 }
 
 macro_rules! FUNC {
-	($m: ident, $n: ident, $($t: ty),+) => {
-pub struct $n;
-#[allow(unused_parens)]
-impl $n {
-	fn state() -> &'static mut ($($t),+) {
-		LocalStatic!(($($t),+), { ($(0 as $t),+) })
-	}
-	fn saved_state() -> &'static mut ($($t),+) {
-		LocalStatic!(($($t),+), { ($(0 as $t),+) })
-	}
+($m: ident, $n: ident, $($t: ty),+) => {
+	pub struct $n;
+	#[allow(unused_parens)]
+	impl $n {
+		fn state() -> &'static mut ($($t),+) {
+			LocalStatic!(($($t),+), { ($(0 as $t),+) })
+		}
+		fn saved_state() -> &'static mut ($($t),+) {
+			LocalStatic!(($($t),+), { ($(0 as $t),+) })
+		}
 
-	pub fn Set(state: ($($t),+)) {
-		let last_s = Self::state();
-		debug_assert!({
-			states_map().entry($m::$n as *const () as usize).or_insert_with(|| { ASSERT!(state != *last_s, "First call to GL::{}::Set() must not have all zeros as arguments", stringify!($n)); (false, false) });
-			true
-		});
-		if *last_s != state {
-			*last_s = state;
-			state.apply($m::$n);
-			DEBUG!("Set GL::{}({state:?})", stringify!($n));
+		pub fn Set(state: ($($t),+)) {
+			let last_s = Self::state();
+			debug_assert!({
+				states_map().entry($m::$n as *const () as usize).or_insert_with(|| { ASSERT!(state != *last_s, "First call to GL::{}::Set() must not have all zeros as arguments", stringify!($n)); (false, false) });
+				true
+			});
+			if *last_s != state {
+				*last_s = state;
+				state.apply($m::$n);
+				DEBUG!("Set GL::{}({state:?})", stringify!($n));
+			}
+		}
+
+		pub fn Save() {
+			debug_assert!({
+				let (valid, _) = states_map().get_mut(&($m::$n as *const () as usize)).explain_err(|| format!("GL::{}::Save() with default state, nothing to save", stringify!($n))).fail();
+				*valid = true;
+				true
+			});
+			*Self::saved_state() = *Self::state();
+		}
+
+		pub fn Restore() {
+			ASSERT!({
+					let (valid, _) = states_map().entry($m::$n as *const () as usize).or_insert((false, false));
+					let r = *valid;
+					*valid = false;
+					r
+				},
+				"GL::{}::Restore() call not paired with Set()",
+				stringify!($n)
+			);
+			let state = Self::state();
+			let prev_s = Self::saved_state();
+			if state != prev_s {
+				*state = *prev_s;
+				state.apply($m::$n);
+				DEBUG!("Restored GL::{}({state:?})", stringify!($n));
+			}
 		}
 	}
-
-	pub fn Save() {
-		debug_assert!({
-			let (valid, _) = states_map().get_mut(&($m::$n as *const () as usize)).expect(&format!("GL::{}::Save() with default state, nothing to save", stringify!($n)));
-			*valid = true;
-			true
-		});
-		*Self::saved_state() = *Self::state();
-	}
-
-	pub fn Restore() {
-		ASSERT!(
-			{
-				let (valid, _) = states_map().entry($m::$n as *const () as usize).or_insert((false, false));
-				let r = *valid;
-				*valid = false;
-				r
-			},
-			"GL::{}::Restore() call not paired with Set()",
-			stringify!($n)
-		);
-		let state = Self::state();
-		let prev_s = Self::saved_state();
-		if *state != *prev_s {
-			*state = *prev_s;
-			state.apply($m::$n);
-			DEBUG!("Restored GL::{}({state:?})", stringify!($n));
-		}
-	}
-}
-};
-}
+}}
 
 pub trait State {
 	fn gl_enable(t: GLenum) {

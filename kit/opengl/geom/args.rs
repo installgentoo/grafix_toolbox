@@ -55,9 +55,5 @@ where
 }
 
 pub fn to_glbool(b: bool) -> GLbool {
-	if b {
-		gl::TRUE
-	} else {
-		gl::FALSE
-	}
+	gl::TRUE.or_val(b, || gl::FALSE)
 }

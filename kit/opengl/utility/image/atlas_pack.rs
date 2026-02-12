@@ -1,7 +1,7 @@
 use super::*;
 
 pub fn pack(w: i32, h: i32, empty: &mut Vec<Rect>, filled: &mut Vec<Rect>, min: iVec2) -> Res<Rect> {
-	let (b, min_y) = Res(empty
+	let (b, min_y) = empty
 		.iter()
 		.filter(|e| e.w >= w && e.h >= h)
 		.map(|e| {
@@ -10,59 +10,39 @@ pub fn pack(w: i32, h: i32, empty: &mut Vec<Rect>, filled: &mut Vec<Rect>, min: 
 				.fold(0, |sum, f| sum + i32(e.x == f.x2() && ((f.y - e.y) * 2 + f.h - e.h).abs() < f.h.max(e.h)));
 			(e, e.y - 2 * sum)
 		})
-		.min_by(|(_, l_sum), (_, r_sum)| l_sum.cmp(r_sum)))?;
+		.min_by(|(_, l_sum), (_, r_sum)| l_sum.cmp(r_sum))
+		.res()?;
 
-	let x = if b.y != min_y { b.x } else { b.x2() - w };
+	let x = b.x.or_val(b.y != min_y, || b.x2() - w);
 	filled.push(Rect { x, y: b.y, w, h });
 
-	let b = *filled.last().valid();
-	let mut i = 0;
-	while i < empty.len() {
-		let e = empty[i];
-		if b.intersects(&e) {
-			let mut push = |cond, x, y, w, h| {
-				if cond && (w, h).ge(min).all() {
-					empty.push(Rect { x, y, w, h })
-				}
-			};
-			#[rustfmt::skip] push(b.x2() < e.x2(), b.x2(), e.y,    e.x2() - b.x2(), e.h);
-			#[rustfmt::skip] push(b.y2() < e.y2(), e.x,    b.y2(), e.w,             e.y2() - b.y2());
-			#[rustfmt::skip] push(b.x > e.x,       e.x,    e.y,    b.x - e.x,       e.h);
-			#[rustfmt::skip] push(b.y > e.y,       e.x,    e.y,    e.w,             b.y - e.y);
-			empty.remove(i);
-		} else {
-			i += 1;
-		}
-	}
+	let &b = filled.last().valid();
+	(0..empty.len()).for_each(|i| {
+		let &e = empty.at(i);
 
-	empty.sort_unstable_by(|l, r| {
-		if l.contains(r) {
-			ord::Greater
-		} else if l == r {
-			ord::Equal
-		} else {
-			ord::Less
+		if !intersects(b.bb(), e.bb()) {
+			return;
 		}
-	});
-	empty.reverse();
-	empty.dedup_by(|r, l| l.contains(r));
 
-	let mut i = 0;
-	while i < empty.len() {
-		let p = empty[i];
-		let mut j = i + 1;
-		while j < empty.len() {
-			if p.contains(&empty[j]) {
-				empty.swap_remove(j);
+		let mut push = |cond, x, y, w, h| {
+			if cond && (w, h).ge(min).all() {
+				empty.push(Rect { x, y, w, h })
 			}
-			j += 1;
-		}
-		i += 1;
-	}
+		};
+		#[rustfmt::skip] push(b.x2() < e.x2(), b.x2(), e.y,    e.x2() - b.x2(), e.h);
+		#[rustfmt::skip] push(b.y2() < e.y2(), e.x,    b.y2(), e.w,             e.y2() - b.y2());
+		#[rustfmt::skip] push(b.x > e.x,       e.x,    e.y,    b.x - e.x,       e.h);
+		#[rustfmt::skip] push(b.y > e.y,       e.x,    e.y,    e.w,             b.y - e.y);
+		*empty.at_mut(i) = Def();
+	});
+
+	empty.retain(|e| e != &Def());
+	empty.dedup_by(|a, b| contains(b.bb(), a.bb()));
+
 	Ok(b)
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive_as_trivial]
 pub struct Rect {
 	pub x: i32,
 	pub y: i32,
@@ -79,15 +59,5 @@ impl Rect {
 	fn bb(&self) -> (iVec2, iVec2) {
 		let b1 = (self.x, self.y);
 		(b1, b1.sum((self.w, self.h)))
-	}
-	fn intersects(&self, r: &Self) -> bool {
-		let (b1, b2) = self.bb();
-		let (r_b1, r_b2) = r.bb();
-		!(b2.le(r_b1).any() || b1.ge(r_b2).any())
-	}
-	fn contains(&self, r: &Self) -> bool {
-		let (b1, b2) = self.bb();
-		let (r_b1, r_b2) = r.bb();
-		!(r_b1.ls(b1).any() || r_b2.gt(b2).any())
 	}
 }

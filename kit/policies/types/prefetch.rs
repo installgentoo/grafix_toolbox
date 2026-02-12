@@ -13,14 +13,14 @@ enum mSelf<'a, K, T, M> {
 
 impl<'a, K, T, M: Fetcher<K, T>> Prefetched<'a, K, T, M> {
 	pub fn new(k: K, m: &'a M) -> Self {
-		Self(Cell(Started(Box(Some((k, m))))))
+		(k, m).pipe(Some).pipe(Box).pipe(Started).pipe(Cell).pipe(Self)
 	}
 	pub fn get(&self) -> &T {
 		let s = unsafe { &mut *self.0.as_ptr() };
 		match s {
 			Done(v) => v,
 			Started(b) => {
-				let (k, m) = b.take().valid();
+				let (k, m) = b.take().valid(); // TODO drop in favour of Feed?
 				let v = m.get(k);
 				*s = Done(v);
 				v
@@ -30,7 +30,7 @@ impl<'a, K, T, M: Fetcher<K, T>> Prefetched<'a, K, T, M> {
 	pub fn take(self) -> T {
 		let s = self.0.into_inner();
 		match s {
-			Done(_) => ERROR!("Batched value already borrowed, can't take"),
+			Done(_) => ERROR!("Cannot take borrowed prefetched"),
 			Started(b) => {
 				let (k, m) = b.valid();
 				m.take(k)

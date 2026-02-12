@@ -9,7 +9,7 @@ pub struct Frame9<'r> {
 }
 impl Frame9<'_> {
 	pub fn compare(&self, crop: &Geom, r: &Frame9Impl) -> State {
-		let &Self { pos, size, corner, color, theme } = self;
+		let Self { pos, size, corner, color, theme } = *self;
 		let xyzw = (State::XYZW | State::UV).or_def(geom_cmp(pos, size, crop, &r.base) || corner != r.corner);
 		let rgba = State::RGBA.or_def(color != r.base.color);
 		let ord = State::MISMATCH.or_def(!ptr::eq(theme, r.tex));
@@ -36,16 +36,16 @@ impl Primitive for Frame9Impl {
 	}
 	fn write_mesh(&self, aspect: Vec2, range: BatchedObj) {
 		let (crop, &Base { pos, size, color, .. }) = (self.base.bound_box(), self.base());
-		let c = size.x().min(size.y()) * self.corner.min(0.5).max(0.);
+		let c = size.min_comp() * self.corner.clamp(0., 0.5);
 		write_sprite9((aspect, pos, size, (c, c), crop, (0., 0., 1., 1.), color), range);
 	}
-	fn batch_draw(&self, b: &VaoBinding<u16>, (offset, num): (u16, u16)) {
-		let s = LeakyStatic!(Shader, { Shader::pure([vs_gui__pos_col_tex, ps_gui__frame]) });
+	fn batch_draw(&self, b: &VaoBind<u16>, (offset, num): (u16, u16)) {
+		let s = LeakyStatic!(Shader, { [vs_gui__pos_col_tex, ps_gui__frame].pipe(Shader::pure) });
 
 		let tex = unsafe { &*self.tex };
 		let t = tex.atlas.Bind(sampler());
 		let (x, y, w, _) = tex.region;
-		let _ = Uniforms!(s, ("tex", t), ("iThemeCoords", (x, y, w - x)));
+		let _ = Uniforms!(s, ("iTheme", t), ("iThemeCoord", (x, y, w - x)));
 		b.Draw((num, offset, gl::TRIANGLES));
 	}
 
@@ -62,12 +62,12 @@ SHADER!(
 	r"in vec4 glColor;
 	in vec2 glUV;
 	layout(location = 0) out vec4 glFragColor;
-	uniform sampler2D tex;
-	uniform vec3 iThemeCoords;
+	uniform sampler2D iTheme;
+	uniform vec3 iThemeCoord;
 
 	void main() {
 		float d = min(.9, length(glUV));
-		vec4 c = texture(tex, iThemeCoords.xy + vec2(d * iThemeCoords.z, 0));
+		vec4 c = texture(iTheme, iThemeCoord.xy + vec2(d * iThemeCoord.z, 0));
 		glFragColor = glColor * c;
 	}"
 );

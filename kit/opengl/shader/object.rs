@@ -2,23 +2,23 @@ use super::*;
 
 #[derive(Debug)]
 pub enum ShaderObj {
-	Vertex(Object<ShaderVert>),
-	Fragment(Object<ShaderPix>),
-	Geometry(Object<ShaderGeom>),
-	Compute(Object<ShaderComp>),
-	TessCtrl(Object<ShaderTCtrl>),
-	TessEval(Object<ShaderTEval>),
+	Vertex(Obj<ShdVertT>),
+	Fragment(Obj<ShdPixT>),
+	Geometry(Obj<ShdGeomT>),
+	Compute(Obj<ShdCompT>),
+	TessCtrl(Obj<ShdCtrlT>),
+	TessEval(Obj<ShdEvalT>),
 }
 impl ShaderObj {
 	pub fn new(name: &str, src: &CString) -> Res<Self> {
-		let obj = match slice((name, 2)) {
+		let obj = match name.slice(..2) {
 			"vs" => Vertex(Def()),
 			"ps" => Fragment(Def()),
 			"gs" => Geometry(Def()),
 			"cs" => Compute(Def()),
 			"tc" => TessCtrl(Def()),
 			"te" => TessEval(Def()),
-			_ => Err(format!("Shader name {name:?} should start with vs|ps|gs|cs|tc|te according to type"))?,
+			_ => format!("Shader name {name:?} should start with vs|ps|gs|cs|tc|te according to type").pipe(Err)?,
 		};
 
 		let o = obj.obj();
@@ -27,7 +27,7 @@ impl ShaderObj {
 		let mut status: i32 = 0;
 		GL!(gl::GetShaderiv(o, gl::COMPILE_STATUS, &mut status));
 		if GLbool::to(status) != gl::TRUE {
-			Err(format!("Error compiling {} shader {name:?}\n\n{}", obj.name(), parsing::print_shader_log(o)))?
+			format!("Error compiling {} shader {name:?}\n\n{}", obj.name(), parsing::print_shader_log(o)).pipe(Err)?
 		}
 
 		Ok(obj)
@@ -43,9 +43,9 @@ impl ShaderObj {
 		}
 	}
 	pub fn valid(name: &str) -> Res<()> {
-		match slice((name, 2)) {
+		match name.slice(..2) {
 			"vs" | "ps" | "gs" | "cs" | "tc" | "te" => Ok(()),
-			_ => Err(format!("Shader name '{name}' should start with vs|ps|gs|cs|tc|te according to type")),
+			_ => format!("Shader name '{name}' should start with vs|ps|gs|cs|tc|te according to type").pipe(Err),
 		}
 	}
 	fn name(&self) -> &str {

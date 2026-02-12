@@ -1,19 +1,19 @@
 [package]
 name = "grafix-toolbox"
-version = "0.8.31"
+version = "0.8.32"
 authors = ["Alexander Drozdoff"]
-edition = "2021"
+edition = "2024"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
 license = "MIT"
 repository = "https://github.com/installgentoo/grafix_toolbox"
 homepage = "https://github.com/installgentoo/grafix_toolbox"
 
 [features]
-default = ["gl45"]
+default = ["gl45", "gui"]
 gl45 = []
 profiling = []
 
-adv_fs = ["bincode", "serde", "serde_json", "half/serde", "zstd"]
+adv_fs = ["faster-hex", "serde", "grafix-toolbox-macros/serde", "serde_json", "half/serde", "zstd"]
 rng = ["fastrand"]
 fsnotify = ["notify"]
 
@@ -33,23 +33,26 @@ gui = []
 
 [lib]
 name = "grafix_toolbox"
-path = "./crate.rs"
+path = "crate.rs"
 
 [dependencies]
-bincode = { version = "^1", optional = true }
+grafix-toolbox-macros = "1"
 bitflags = "^2"
+faster-hex = { version = "^0.10", features = ["std"], default-features = false, optional = true }
 fastrand = { version = "^2", optional = true }
-futures-lite = { version = "^2", default-features = false }
+futures-lite = { version = "^2", features = ["std"], default-features = false }
 gl = "^0.14"
-glfw = "^0.58"
 half = "^2"
 image = { version = "^0.25", default-features = false }
-nalgebra = { version = "^0.33", features = ["std", "serde-serialize"], default-features = false }
-notify = { version = "^7", optional = true }
+nalgebra = { version = "^0.34", features = ["std", "serde-serialize"], default-features = false }
+notify = { version = "^8", optional = true }
+parking_lot = "^0.12"
 rusttype = { version = "^0.9", optional = true }
+sdl2 = { version = "^0.38", default-features = false }
 serde = { version = "^1", features = ["derive"], optional = true }
 serde_json = { version = "^1", optional = true }
 tobj = { version = "^4", optional = true }
 tokio = { version = "^1", features = ["rt-multi-thread", "sync", "io-util", "io-std", "fs", "time"], default-features = false }
+tokio-stream = "0.1"
 yansi = "^1"
 zstd = { version = "^0.13", optional = true }

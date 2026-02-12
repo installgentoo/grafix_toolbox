@@ -1,15 +1,42 @@
-use std::{collections::HashMap, hash::Hash};
+use crate::{lib::*, math::*};
+use std::hash::Hash;
 
 pub trait Utf8Len {
-	fn utf8_len(&self) -> usize;
-	fn len_at_char(&self, idx: usize) -> usize;
+	fn utf8_len_at<T>(&self, idx: T) -> usize
+	where
+		usize: Cast<T>;
+	fn utf8_count(&self) -> usize;
+	fn utf8_slice(&self, r: impl uRange) -> &str;
+	fn slice(&self, r: impl uRange) -> &str;
 }
-impl Utf8Len for &str {
-	fn utf8_len(&self) -> usize {
+impl Utf8Len for str {
+	fn utf8_len_at<T>(&self, char_idx: T) -> usize
+	where
+		usize: Cast<T>,
+	{
+		let char_idx = usize(char_idx);
+		self.char_indices()
+			.enumerate()
+			.take(char_idx + 1)
+			.last()
+			.map_or(0, |(n, (i, _))| if n == char_idx { i } else { self.len() })
+	}
+	fn utf8_count(&self) -> usize {
 		self.chars().count()
 	}
-	fn len_at_char(&self, idx: usize) -> usize {
-		self.char_indices().nth(idx).map_or_else(|| self.len(), |(i, _)| i)
+	fn utf8_slice(&self, r: impl uRange) -> &str {
+		let (b, e) = r.get_range();
+		let beg = self.utf8_len_at(b);
+		if e == usize::MAX {
+			return &self[beg..];
+		}
+
+		let end = self[beg..].utf8_len_at(e - b);
+		&self[beg..beg + end]
+	}
+	fn slice(&self, r: impl uRange) -> &str {
+		let (b, e) = r.get_range().fmin(self.len());
+		&self[b..e]
 	}
 }
 
@@ -33,8 +60,9 @@ pub trait CollectVec<T>: Sized + Iterator<Item = T> {
 	}
 	fn collect_arr<const N: usize>(self) -> [T; N] {
 		let vec = self.collect_vec();
-		ASSERT!(vec.len() == N, "Collecting into array of wrong length");
-		unsafe { vec.try_into().unwrap_unchecked() }
+		vec.try_into()
+			.map_err(|v: Vec<_>| format!("Cannot collect [_][..{}] into [{}; {N}]", v.len(), type_name::<T>()))
+			.fail()
 	}
 }
 impl<V: Sized + Iterator<Item = T>, T> CollectVec<T> for V {}

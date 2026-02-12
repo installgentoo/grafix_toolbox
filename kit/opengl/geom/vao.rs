@@ -1,19 +1,16 @@
-use super::{format::*, vao_args::*, *};
+use super::{super::internal::*, *};
 
 #[derive(Default, Debug)]
 pub struct Vao<I> {
-	o: Object<VertArrObj>,
-	d: Dummy<I>,
+	i: Dummy<I>,
+	o: Obj<VertArrT>,
 }
 impl<I: IdxType> Vao<I> {
-	pub fn new() -> Self {
-		Self { o: Def(), d: Dummy }
-	}
 	pub fn obj(&self) -> u32 {
 		self.o.obj
 	}
-	pub fn Bind(&self) -> VaoBinding<I> {
-		VaoBinding::new(self)
+	pub fn Bind(&self) -> VaoBind<I> {
+		VaoBind::new(self)
 	}
 	pub fn BindIdxs(&mut self, o: &IdxArr<I>) {
 		GL!(glVaoElementBuffer(self.obj(), o.obj));
@@ -47,32 +44,32 @@ impl<I> Drop for Vao<I> {
 	}
 }
 
-pub struct VaoBinding<'l, I> {
-	_b: Binding<'l, VertArrObj>,
-	d: Dummy<I>,
+pub struct VaoBind<'l, I> {
+	i: Dummy<I>,
+	_b: Bind<'l, VertArrT>,
 }
-impl<I: IdxType> VaoBinding<'_, I> {
-	pub fn new(o: &Vao<I>) -> Self {
-		let _b = Binding::new(&o.o);
-		Self { _b, d: Dummy }
+impl<I: IdxType> VaoBind<'_, I> {
+	fn new(o: &Vao<I>) -> Self {
+		let _b = Bind::new(&o.o);
+		Self { i: Dummy, _b }
 	}
 	pub fn Draw(&self, args: impl DrawArgs) {
-		Index::checkcrossbinds(VertArrObj::bound_obj());
-		Attribute::checkcrossbinds(VertArrObj::bound_obj());
+		VertArrT::bound_obj().pipe_as(Index::checkcrossbinds);
+		VertArrT::bound_obj().pipe_as(Attribute::checkcrossbinds);
 		let (num, offset, mode) = args.get();
 		GL!(gl::DrawElements(mode, num, I::TYPE, (offset * type_size::<I>()) as *const GLvoid));
 	}
 	pub fn DrawUnindexed(&self, args: impl DrawArgs) {
-		Attribute::checkcrossbinds(VertArrObj::bound_obj());
+		VertArrT::bound_obj().pipe_as(Attribute::checkcrossbinds);
 		let (num, offset, mode) = args.get();
 		GL!(gl::DrawArrays(mode, i32(offset), num));
 	}
-	pub fn DrawInstanced<T>(&self, n: T, args: impl DrawArgs)
+	pub fn DrawInstanced<A>(&self, n: A, args: impl DrawArgs)
 	where
-		i32: Cast<T>,
+		i32: Cast<A>,
 	{
-		Index::checkcrossbinds(VertArrObj::bound_obj());
-		Attribute::checkcrossbinds(VertArrObj::bound_obj());
+		VertArrT::bound_obj().pipe_as(Index::checkcrossbinds);
+		VertArrT::bound_obj().pipe_as(Attribute::checkcrossbinds);
 		let (num, offset, mode) = args.get();
 		let offset = (offset * type_size::<I>()) as *const GLvoid;
 		GL!(gl::DrawElementsInstanced(mode, num, I::TYPE, offset, i32(n)));

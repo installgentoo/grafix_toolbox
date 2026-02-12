@@ -1,24 +1,18 @@
 #[macro_export]
 macro_rules! LOGGER {
-	($f: path, $l: ident) => {
-		let ___errors_logging_main_logger_sink = logging::Logger::initialize($f, logging::Level::$l);
+	($f: expr, $l: ident) => {
+		let ___errors_logger_main_logger_sink = logger::Logger::init($f, logger::Level::$l);
 	};
 }
 
 #[cfg(not(debug_assertions))]
 #[macro_export]
 macro_rules! ASSERT {
-	(false, $($t: tt)+) => {{
-		unreachable!();
-	}};
 	($e: expr, $($t: tt)+) => {{}};
 }
 #[cfg(debug_assertions)]
 #[macro_export]
 macro_rules! ASSERT {
-	(false, $w: literal) => { ERROR_IMPL!($w) };
-	(false, $w: expr) => { ERROR_IMPL!("{}", $w) };
-	(false, $($t: tt)+) => { ERROR_IMPL!($($t)+) };
 	($e: expr, $w: literal) => { if $e {} else { ERROR_IMPL!($w) } };
 	($e: expr, $w: expr) => { if $e {} else { ERROR_IMPL!("{}", $w) } };
 	($e: expr, $($t: tt)+) => { if $e {} else { ERROR_IMPL!($($t)+) } };
@@ -33,24 +27,25 @@ macro_rules! ERROR {
 #[macro_export]
 macro_rules! ERROR_IMPL {
 	($($t: tt)+) => {{
-		use $crate::logging::*;
-		let e = "E|".red().bold();
-		let bt = process_backtrace(std::backtrace::Backtrace::force_capture());
+		use $crate::logger::*;
+		let (bt, e) = (process_backtrace(std::backtrace::Backtrace::force_capture()), "E|".red().bold());
 		Logger::log(format!("{e} {bt}{e} {} |{}:{}|{}\n", format!($($t)+).red(), file!(), line!(), std::thread::current().name().unwrap_or("???")));
 		std::panic::set_hook(std::boxed::Box::new(|_| {}));
-		panic!();
+		panic!()
 	}};
 }
 
 #[cfg(not(debug_assertions))]
 #[macro_export]
 macro_rules! FAIL {
+	($b: block, $($t: tt)+) => {{ WARN!($($t)+); $b }};
 	($($t: tt)+) => { WARN!($($t)+) };
 }
 #[cfg(debug_assertions)]
 #[macro_export]
 macro_rules! FAIL {
-	($($t: tt)+) => { ASSERT!(0 == 1, $($t)+) };
+	($b: block, $($t: tt)+) => { ERROR!($($t)+) };
+	($($t: tt)+) => { ERROR!($($t)+) };
 }
 
 #[macro_export]
@@ -62,7 +57,7 @@ macro_rules! WARN {
 #[macro_export]
 macro_rules! WARN_IMPL {
 	($($t: tt)+) => {{
-		use $crate::logging::*;
+		use $crate::logger::*;
 		if Level::WARNING as i32 <= Logger::level() {
 			let w = "W| ".red().to_string();
 			Logger::log([&w, &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
@@ -79,7 +74,7 @@ macro_rules! INFO {
 #[macro_export]
 macro_rules! INFO_IMPL {
 	($($t: tt)+) => {{
-		use $crate::logging::*;
+		use $crate::logger::*;
 		if Level::INFO as i32 <= Logger::level() {
 			Logger::log(["I| ", &format!($($t)+), " |", file!(), ":", &line!().to_string(), "\n"].concat());
 		}
@@ -101,7 +96,7 @@ macro_rules! DEBUG {
 #[macro_export]
 macro_rules! DEBUG_IMPL {
 	($($t: tt)+) => {{
-		use $crate::logging::*;
+		use $crate::logger::*;
 		if Level::DEBUG as i32 <= Logger::level() {
 			Logger::log(["D| ", &format!($($t)+), "\n"].concat());
 		}
@@ -117,11 +112,11 @@ macro_rules! PRINT {
 #[macro_export]
 macro_rules! PRINT_IMPL {
 	($($t: tt)+) => {{
-		use $crate::logging::*;
+		use $crate::logger::*;
 		if Level::PRINT as i32 <= Logger::level() {
 			let mut msg = format!($($t)+);
 			msg.push('\n');
-			Logger::log( msg);
+			Logger::log(msg);
 		}
 	}};
 }

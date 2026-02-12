@@ -1,4 +1,4 @@
-use super::{super::ext::*, super::la, *};
+use super::{super::ext::*, super::la};
 
 pub trait TupleMath<RA, A: Number>: TupleApply<RA, A, R<A> = Self> {
 	fn clmp<LA>(self, l: LA, r: RA) -> Self
@@ -7,12 +7,12 @@ pub trait TupleMath<RA, A: Number>: TupleApply<RA, A, R<A> = Self> {
 	{
 		self.fmax(RA::to(l)).fmin(r)
 	}
-	fn mix<M>(self, a: M, r: RA) -> Self
+	fn mix<M>(self, r: RA, a: M) -> Self
 	where
 		f32: Cast<M>,
 	{
 		let a = f32(a);
-		self.apply(r, |l, r| l.mix(a, r))
+		self.apply(r, |l, r| l.mix(r, a))
 	}
 	fn sum(self, r: RA) -> Self {
 		self.apply(r, |l, r| l + r)
@@ -57,13 +57,15 @@ pub trait TupleSelf<A: Number>: TupleMap<A, R<A> = Self> + TupleFold<A> + TupleM
 	fn mag(self) -> A {
 		self.pow2().fold(|l, r| l + r).root()
 	}
+	fn min_comp(self) -> A {
+		self.fold(|l, r| if l < r { l } else { r })
+	}
+	fn max_comp(self) -> A {
+		self.fold(|l, r| if l > r { l } else { r })
+	}
 	fn norm(self) -> Self {
 		let l = self.mag();
-		if l.is_zero() {
-			Self::default()
-		} else {
-			self.div(l)
-		}
+		if l.is_zero() { Self::default() } else { self.div(l) }
 	}
 }
 impl<S: TupleMap<A, R<A> = Self> + TupleFold<A> + TupleMath<A, A> + TupleIdentity, A: Number> TupleSelf<A> for S {}
@@ -103,7 +105,7 @@ impl<const N: usize, S: TupleApply<RA, A, R<bool> = [bool; N]>, RA, A: EpsEq> Tu
 pub trait Tuple2Geometry<A> {
 	fn rotate(self, deg: A) -> Self;
 }
-impl<T: Tuple2<f32>, A> Tuple2Geometry<A> for T
+impl<A> Tuple2Geometry<A> for (A, A)
 where
 	f32: Cast<A>,
 	Self: Cast<la::V2>,
@@ -111,6 +113,6 @@ where
 	fn rotate(self, rad: A) -> Self {
 		let rad = std::f32::consts::PI * 2. * f32(rad);
 		let rot = la::na::Rotation2::new(rad);
-		Self::to(rot * la::V2::to(self.get()))
+		Self::to(rot * la::V2::to(Vec2(self)))
 	}
 }
