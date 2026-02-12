@@ -38,10 +38,10 @@ impl Model {
 					Def(),
 				);
 				for i in (0..xyz.len()).step_by(3) {
-					let v = Vec3(&xyz[i..]);
+					let v = Vec3(&xyz[i..i + 3]);
 					(min, max) = (v.fmin(min), v.fmax(max));
 					if m.normals.is_empty() && i % 9 == 0 && i + 8 < xyz.len() {
-						let xyz = &xyz[i..];
+						let xyz = &xyz[i..i + 3];
 						let (v1, v2, v3) = Mat3((xyz, &xyz[3..], &xyz[6..]));
 						let ndir = v1.sum(v2).sum(v3).div(3).sgn();
 						let (v1, v2, v3) = vec3::<la::V3>::to((v1, v2, v3));

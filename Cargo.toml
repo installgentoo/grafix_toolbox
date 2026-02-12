@@ -1,6 +1,6 @@
 [package]
 name = "grafix-toolbox"
-version = "0.8.32"
+version = "0.8.33"
 authors = ["Alexander Drozdoff"]
 edition = "2024"
 description = "Personal collection of opengl and rust tools, also serving as an functional gui crate. See ./gui/elements for premade gui elements"
